@@ -9,6 +9,13 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+debug
 
-# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
-.glide/
+# IDE
+.vscode
+
+vendor
+/.gopath
+/bin
+goose
+
