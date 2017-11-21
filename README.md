@@ -11,9 +11,15 @@ cd ~/go/src/github.com/iReflect/reflect-app
 git checkout develop
 ```
 
+
+## Pull vendor dependencies
+```
+make vendor
+```
+
 ## Build
 ```
-make build
+make all
 ```
 
 ## Run

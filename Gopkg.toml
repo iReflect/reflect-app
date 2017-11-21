@@ -34,8 +34,9 @@
   version = "1.2.0"
 
 [[constraint]]
-  branch = "master"
+  branch = "remove_foreign_key"
   name = "github.com/jinzhu/gorm"
+  source = "https://github.com/iReflect/gorm.git"
 
 [[constraint]]
   branch = "master"

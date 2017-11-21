@@ -62,10 +62,11 @@
   version = "v1.1"
 
 [[projects]]
-  branch = "master"
+  branch = "remove_foreign_key"
   name = "github.com/jinzhu/gorm"
   packages = [".","dialects/postgres"]
-  revision = "0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e"
+  revision = "2a5838f889350305ab1c2ede393fcc1aba018f14"
+  source = "https://github.com/iReflect/gorm.git"
 
 [[projects]]
   branch = "master"
@@ -196,6 +197,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4c2583e8ae6c5d60874bf9d31496775d88fcfa9528dab0341232772cd8fa6467"
+  inputs-digest = "55787bc4fe1378a9e93990f88f4f52e898631a4fbb826d8f9fd5c68cbf2e68b7"
   solver-name = "gps-cdcl"
   solver-version = 1

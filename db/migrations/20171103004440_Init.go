@@ -17,13 +17,14 @@ func Up00001(tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
+	gormdb.CreateTable(&base.User{}, &base.Group{}, &base.Role{})
+	gormdb.Model(&base.Role{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
+	gormdb.Model(&base.Role{}).AddForeignKey("group_id", "groups(id)", "RESTRICT", "RESTRICT")
 
-	gormdb.CreateTable(&base.User{})
-	gormdb.CreateTable(&base.Group{})
-	gormdb.CreateTable(&base.Role{})
-	gormdb.CreateTable(&base.Category{})
-	gormdb.CreateTable(&base.Item{})
-	gormdb.CreateTable(&base.ItemType{})
+	gormdb.CreateTable(&base.Category{}, &base.Item{}, &base.ItemType{})
+	gormdb.Model(&base.Item{}).AddForeignKey("category_id", "categories(id)", "RESTRICT", "RESTRICT")
+	gormdb.Model(&base.Item{}).AddForeignKey("item_type_id", "item_types(id)", "RESTRICT", "RESTRICT")
+
 	return nil
 }
 
@@ -33,12 +34,14 @@ func Down00001(tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
-	gormdb.DropTable(&base.Role{})
-	gormdb.DropTable(&base.User{})
-	gormdb.DropTable(&base.Group{})
-	gormdb.DropTable(&base.ItemType{})
-	gormdb.DropTable(&base.Category{})
-	gormdb.DropTable(&base.Item{})
+
+	gormdb.Model(&base.Role{}).RemoveForeignKey("user_id", "users(id)")
+	gormdb.Model(&base.Role{}).RemoveForeignKey("group_id", "groups(id)")
+	gormdb.DropTable(&base.User{}, &base.Group{}, &base.Role{})
+
+	gormdb.Model(&base.Item{}).RemoveForeignKey("category_id", "categories(id)")
+	gormdb.Model(&base.Item{}).RemoveForeignKey("item_type_id", "item_types(id)")
+	gormdb.DropTable(&base.Category{}, &base.Item{}, &base.ItemType{})
 
 	return nil
 }
