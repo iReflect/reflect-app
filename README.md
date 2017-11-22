@@ -21,7 +21,7 @@ export DB_DRIVER="mysql"
 
 ## Get Code
 ```
-go get github.com/iReflect/reflect-app
+go get -d github.com/iReflect/reflect-app
 cd ~/go/src/github.com/iReflect/reflect-app
 git checkout develop
 ```
