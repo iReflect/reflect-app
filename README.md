@@ -42,7 +42,7 @@ make all
 make run
 ```
 Vist API at - http://localhost:3000/  
-Visit Admin at - http://localhost:9000/admin/  
+Visit Admin at - http://localhost:3000/admin/  
 
 ## Run Tests
 ```
