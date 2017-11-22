@@ -62,7 +62,7 @@
   version = "v1.1"
 
 [[projects]]
-  branch = "remove_foreign_key"
+  branch = "master"
   name = "github.com/jinzhu/gorm"
   packages = [".","dialects/postgres"]
   revision = "2a5838f889350305ab1c2ede393fcc1aba018f14"
@@ -111,10 +111,11 @@
   revision = "68fecaef60268522d2ac3f0123cec9d3bcab7b6e"
 
 [[projects]]
+  branch = "master"
   name = "github.com/pressly/goose"
   packages = ["."]
-  revision = "056a4d47dcc4d67fa3947a4f13945a5c690e568b"
-  version = "v2.1.0"
+  revision = "3ddaf111b0c8fb76d178b8f5899d74dca89b8706"
+  source = "https://github.com/iReflect/goose.git"
 
 [[projects]]
   name = "github.com/qor/admin"
@@ -156,7 +157,7 @@
   branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "8338af5bac521965300f901d1817d1fd20ee0d9e"
+  revision = "b051152d28096a3a49ab8c09fc773863befb1728"
 
 [[projects]]
   branch = "master"
@@ -168,13 +169,13 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom"]
-  revision = "a337091b0525af65de94df2eb7e98bd9962dcbe2"
+  revision = "9dfe39835686865bff950a07b394c12a98ddc811"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "665f6529cca930e27b831a0d1dafffbe1c172924"
+  revision = "82aafbf43bf885069dc71b7e7c2f9d7a614d47da"
 
 [[projects]]
   branch = "master"
@@ -192,11 +193,11 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "eb3733d160e74a9c7e442f435eb3bea458e1d19f"
+  revision = "287cf08546ab5e7e37d55a84f7ed3fd1db036de5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "55787bc4fe1378a9e93990f88f4f52e898631a4fbb826d8f9fd5c68cbf2e68b7"
+  inputs-digest = "8aa2d112973b5c966a13f31930450f312e12ea29fa4da8d46c02ef83a94c3fac"
   solver-name = "gps-cdcl"
   solver-version = 1

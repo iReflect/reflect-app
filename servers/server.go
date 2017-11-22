@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"log"
@@ -55,6 +55,14 @@ func (a *App) SetRoutes() {
 		new(feedbackControllers.CategoryController).Routes(v1.Group("categories"))
 		new(feedbackControllers.ItemController).Routes(v1.Group("categories/:title/items"))
 	}
+}
+
+func (a *App) SetAdminRoutes() {
+	r := a.Router
+	admin := &Admin{DB: a.DB}
+	adminRouter := admin.Router()
+
+	r.Any("/admin/*w", gin.WrapH(adminRouter))
 }
 
 // Run the app on it's router

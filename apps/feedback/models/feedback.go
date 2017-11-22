@@ -9,13 +9,13 @@ type Category struct {
 	gorm.Model
 	Title    string `gorm:"type:varchar(100);unique_index"`
 	Archived bool
+	Weight   int
 	Items    []Item
 }
 
 type ItemType struct {
 	gorm.Model
-	Title  string
-	Weight int
+	Title string
 }
 
 type Item struct {

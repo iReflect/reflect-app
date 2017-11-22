@@ -4,6 +4,21 @@
 Install GO - https://golang.org/doc/install  
 Install dep - https://github.com/golang/dep
 
+## Prepare DB
+Create a database (postgresql) as below to use the default configuration,
+```
+host=localhost
+user=ireflect
+password=1Reflect
+dbname=ireflect-dev
+```
+
+You can override the default DB connection information by setting an ENV variable
+```
+export DB_DSN="host=localhost user=ireflect password=1Reflect dbname=ireflect-dev"
+export DB_DRIVER="mysql"
+```
+
 ## Get Code
 ```
 go get github.com/iReflect/reflect-app
@@ -38,6 +53,14 @@ make test
 ```
 make migrate up
 make migrate status
+```
+
+# Adding Migrations
+Examples:
+```
+make migrate create <migration_name> go
+
+make migrate create <migration_name> sql
 ```
 
 For help - make migrate

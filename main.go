@@ -9,8 +9,7 @@ import (
 
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/db"
-	adminServer "github.com/iReflect/reflect-app/servers/admin"
-	apiServer "github.com/iReflect/reflect-app/servers/api"
+	server "github.com/iReflect/reflect-app/servers"
 
 	_ "github.com/iReflect/reflect-app/db/migrations" //Init for all migrations
 )
@@ -23,26 +22,15 @@ func main() {
 	gormDB := db.Initialize(config)
 	db.Migrate(config, gormDB)
 
-	app := &apiServer.App{}
+	app := &server.App{}
 	app.Initialize(config)
 	app.SetRoutes()
+	app.SetAdminRoutes()
 	srv := app.Server(":3000")
-
-	adminApp := &adminServer.App{}
-	adminApp.Initialize(config)
-	adminApp.SetRoutes()
-	adminSrv := adminApp.Server(":9000")
 
 	go func() {
 		// service connections
 		if err := srv.ListenAndServe(); err != nil {
-			log.Printf("listen: %s\n", err)
-		}
-	}()
-
-	go func() {
-		// service connections
-		if err := adminSrv.ListenAndServe(); err != nil {
 			log.Printf("listen: %s\n", err)
 		}
 	}()
@@ -58,9 +46,6 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("App Server Shutdown:", err)
-	}
-	if err := adminSrv.Shutdown(ctx); err != nil {
-		log.Fatal("Admin Server Shutdown:", err)
 	}
 	log.Println("Server exiting")
 

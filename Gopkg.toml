@@ -34,7 +34,7 @@
   version = "1.2.0"
 
 [[constraint]]
-  branch = "remove_foreign_key"
+  branch = "master"
   name = "github.com/jinzhu/gorm"
   source = "https://github.com/iReflect/gorm.git"
 
@@ -43,8 +43,9 @@
   name = "github.com/lib/pq"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/pressly/goose"
-  version = "2.1.0"
+  source = "https://github.com/iReflect/goose.git"
 
 [[constraint]]
   name = "github.com/qor/admin"

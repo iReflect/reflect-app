@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"text/template"
 
 	"github.com/iReflect/reflect-app/config"
 	"github.com/pressly/goose"
@@ -39,7 +40,17 @@ func main() {
 	config := config.GetConfig()
 
 	if len(args) > 1 && args[0] == "create" {
-		if err := goose.Run("create", nil, config.DB.MigrationsDir, args[1:]...); err != nil {
+
+		migrationType := "go"
+		if len(args) == 3 {
+			migrationType = args[2]
+		}
+		var migrationTemplate *template.Template
+		if migrationType == "go" {
+			migrationTemplate = customGoSQLMigrationTemplate
+		}
+
+		if err := goose.CreateWithTemplate(nil, config.DB.MigrationsDir, migrationTemplate, args[1], migrationType); err != nil {
 			log.Fatalf("goose run: %v", err)
 		}
 		return
@@ -53,7 +64,7 @@ func main() {
 	}
 
 	arguments := []string{}
-	if len(args) > 1 {
+	if len(args) > 3 {
 		arguments = append(arguments, args[3:]...)
 	}
 
@@ -92,3 +103,48 @@ Commands:
     create NAME [sql|go] Creates new migration file with next version
 `
 )
+
+var customGoSQLMigrationTemplate = template.Must(template.New("goose.go-migration").Parse(`package migrations
+	
+import (
+	"database/sql"
+	"github.com/pressly/goose"
+	"github.com/jinzhu/gorm"
+)
+
+// Define only the fields used in this migration and not full model.
+type Category struct {
+	gorm.Model
+	Weight int
+}
+
+func init() {
+	goose.AddMigration(Up{{.}}, Down{{.}})
+}
+
+func Up{{.}}(tx *sql.Tx) error {
+	// This code is executed when the migration is applied.
+	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
+	if err != nil {
+		return err
+	}
+
+	//Add a column
+	gormdb.AutoMigrate(&Category{})
+
+	return nil
+}
+
+func Down{{.}}(tx *sql.Tx) error {
+	// This code is executed when the migration is rolled back.
+	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
+	if err != nil {
+		return err
+	}
+
+	//Drop a column
+	gormdb.Model(&Category{}).DropColumn("weight")
+
+	return nil
+}
+`))
