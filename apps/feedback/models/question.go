@@ -10,7 +10,7 @@ type Question struct {
 	gorm.Model
 	Text    string       `gorm:"type:text; not null"`
 	Type    int          `gorm:"default:0; not null"`
-	Skill   Skill        `gorm:"ForeignKey:SkillID; AssociationForeignKey:ID"`
+	Skill   Skill
 	SkillID uint         `gorm:"not null"`
 	Options fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	Weight  int          `gorm:"default:1; not null"`

@@ -1,12 +1,14 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import "time"
 
 type UserTeamAssociation struct {
-	gorm.Model
-	User   User `gorm:"ForeignKey:UserID;AssociationForeignKey:ID"`
-	UserId uint `gorm:"not null"`
-	Team   Team `gorm:"ForeignKey:TeamID;AssociationForeignKey:ID"`
-	TeamId uint `gorm:"not null"`
-	Active bool `gorm:"default:true; not null"`
+	User      User
+	UserId    uint       `gorm:"primary_key"`
+	Team      Team
+	TeamId    uint       `gorm:"primary_key"`
+	Active    bool       `gorm:"default:true; not null"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
 }
