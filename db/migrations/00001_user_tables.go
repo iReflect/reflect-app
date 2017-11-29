@@ -18,7 +18,9 @@ func Up00001(tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
-	gormdb.CreateTable(&models.Role{}, &models.User{}, &models.Team{}, &models.UserTeamAssociation{})
+	gormdb.CreateTable(&models.Role{}, &models.User{}, &models.Team{})
+
+	gormdb.AutoMigrate(&models.UserTeamAssociation{})
 
 	gormdb.Model(&models.User{}).AddForeignKey("role_id", "roles(id)", "RESTRICT", "RESTRICT")
 

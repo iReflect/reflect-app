@@ -4,5 +4,5 @@ import "github.com/jinzhu/gorm"
 
 type Role struct {
 	gorm.Model
-	Name string `gorm:"type:varchar(30)"`
+	Name string `gorm:"type:varchar(64)"`
 }

@@ -8,11 +8,11 @@ import (
 
 type TeamFeedbackForm struct {
 	gorm.Model
-	Team           userModels.Team `gorm:"ForeignKey:TeamID; AssociationForeignKey:ID"`
-	TeamID         uint            `gorm:"not null"`
-	Role           userModels.Role `gorm:"ForeignKey:RoleID; AssociationForeignKey:ID"`
-	RoleID         uint            `gorm:"not null"`
-	FeedbackForm   FeedbackForm    `gorm:"ForeignKey:FeedbackFormID; AssociationForeignKey:ID"`
-	FeedbackFormID uint            `gorm:"not null"`
-	Active         bool            `gorm:"default:true; not null"`
+	Team           userModels.Team
+	TeamID         uint `gorm:"not null"`
+	ForRole        userModels.Role
+	ForRoleID      uint `gorm:"not null"`
+	FeedbackForm   FeedbackForm
+	FeedbackFormID uint `gorm:"not null"`
+	Active         bool `gorm:"default:true; not null"`
 }
