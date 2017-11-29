@@ -21,7 +21,7 @@ export DB_DRIVER="mysql"
 
 ## Get Code
 ```
-go get github.com/iReflect/reflect-app
+go get -d github.com/iReflect/reflect-app
 cd ~/go/src/github.com/iReflect/reflect-app
 git checkout develop
 ```
@@ -42,7 +42,7 @@ make all
 make run
 ```
 Vist API at - http://localhost:3000/  
-Visit Admin at - http://localhost:9000/admin/  
+Visit Admin at - http://localhost:3000/admin/  
 
 ## Run Tests
 ```
