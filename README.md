@@ -1,5 +1,10 @@
 # Development
 
+[![CircleCI](https://circleci.com/gh/iReflect/reflect-app.svg?style=svg)](https://circleci.com/gh/iReflect/reflect-app)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/21adfd09348b4de5b1aaec650a2d7462)](https://www.codacy.com/app/iReflect/reflect-app?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=iReflect/reflect-app&amp;utm_campaign=Badge_Grade)
+[![codecov](https://codecov.io/gh/iReflect/reflect-app/branch/master/graph/badge.svg)](https://codecov.io/gh/iReflect/reflect-app)
+
+
 ## System Setup
 Install GO - https://golang.org/doc/install  
 Install dep - https://github.com/golang/dep
