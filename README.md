@@ -1,5 +1,7 @@
 # Development
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/21adfd09348b4de5b1aaec650a2d7462)](https://www.codacy.com/app/iReflect/reflect-app?utm_source=github.com&utm_medium=referral&utm_content=iReflect/reflect-app&utm_campaign=badger)
+
 ## System Setup
 Install GO - https://golang.org/doc/install  
 Install dep - https://github.com/golang/dep
