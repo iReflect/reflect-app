@@ -22,7 +22,7 @@ func (j *JSONB) Scan(value interface{}) error {
 	}
 	s, ok := value.([]byte)
 	if !ok {
-		errors.New("Scan source was not string")
+		return errors.New("Scan source was not string")
 	}
 	// I think I need to make a copy of the bytes.
 	// It seems the byte slice passed in is re-used
