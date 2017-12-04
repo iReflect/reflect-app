@@ -16,7 +16,7 @@ type Feedback struct {
 	FeedbackFormID   uint   `gorm:"not null"`
 	ForUserProfile   userModels.UserProfile
 	ForUserProfileID uint
-	ByProfile        userModels.UserProfile
+	ByUserProfile        userModels.UserProfile
 	ByUserProfileID  uint   `gorm:"not null"`
 	Team             userModels.Team
 	TeamID           uint   `gorm:"not null"`
