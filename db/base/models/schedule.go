@@ -1,9 +1,9 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
 	"time"
 
+	"github.com/jinzhu/gorm"
 )
 
 // Schedule at which feedback events would be created for a team

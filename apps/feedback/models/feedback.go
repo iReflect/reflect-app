@@ -1,8 +1,9 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
 	"time"
+
+	"github.com/jinzhu/gorm"
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )

@@ -1,9 +1,9 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
 	"time"
 
+	"github.com/jinzhu/gorm"
 )
 
 // Feedback represent a submitted/in-progress feedback form by a user

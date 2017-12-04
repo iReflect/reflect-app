@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"database/sql"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pressly/goose"
 
