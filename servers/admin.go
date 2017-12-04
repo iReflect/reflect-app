@@ -23,22 +23,23 @@ func (a *Admin) Router() *http.ServeMux {
 		DB: a.DB,
 	})
 
-	category := feedbackModels.Category{}
-	item := feedbackModels.Item{}
-	itemType := feedbackModels.ItemType{}
+	Admin.AddResource(&userModels.User{}, &admin.Config{Menu: []string{"User Management"}})
+	Admin.AddResource(&userModels.Role{}, &admin.Config{Menu: []string{"User Management"}})
+	Admin.AddResource(&userModels.UserProfile{}, &admin.Config{Menu: []string{"User Management"}})
+	Admin.AddResource(&userModels.Team{}, &admin.Config{Menu: []string{"User Management"}})
+	Admin.AddResource(&userModels.UserTeam{}, &admin.Config{Menu: []string{"User Management"}})
 
-	Admin.AddResource(&category, &admin.Config{Menu: []string{"Data Management"}})
-	Admin.AddResource(&item, &admin.Config{Menu: []string{"Data Management"}})
-	Admin.AddResource(&itemType, &admin.Config{Menu: []string{"Data Management"}})
+	Admin.AddResource(&feedbackModels.Category{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
+	Admin.AddResource(&feedbackModels.Skill{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
+	Admin.AddResource(&feedbackModels.Question{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
+	Admin.AddResource(&feedbackModels.FeedbackForm{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
+	Admin.AddResource(&feedbackModels.FeedbackFormContent{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
+	Admin.AddResource(&feedbackModels.TeamFeedbackForm{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
 
-	user := userModels.User{}
-	group := userModels.Group{}
-	role := userModels.Role{}
+	Admin.AddResource(&feedbackModels.Feedback{}, &admin.Config{Menu: []string{"Feedback Management"}})
+	Admin.AddResource(&feedbackModels.QuestionResponse{}, &admin.Config{Menu: []string{"Feedback Management"}})
 
-	Admin.AddResource(&user, &admin.Config{Menu: []string{"User Management"}})
-	Admin.AddResource(&group, &admin.Config{Menu: []string{"User Management"}})
-	Admin.AddResource(&role, &admin.Config{Menu: []string{"User Management"}})
-
+	Admin.AddResource(&feedbackModels.Schedule{}, &admin.Config{Menu: []string{"Schedule Management"}})
 	Admin.MountTo("/admin/", adminRouter)
 
 	return adminRouter
