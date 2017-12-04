@@ -1,21 +1,19 @@
-package models
+package base_models
 
 import (
 	"github.com/jinzhu/gorm"
 	"time"
-
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 type Feedback struct {
 	gorm.Model
 	FeedbackForm     FeedbackForm
 	FeedbackFormID   uint `gorm:"not null"`
-	ForUserProfile   userModels.UserProfile
+	ForUserProfile   UserProfile
 	ForUserProfileID uint
-	ByProfile        userModels.UserProfile
+	ByProfile        UserProfile
 	ByUserProfileID  uint `gorm:"not null"`
-	Team             userModels.Team
+	Team             Team
 	TeamID           uint `gorm:"not null"`
 	Status           int8 `gorm:"default:0; not null"` // TODO Add enum
 	SubmittedAt      time.Time

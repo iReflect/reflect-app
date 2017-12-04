@@ -129,8 +129,8 @@ func Up{{.}}(tx *sql.Tx) error {
 		return err
 	}
 
-	//Add a column
-	gormdb.AutoMigrate(&Category{})
+	// Add a column
+	// gormdb.AutoMigrate(&Category{})
 
 	return nil
 }
@@ -142,8 +142,8 @@ func Down{{.}}(tx *sql.Tx) error {
 		return err
 	}
 
-	//Drop a column
-	gormdb.Model(&Category{}).DropColumn("weight")
+	// Drop a column
+	// gormdb.Model(&Category{}).DropColumn("weight")
 
 	return nil
 }

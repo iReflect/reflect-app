@@ -5,7 +5,7 @@ import (
 	"github.com/pressly/goose"
 	"github.com/jinzhu/gorm"
 
-	"github.com/iReflect/reflect-app/apps/feedback/models"
+	models "github.com/iReflect/reflect-app/db/base_models"
 )
 
 // Define only the fields used in this migration and not full model.
@@ -43,15 +43,15 @@ func Up00002(tx *sql.Tx) error {
 	gormdb.Model(&models.TeamFeedbackForm{}).AddUniqueIndex("unique_team_user_role", "team_id", "for_role_id")
 
 	gormdb.Model(&models.Feedback{}).AddForeignKey("feedback_form_id", "feedback_forms(id)", "RESTRICT", "RESTRICT")
-	gormdb.Model(&models.Feedback{}).AddForeignKey("for_user_id", "users(id)", "RESTRICT", "RESTRICT")
-	gormdb.Model(&models.Feedback{}).AddForeignKey("by_user_id", "users(id)", "RESTRICT", "RESTRICT")
+	gormdb.Model(&models.Feedback{}).AddForeignKey("for_user_profile_id", "user_profiles(id)", "RESTRICT", "RESTRICT")
+	gormdb.Model(&models.Feedback{}).AddForeignKey("by_user_profile_id", "user_profiles(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.Feedback{}).AddForeignKey("team_id", "teams(id)", "RESTRICT", "RESTRICT")
-	
+
 	gormdb.Model(&models.QuestionResponse{}).AddForeignKey("feedback_form_content_id", "feedback_form_contents(id)",
 		"RESTRICT", "RESTRICT")
 	gormdb.Model(&models.QuestionResponse{}).AddForeignKey("feedback_id", "feedbacks(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.QuestionResponse{}).AddForeignKey("question_id", "questions(id)", "RESTRICT", "RESTRICT")
-	
+
 	gormdb.Model(&models.Schedule{}).AddForeignKey("team_id", "teams(id)", "RESTRICT", "RESTRICT")
 
 	return nil
@@ -65,14 +65,14 @@ func Down00002(tx *sql.Tx) error {
 	}
 
 	gormdb.Model(&models.Schedule{}).RemoveForeignKey("team_id", "teams(id)")
-	
+
 	gormdb.Model(&models.QuestionResponse{}).RemoveForeignKey("question_id", "questions(id)")
 	gormdb.Model(&models.QuestionResponse{}).RemoveForeignKey("feedback_id", "feedbacks(id)")
 	gormdb.Model(&models.QuestionResponse{}).RemoveForeignKey("feedback_form_content_id", "feedback_form_contents(id)")
 
 	gormdb.Model(&models.Feedback{}).RemoveForeignKey("team_id", "teams(id)")
-	gormdb.Model(&models.Feedback{}).RemoveForeignKey("by_user_id", "users(id)")
-	gormdb.Model(&models.Feedback{}).RemoveForeignKey("by_user_id", "users(id)")
+	gormdb.Model(&models.Feedback{}).RemoveForeignKey("by_user_profile_id", "user_profiles(id)")
+	gormdb.Model(&models.Feedback{}).RemoveForeignKey("for_user_profile_id", "user_profiles(id)")
 	gormdb.Model(&models.Feedback{}).RemoveForeignKey("feedback_form_id", "feedback_forms(id)")
 
 	gormdb.Model(&models.TeamFeedbackForm{}).RemoveIndex("unique_team_user_role")

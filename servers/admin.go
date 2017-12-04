@@ -23,9 +23,9 @@ func (a *Admin) Router() *http.ServeMux {
 		DB: a.DB,
 	})
 
-
 	Admin.AddResource(&userModels.User{}, &admin.Config{Menu: []string{"User Management"}})
 	Admin.AddResource(&userModels.Role{}, &admin.Config{Menu: []string{"User Management"}})
+	Admin.AddResource(&userModels.UserProfile{}, &admin.Config{Menu: []string{"User Management"}})
 	Admin.AddResource(&userModels.Team{}, &admin.Config{Menu: []string{"User Management"}})
 	Admin.AddResource(&userModels.UserTeamAssociation{}, &admin.Config{Menu: []string{"User Management"}})
 
@@ -38,8 +38,7 @@ func (a *Admin) Router() *http.ServeMux {
 
 	Admin.AddResource(&feedbackModels.Feedback{}, &admin.Config{Menu: []string{"Feedback Management"}})
 	Admin.AddResource(&feedbackModels.QuestionResponse{}, &admin.Config{Menu: []string{"Feedback Management"}})
-	Admin.AddResource(&feedbackModels.ResponseComment{}, &admin.Config{Menu: []string{"Feedback Management"}})
-	
+
 	Admin.AddResource(&feedbackModels.Schedule{}, &admin.Config{Menu: []string{"Schedule Management"}})
 	Admin.MountTo("/admin/", adminRouter)
 
