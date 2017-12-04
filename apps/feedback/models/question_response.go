@@ -2,6 +2,7 @@ package models
 
 import "github.com/jinzhu/gorm"
 
+// QuestionResponse represent the response/answer to a question asked for a skill
 type QuestionResponse struct {
 	gorm.Model
 	Feedback              Feedback

@@ -113,15 +113,16 @@ import (
 )
 
 // Define only the fields used in this migration and not full model.
-type Category struct {
-	gorm.Model
-	Weight int
-}
+// type Category struct {
+//	gorm.Model
+//	Weight int
+// }
 
 func init() {
 	goose.AddMigration(Up{{.}}, Down{{.}})
 }
 
+// Up{{.}}
 func Up{{.}}(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
@@ -135,6 +136,7 @@ func Up{{.}}(tx *sql.Tx) error {
 	return nil
 }
 
+// Down{{.}}
 func Down{{.}}(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))

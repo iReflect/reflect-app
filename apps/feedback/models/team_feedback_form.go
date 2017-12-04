@@ -6,6 +6,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
+// TeamFeedbackForm represent the feedback template to be used for a role under a team
 type TeamFeedbackForm struct {
 	gorm.Model
 	Team           userModels.Team

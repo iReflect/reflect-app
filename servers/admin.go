@@ -7,8 +7,8 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 type Admin struct {
@@ -27,7 +27,7 @@ func (a *Admin) Router() *http.ServeMux {
 	Admin.AddResource(&userModels.Role{}, &admin.Config{Menu: []string{"User Management"}})
 	Admin.AddResource(&userModels.UserProfile{}, &admin.Config{Menu: []string{"User Management"}})
 	Admin.AddResource(&userModels.Team{}, &admin.Config{Menu: []string{"User Management"}})
-	Admin.AddResource(&userModels.UserTeamAssociation{}, &admin.Config{Menu: []string{"User Management"}})
+	Admin.AddResource(&userModels.UserTeam{}, &admin.Config{Menu: []string{"User Management"}})
 
 	Admin.AddResource(&feedbackModels.Category{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
 	Admin.AddResource(&feedbackModels.Skill{}, &admin.Config{Menu: []string{"Feedback Form Management"}})

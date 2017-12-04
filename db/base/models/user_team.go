@@ -2,11 +2,12 @@ package models
 
 import "time"
 
-type UserTeamAssociation struct {
+// UserTeam represent team associations of a users
+type UserTeam struct {
 	User      User
-	UserId    uint       `gorm:"primary_key"`
+	UserID    uint       `gorm:"primary_key"`
 	Team      Team
-	TeamId    uint       `gorm:"primary_key"`
+	TeamID    uint       `gorm:"primary_key"`
 	Active    bool       `gorm:"default:true; not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time

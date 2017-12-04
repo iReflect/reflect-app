@@ -6,6 +6,8 @@ import (
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
+// Question represent the questions asked for a skill
+// TODO Add support for versioning and making it non-editable
 type Question struct {
 	gorm.Model
 	Text    string       `gorm:"type:text; not null"`

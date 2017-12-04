@@ -1,9 +1,10 @@
-package base_models
+package models
 
 import (
 	"github.com/jinzhu/gorm"
 )
 
+// TeamFeedbackForm represent the feedback template to be used for a role under a team
 type TeamFeedbackForm struct {
 	gorm.Model
 	Team           Team

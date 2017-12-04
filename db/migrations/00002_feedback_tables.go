@@ -2,22 +2,17 @@ package migrations
 
 import (
 	"database/sql"
-	"github.com/pressly/goose"
 	"github.com/jinzhu/gorm"
+	"github.com/pressly/goose"
 
-	models "github.com/iReflect/reflect-app/db/base_models"
+	"github.com/iReflect/reflect-app/db/base/models"
 )
-
-// Define only the fields used in this migration and not full model.
-type Category struct {
-	gorm.Model
-	Weight int
-}
 
 func init() {
 	goose.AddMigration(Up00002, Down00002)
 }
 
+// Up00002 create feedback tables
 func Up00002(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
@@ -57,6 +52,7 @@ func Up00002(tx *sql.Tx) error {
 	return nil
 }
 
+// Down00002 drop feedback tables
 func Down00002(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))

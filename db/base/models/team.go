@@ -1,7 +1,8 @@
-package base_models
+package models
 
 import "github.com/jinzhu/gorm"
 
+// Team represent a team/project comprising a set of user
 type Team struct {
 	gorm.Model
 	Name        string `gorm:"type:varchar(64);not null"`

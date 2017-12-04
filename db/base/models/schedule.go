@@ -4,13 +4,12 @@ import (
 	"github.com/jinzhu/gorm"
 	"time"
 
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 // Schedule at which feedback events would be created for a team
 type Schedule struct {
 	gorm.Model
-	Team          userModels.Team
+	Team          Team
 	TeamID        uint      `gorm:"not null"`
 	PeriodValue   uint      `gorm:"not null"`                   // consecutive period units, after which event need to be recreated
 	PeriodUnit    string    `gorm:"type:varchar(15); not null"` // Unit of period, eg: year, week, days

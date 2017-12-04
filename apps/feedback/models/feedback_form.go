@@ -2,9 +2,8 @@ package models
 
 import "github.com/jinzhu/gorm"
 
-/*
- * TODO Add support for versioning
- */
+// FeedbackForm represent template form for feedback
+// TODO Add support for versioning
 type FeedbackForm struct {
 	gorm.Model
 	Title       string `gorm:"type:varchar(255); not null"`
