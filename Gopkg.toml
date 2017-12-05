@@ -49,11 +49,15 @@
 
 [[constraint]]
   name = "github.com/qor/admin"
-  version = "1.0.0"
+  revision = "431624c143c9bc451659736f71781f3c8264420c"
 
 [[constraint]]
   name = "github.com/qor/qor"
-  version = "1.0.0"
+  revision = "610165c4bb100d28fbe93c4bf691a1cab4508201"
+
+[[constraint]]
+  name = "github.com/qor/roles"
+  revision = "d6375609fe3e5da46ad3a574fae244fb633e79c1"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
