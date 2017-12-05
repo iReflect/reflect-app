@@ -9,21 +9,21 @@ import (
 
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/db"
-	server "github.com/iReflect/reflect-app/servers"
+	"github.com/iReflect/reflect-app/servers"
 
 	_ "github.com/iReflect/reflect-app/db/migrations" //Init for all migrations
 )
 
 func main() {
 
-	config := config.GetConfig()
+	configuration := config.GetConfig()
 
 	//Run migrations - Need to see how this would be possible with new goose.
-	gormDB := db.Initialize(config)
-	db.Migrate(config, gormDB)
+	gormDB := db.Initialize(configuration)
+	db.Migrate(configuration, gormDB)
 
 	app := &server.App{}
-	app.Initialize(config)
+	app.Initialize(configuration)
 	app.SetRoutes()
 	app.SetAdminRoutes()
 	srv := app.Server(":3000")

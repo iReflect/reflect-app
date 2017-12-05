@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	//feedbackControllers "github.com/iReflect/reflect-app/apps/feedback/controllers"
+	feedbackControllers "github.com/iReflect/reflect-app/apps/feedback/controllers"
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/db"
 	appMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
@@ -51,9 +51,8 @@ func (a *App) SetRoutes() {
 
 	v1 := r.Group("/api/v1")
 	{
-		v1.Group("categories")
-		//new(feedbackControllers.CategoryController).Routes(v1.Group("categories"))
-		//new(feedbackControllers.ItemController).Routes(v1.Group("categories/:title/items"))
+		v1.Group("feedbacks")
+		new(feedbackControllers.FeedbackController).Routes(v1.Group("feedbacks"))
 	}
 }
 
