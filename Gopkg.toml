@@ -26,10 +26,6 @@
   version = "3.1.1"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/gin-gonic/contrib"
-
-[[constraint]]
   name = "github.com/gin-gonic/gin"
   version = "1.2.0"
 
@@ -58,3 +54,7 @@
 [[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.3"
+
+[[constraint]]
+  name = "github.com/gin-contrib/cors"
+  version = "1.2"

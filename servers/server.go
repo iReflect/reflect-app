@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -41,6 +42,8 @@ func (a *App) Initialize(config *config.Config) {
 
 	store := sessions.NewCookieStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
+
+	r.Use(cors.Default())
 
 	// Middleware
 	r.Use(appMiddlewares.DBMiddleware(a.DB))
