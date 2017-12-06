@@ -26,3 +26,10 @@ type Feedback struct {
 	DurationEnd      time.Time `gorm:"not null"`
 	ExpireAt         time.Time `gorm:"not null"`
 }
+
+type FeedbackListResponse struct {
+	NewFeedbackCount       uint
+	DraftFeedbackCount     uint
+	SubmittedFeedbackCount uint
+	Feedbacks              []Feedback
+}

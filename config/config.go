@@ -11,6 +11,7 @@ type DBConfig struct {
 	Driver        string `env:"DB_DRIVER"  envDefault:"postgres"`
 	DSN           string `env:"DB_DSN"  envDefault:"host=localhost user=ireflect password=1Reflect dbname=ireflect-dev sslmode=disable"`
 	MigrationsDir string `env:"MIGRATION_DIR"  envDefault:"db/migrations"`
+	LogEnabled    bool   `env:"DB_LOG_ENABLED"  envDefault:"false"`
 }
 
 func GetConfig() *Config {
