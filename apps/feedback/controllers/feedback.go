@@ -10,7 +10,8 @@ import (
 )
 
 //FeedbackController ...
-type FeedbackController struct{}
+type FeedbackController struct{
+}
 
 //Add Routes
 func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
@@ -35,12 +36,7 @@ func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
 // List Feedbacks
 func (ctrl FeedbackController) List(c *gin.Context) {
 	db, _ := database.GetFromContext(c)
-	byUserProfiles := userModels.UserProfile{}
 	feedbacks := []feedbackModels.Feedback{}
-	if err := db.Find(&byUserProfiles, userModels.UserProfile{UserID: 1}).Error; err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "User not found", "error": err})
-		return
-	}
 
 	if err := db.Preload("Team").
 		Preload("ByUserProfile").
@@ -50,7 +46,9 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 		Preload("ForUserProfile.User").
 		Preload("ForUserProfile.Role").
 		Preload("FeedbackForm").
-		Find(&feedbacks, feedbackModels.Feedback{ByUserProfileID: byUserProfiles.UserID}).Error; err != nil {
+		Where("by_user_profile_id in (?)",
+		db.Model(&userModels.UserProfile{}).Where("user_id = ?", 1).Select("id").QueryExpr()).
+		Find(&feedbacks).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedbacks not found", "error": err})
 		return
 	}
