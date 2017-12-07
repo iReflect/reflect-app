@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"github.com/gin-gonic/contrib/sessions"
+	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -47,6 +49,13 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 		listQuery = listQuery.Where("status in (?)", status)
 
 	}
+	session := sessions.Default(c)
+	state := session.Get("state")
+	if state == nil {
+		state = utils.RandToken() 
+		session.Set("state", state)
+	}
+	session.Save()
 
 	if err := listQuery.
 		Preload("Team").
@@ -64,6 +73,6 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 	baseQuery.Where("status = 0").Count(&response.NewFeedbackCount)
 	baseQuery.Where("status = 1").Count(&response.DraftFeedbackCount)
 	baseQuery.Where("status = 2").Count(&response.SubmittedFeedbackCount)
-
+	response.Token = state.(string)
 	c.JSON(http.StatusOK, response)
 }

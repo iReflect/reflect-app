@@ -32,4 +32,5 @@ type FeedbackListResponse struct {
 	DraftFeedbackCount     uint
 	SubmittedFeedbackCount uint
 	Feedbacks              []Feedback
+	Token                  string
 }

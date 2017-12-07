@@ -9,12 +9,14 @@ import (
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	feedbackControllers "github.com/iReflect/reflect-app/apps/feedback/controllers"
-	"github.com/iReflect/reflect-app/config"
-	"github.com/iReflect/reflect-app/db"
-	appMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+
+	feedbackControllers "github.com/iReflect/reflect-app/apps/feedback/controllers"
+	userControllers "github.com/iReflect/reflect-app/apps/user/controllers"
+	"github.com/iReflect/reflect-app/config"
+	"github.com/iReflect/reflect-app/db"
+	dbMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
 )
 
 type App struct {
@@ -40,23 +42,21 @@ func (a *App) Initialize(config *config.Config) {
 	// Recovery middleware recovers from any panics and writes a 500 if there was one.
 	r.Use(gin.Recovery())
 
-	store := sessions.NewCookieStore([]byte("secret"))
-	r.Use(sessions.Sessions("mysession", store))
+	store := sessions.NewCookieStore([]byte(config.Auth.Secret))
+	r.Use(sessions.Sessions("session", store))
 
 	r.Use(cors.Default())
 
 	// Middleware
-	r.Use(appMiddlewares.DBMiddleware(a.DB))
+	r.Use(dbMiddlewares.DBMiddleware(a.DB))
 }
 
 func (a *App) SetRoutes() {
 	r := a.Router
 
 	v1 := r.Group("/api/v1")
-	{
-		v1.Group("feedbacks")
-		new(feedbackControllers.FeedbackController).Routes(v1.Group("feedbacks"))
-	}
+	new(feedbackControllers.FeedbackController).Routes(v1.Group("feedbacks"))
+	new(userControllers.UserAuthController).Routes(r.Group("/"))
 }
 
 func (a *App) SetAdminRoutes() {
