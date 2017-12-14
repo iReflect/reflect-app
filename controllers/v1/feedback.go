@@ -21,7 +21,7 @@ func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
 // Get feedback
 func (ctrl FeedbackController) Get(c *gin.Context) {
 	id := c.Param("id")
-	userID,_ := c.Get("userID")
+	userID, _ := c.Get("userID")
 	feedbackResponse, err := ctrl.FeedbackService.Get(id, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
@@ -34,7 +34,7 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 // List Feedbacks
 func (ctrl FeedbackController) List(c *gin.Context) {
 	statuses := c.QueryArray("status")
-	userID,_ := c.Get("userID")
+	userID, _ := c.Get("userID")
 	response, err := ctrl.FeedbackService.List(userID.(uint), statuses)
 
 	if err != nil {

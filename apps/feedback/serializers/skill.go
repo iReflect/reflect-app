@@ -9,4 +9,3 @@ type SkillDetailSerializer struct {
 	Weight       int
 	Questions    []QuestionResponseDetailSerializer
 }
-

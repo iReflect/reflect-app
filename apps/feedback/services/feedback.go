@@ -22,7 +22,7 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 
 	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
 		Where("by_user_profile_id in (?)",
-		db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
+			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
 		Select("id, title, duration_start,duration_end, submitted_at, expire_at, status, feedback_form_id").
 		Scan(&feedback).Error; err != nil {
 		return nil, err
@@ -48,10 +48,10 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 			questionResponse := feedbackModels.QuestionResponse{}
 			db.Model(questionResponse).
 				Where(feedbackModels.QuestionResponse{
-				FeedbackID:            feedback.ID,
-				QuestionID:            question.ID,
-				FeedbackFormContentID: feedBackFormContent.ID,
-			}).
+					FeedbackID:            feedback.ID,
+					QuestionID:            question.ID,
+					FeedbackFormContentID: feedBackFormContent.ID,
+				}).
 				FirstOrCreate(&questionResponse)
 
 			questionResponses = append(questionResponses,
@@ -103,7 +103,7 @@ func (service FeedbackService) List(userID uint, statuses []string) (
 	db := service.DB
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
 		Where("by_user_profile_id in (?)",
-		db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr())
+			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr())
 
 	listQuery := baseQuery
 	if len(statuses) > 0 {

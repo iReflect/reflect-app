@@ -70,7 +70,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (*userSerializers
 }
 
 // Authenticate ...
-func (service AuthenticationService) Authenticate(c *gin.Context) (bool) {
+func (service AuthenticationService) Authenticate(c *gin.Context) bool {
 	db := service.DB
 
 	token := getToken(c)
