@@ -1,12 +1,11 @@
-package controllers
+package v1
 
 import (
-	"github.com/gin-gonic/contrib/sessions"
-	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
+	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	database "github.com/iReflect/reflect-app/db"
 )
@@ -26,7 +25,7 @@ func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
 func (ctrl FeedbackController) Get(c *gin.Context) {
 	id := c.Param("id")
 	db, _ := database.GetFromContext(c)
-	feedbackResponse := feedbackModels.FeedbackDetailResponse{}
+	feedbackResponse := feedbackSerializers.FeedbackDetailSerializer{}
 	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", id).Select("id, title, duration_start, duration_end, submitted_at, expire_at, status, feedback_form_id").
 		Scan(&feedbackResponse).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
@@ -45,21 +44,21 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
 	}
 
-	var categories = make(map[uint]feedbackModels.CategorySkillQuestions)
+	var categories = make(map[uint]feedbackSerializers.CategoryDetailSerializer)
 
 	for _, feedBackFormContent := range feedBackFormContents {
-		questionResponseList := []feedbackModels.QuestionResponseDetail{}
+		questionResponses := []feedbackSerializers.QuestionResponseDetailSerializer{}
 		for _, question := range feedBackFormContent.Skill.Questions {
 			questionResponse := feedbackModels.QuestionResponse{}
 			db.Model(questionResponse).
 				Where(feedbackModels.QuestionResponse{
-					FeedbackID:            feedbackResponse.ID,
-					QuestionID:            question.ID,
-					FeedbackFormContentID: feedBackFormContent.ID,
-				}).
+				FeedbackID:            feedbackResponse.ID,
+				QuestionID:            question.ID,
+				FeedbackFormContentID: feedBackFormContent.ID,
+			}).
 				FirstOrCreate(&questionResponse)
-			questionResponseList = append(questionResponseList,
-				feedbackModels.QuestionResponseDetail{
+			questionResponses = append(questionResponses,
+				feedbackSerializers.QuestionResponseDetailSerializer{
 					ID:         question.ID,
 					Type:       question.Type,
 					Text:       question.Text,
@@ -71,32 +70,32 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 				})
 		}
 
-		skillQuestionResponse := feedbackModels.SkillQuestionList{
+		skill := feedbackSerializers.SkillDetailSerializer{
 			ID:           feedBackFormContent.SkillID,
 			Title:        feedBackFormContent.Skill.Title,
 			DisplayTitle: feedBackFormContent.Skill.DisplayTitle,
 			Description:  feedBackFormContent.Skill.Description,
 			Weight:       feedBackFormContent.Skill.Weight,
-			Questions:    questionResponseList,
+			Questions:    questionResponses,
 		}
 
 		categoryID := feedBackFormContent.CategoryID
 		_, exists := categories[categoryID]
 		if exists == false {
-			skillQuestionMap := make(map[uint]feedbackModels.SkillQuestionList)
-			skillQuestionMap[feedBackFormContent.SkillID] = skillQuestionResponse
+			skills := make(map[uint]feedbackSerializers.SkillDetailSerializer)
+			skills[feedBackFormContent.SkillID] = skill
 
-			categories[categoryID] = feedbackModels.CategorySkillQuestions{
+			categories[categoryID] = feedbackSerializers.CategoryDetailSerializer{
 				ID:          feedBackFormContent.Category.ID,
 				Title:       feedBackFormContent.Category.Title,
 				Description: feedBackFormContent.Category.Description,
-				Skills:      skillQuestionMap,
+				Skills:      skills,
 			}
 		} else {
-			categories[categoryID].Skills[feedBackFormContent.SkillID] = skillQuestionResponse
+			categories[categoryID].Skills[feedBackFormContent.SkillID] = skill
 		}
 	}
-	c.JSON(http.StatusOK, feedbackModels.FeedbackDetailResponse{
+	c.JSON(http.StatusOK, feedbackSerializers.FeedbackDetailSerializer{
 		ID:            feedbackResponse.ID,
 		Title:         feedbackResponse.Title,
 		DurationStart: feedbackResponse.DurationStart,
@@ -112,23 +111,16 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 func (ctrl FeedbackController) List(c *gin.Context) {
 	db, _ := database.GetFromContext(c)
 	status := c.QueryArray("status")
-	response := feedbackModels.FeedbackListResponse{}
+	response := feedbackSerializers.FeedbackListSerializer{}
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
 		Where("by_user_profile_id in (?)",
-			db.Model(&userModels.UserProfile{}).Where("user_id = ?", 1).Select("id").QueryExpr())
+		db.Model(&userModels.UserProfile{}).Where("user_id = ?", 1).Select("id").QueryExpr())
 
 	listQuery := baseQuery
 	if len(status) > 0 {
 		listQuery = listQuery.Where("status in (?)", status)
 
 	}
-	session := sessions.Default(c)
-	state := session.Get("state")
-	if state == nil {
-		state = utils.RandToken() 
-		session.Set("state", state)
-	}
-	session.Save()
 
 	if err := listQuery.
 		Preload("Team").

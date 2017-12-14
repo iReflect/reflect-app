@@ -43,9 +43,12 @@ func (a *App) Initialize(config *config.Config) {
 	r.Use(gin.Recovery())
 
 	store := sessions.NewCookieStore([]byte(config.Auth.Secret))
+	store.Options(sessions.Options{HttpOnly: false})
 	r.Use(sessions.Sessions("session", store))
-
-	r.Use(cors.Default())
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowCredentials = true
+	r.Use(cors.New(corsConfig))
 
 	// Middleware
 	r.Use(dbMiddlewares.DBMiddleware(a.DB))
