@@ -14,7 +14,7 @@ type Feedback struct {
 	FeedbackFormID   uint      `gorm:"not null"`
 	ForUserProfile   UserProfile
 	ForUserProfileID uint
-	ByProfile        UserProfile
+	ByUserProfile    UserProfile
 	ByUserProfileID  uint      `gorm:"not null"`
 	Team             Team
 	TeamID           uint      `gorm:"not null"`
