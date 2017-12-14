@@ -13,8 +13,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
+	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/config"
-	controllers "github.com/iReflect/reflect-app/controllers/v1"
+	"github.com/iReflect/reflect-app/controllers"
+	apiControllers "github.com/iReflect/reflect-app/controllers/v1"
 	"github.com/iReflect/reflect-app/db"
 	dbMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
 )
@@ -43,8 +46,9 @@ func (a *App) Initialize(config *config.Config) {
 	r.Use(gin.Recovery())
 
 	store := sessions.NewCookieStore([]byte(config.Auth.Secret))
-	store.Options(sessions.Options{HttpOnly: false})
+	store.Options(sessions.Options{HttpOnly: false, MaxAge: 4 * 60 * 60, Path: "/"})
 	r.Use(sessions.Sessions("session", store))
+
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AllowCredentials = true
@@ -56,10 +60,19 @@ func (a *App) Initialize(config *config.Config) {
 
 func (a *App) SetRoutes() {
 	r := a.Router
-	feedBackService := feedbackServices.FeedbackService{DB: a.DB}
-	feedbackController := controllers.FeedbackController{FeedbackService: feedBackService}
+
+	authenticationService := userServices.AuthenticationService{DB: a.DB}
+
 	v1 := r.Group("/api/v1")
+
+	v1.Use(oauth.TokenAuthenticationMiddleWare(authenticationService))
+	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
+	feedbackController := apiControllers.FeedbackController{FeedbackService: feedbackService}
 	feedbackController.Routes(v1.Group("feedbacks"))
+
+	authController := controllers.UserAuthController{AuthService: authenticationService}
+
+	authController.Routes(r.Group("/"))
 }
 
 func (a *App) SetAdminRoutes() {

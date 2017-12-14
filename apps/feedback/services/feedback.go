@@ -8,13 +8,14 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
-//FeedbackService ...
+//feedbackService ...
 type FeedbackService struct {
 	DB *gorm.DB
 }
 
 // Get feedback by id
-func (service FeedbackService) Get(feedbackID string, userID string) (feedback *feedbackSerializers.FeedbackDetailSerializer,
+func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *feedbackSerializers.
+	FeedbackDetailSerializer,
 	err error) {
 	db := service.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
@@ -96,7 +97,7 @@ func (service FeedbackService) Get(feedbackID string, userID string) (feedback *
 }
 
 // List users Feedback
-func (service FeedbackService) List(userID string, statuses []string) (
+func (service FeedbackService) List(userID uint, statuses []string) (
 	feedbacks *feedbackSerializers.FeedbackListSerializer,
 	err error) {
 	db := service.DB

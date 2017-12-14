@@ -4,12 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
 
 //FeedbackController ...
 type FeedbackController struct {
-	FeedbackService feedbaclServices.FeedbackService
+	FeedbackService feedbackServices.FeedbackService
 }
 
 // Routes for Feedback
@@ -21,7 +21,8 @@ func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
 // Get feedback
 func (ctrl FeedbackController) Get(c *gin.Context) {
 	id := c.Param("id")
-	feedbackResponse, err := ctrl.FeedbackService.Get(id, "1")
+	userID,_ := c.Get("userID")
+	feedbackResponse, err := ctrl.FeedbackService.Get(id, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
 		return
@@ -33,7 +34,8 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 // List Feedbacks
 func (ctrl FeedbackController) List(c *gin.Context) {
 	statuses := c.QueryArray("status")
-	response, err := ctrl.FeedbackService.List("1", statuses)
+	userID,_ := c.Get("userID")
+	response, err := ctrl.FeedbackService.List(userID.(uint), statuses)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedbacks not found", "error": err})
