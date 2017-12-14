@@ -17,6 +17,8 @@ type FeedbackService struct {
 func (service FeedbackService) Get(feedbackID string, userID string) (feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {
 	db := service.DB
+	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
+
 	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
 		Where("by_user_profile_id in (?)",
 		db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
@@ -107,6 +109,7 @@ func (service FeedbackService) List(userID string, statuses []string) (
 		listQuery = listQuery.Where("status in (?)", statuses)
 	}
 
+	feedbacks = new(feedbackSerializers.FeedbackListSerializer)
 	if err := listQuery.
 		Preload("Team").
 		Preload("ByUserProfile").
