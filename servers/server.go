@@ -12,9 +12,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
-	feedbackControllers "github.com/iReflect/reflect-app/apps/feedback/controllers"
-	userControllers "github.com/iReflect/reflect-app/apps/user/controllers"
+	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
 	"github.com/iReflect/reflect-app/config"
+	controllers "github.com/iReflect/reflect-app/controllers/v1"
 	"github.com/iReflect/reflect-app/db"
 	dbMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
 )
@@ -56,10 +56,10 @@ func (a *App) Initialize(config *config.Config) {
 
 func (a *App) SetRoutes() {
 	r := a.Router
-
+	feedBackService := feedbackServices.FeedbackService{DB: a.DB}
+	feedbackController := controllers.FeedbackController{FeedbackService: feedBackService}
 	v1 := r.Group("/api/v1")
-	new(feedbackControllers.FeedbackController).Routes(v1.Group("feedbacks"))
-	new(userControllers.UserAuthController).Routes(r.Group("/"))
+	feedbackController.Routes(v1.Group("feedbacks"))
 }
 
 func (a *App) SetAdminRoutes() {
