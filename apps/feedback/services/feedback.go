@@ -39,7 +39,7 @@ func (service FeedbackService) Get(feedbackID string, userID string) (feedback *
 		return nil, err
 	}
 
-	var categories = make(map[uint]feedbackSerializers.CategoryDetailSerializer)
+	categories := make(map[uint]feedbackSerializers.CategoryDetailSerializer)
 
 	for _, feedBackFormContent := range feedBackFormContents {
 		questionResponses := []feedbackSerializers.QuestionResponseDetailSerializer{}
