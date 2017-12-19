@@ -18,7 +18,7 @@ type FeedbackService struct {
 }
 
 // Get feedback by id
-func (service FeedbackService) Get(feedbackID string, userID string) (feedback *feedbackSerializers.FeedbackDetailSerializer,
+func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {
 	db := service.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)

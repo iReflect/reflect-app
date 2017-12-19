@@ -4,12 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
+	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
 
 //FeedbackController ...
 type FeedbackController struct {
-	FeedbackService feedbackServices.FeedbackService
+	FeedbackService feedbaclServices.FeedbackService
 }
 
 // Routes for Feedback
