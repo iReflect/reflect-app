@@ -1,6 +1,10 @@
 package services
 
 import (
+	"errors"
+	"net/http"
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
@@ -8,14 +12,13 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
-//feedbackService ...
+//FeedbackService ...
 type FeedbackService struct {
 	DB *gorm.DB
 }
 
 // Get feedback by id
-func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *feedbackSerializers.
-	FeedbackDetailSerializer,
+func (service FeedbackService) Get(feedbackID string, userID string) (feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {
 	db := service.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
@@ -96,8 +99,55 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 	return feedback, nil
 }
 
+// Put feedback data
+func (service FeedbackService) Put(feedbackID string, userID string,
+	feedBackResponseData feedbackSerializers.FeedbackResponseSerializer) (code int, err error) {
+	db := service.DB
+	feedback := feedbackModels.Feedback{}
+	// Find a feedback with the given ID which hasn't been submitted before
+	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ? AND status != ?", feedbackID, 2).
+		Where("by_user_profile_id in (?)",
+			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
+		First(&feedback).Error; err != nil {
+		code = http.StatusNotFound
+		return code, err
+	}
+	tx := db.Begin() // transaction begin
+	for _, categoryData := range feedBackResponseData.Data {
+		for _, skillData := range categoryData {
+			for questionResponseID, questionResponseData := range skillData {
+				if rowsAffected := tx.Model(&feedbackModels.QuestionResponse{}).
+					Where("id = ? AND feedback_id = ?", questionResponseID, feedbackID).
+					Update(map[string]interface{}{
+						"response": questionResponseData.Response,
+						"comment":  questionResponseData.Comment,
+					}).RowsAffected; rowsAffected == 0 {
+					// Roll back the transaction if any question fails to execute
+					tx.Rollback()
+					code = http.StatusBadRequest
+					err := errors.New("Failed to update the question response")
+					return code, err
+				}
+			}
+		}
+	}
+	if feedBackResponseData.SaveAndSubmit && feedBackResponseData.Status == 2 {
+		if err := tx.Model(&feedback).Update(map[string]interface{}{
+			"status":       2,
+			"submitted_at": time.Now(),
+		}).Error; err != nil {
+			// Roll back the transaction if feedback status update fails to execute
+			tx.Rollback()
+			code = http.StatusBadRequest
+			return code, err
+		}
+	}
+	tx.Commit() // transaction committed/end
+	return http.StatusNoContent, nil
+}
+
 // List users Feedback
-func (service FeedbackService) List(userID uint, statuses []string) (
+func (service FeedbackService) List(userID string, statuses []string) (
 	feedbacks *feedbackSerializers.FeedbackListSerializer,
 	err error) {
 	db := service.DB
