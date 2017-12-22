@@ -13,9 +13,9 @@ type UserAuthController struct {
 
 //Add Routes
 func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
-	r.GET("/login", ctrl.Login)
-	r.GET("/auth", ctrl.Auth)
-	r.GET("/logout", ctrl.Logout)
+	r.GET("/login/", ctrl.Login)
+	r.GET("/auth/", ctrl.Auth)
+	r.POST("/logout/", ctrl.Logout)
 }
 
 // Login ...
@@ -28,7 +28,7 @@ func (ctrl UserAuthController) Login(c *gin.Context) {
 func (ctrl UserAuthController) Auth(c *gin.Context) {
 	user, err := ctrl.AuthService.Authorize(c)
 	if err != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 	c.JSON(http.StatusOK, user)
@@ -36,5 +36,10 @@ func (ctrl UserAuthController) Auth(c *gin.Context) {
 
 // Logout ...
 func (ctrl UserAuthController) Logout(c *gin.Context) {
-	c.AbortWithStatus(ctrl.AuthService.Logout(c))
+	status := ctrl.AuthService.Logout(c)
+	if status == http.StatusOK {
+		c.AbortWithStatusJSON(http.StatusOK, gin.H{"message": "success"})
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 }

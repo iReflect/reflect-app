@@ -50,7 +50,7 @@ func (a *App) Initialize(config *config.Config) {
 	r.Use(sessions.Sessions("session", store))
 
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowOrigins = []string{"http://localhost:4200","http://localhost:3000"}
 	corsConfig.AllowCredentials = true
 	r.Use(cors.New(corsConfig))
 
@@ -65,10 +65,14 @@ func (a *App) SetRoutes() {
 
 	v1 := r.Group("/api/v1")
 
-	v1.Use(oauth.TokenAuthenticationMiddleWare(authenticationService))
+	v1.Use(oauth.CookieAuthenticationMiddleWare(authenticationService))
 	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
+
 	feedbackController := apiControllers.FeedbackController{FeedbackService: feedbackService}
 	feedbackController.Routes(v1.Group("feedbacks"))
+
+	userController := apiControllers.UserController{}
+	userController.Routes(v1.Group("users"))
 
 	authController := controllers.UserAuthController{AuthService: authenticationService}
 
