@@ -6,9 +6,9 @@ import (
 	"net/http"
 )
 
-func TokenAuthenticationMiddleWare(service services.AuthenticationService) gin.HandlerFunc {
+func CookieAuthenticationMiddleWare(service services.AuthenticationService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !service.Authenticate(c) {
+		if !service.AuthenticateSession(c) {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

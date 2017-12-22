@@ -11,7 +11,6 @@ type FeedbackListSerializer struct {
 	DraftFeedbackCount     uint
 	SubmittedFeedbackCount uint
 	Feedbacks              []models.Feedback
-	Token                  string
 }
 
 // FeedbackDetailResponse returns the details of a feedback
