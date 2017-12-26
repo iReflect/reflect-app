@@ -42,7 +42,7 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 		parsedPerPage = -1
 
 	}
-	response, err := ctrl.FeedbackService.TeamList(userID.(uint), statuses, parsedPerPage)
+	response, err := ctrl.FeedbackService.List(userID.(uint), statuses, parsedPerPage)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedbacks not found", "error": err})
