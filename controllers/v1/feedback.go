@@ -5,18 +5,20 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
+	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
 
 //FeedbackController ...
 type FeedbackController struct {
-	FeedbackService feedbackServices.FeedbackService
+	FeedbackService feedbaclServices.FeedbackService
 }
 
 // Routes for Feedback
 func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:id/", ctrl.Get)
+	r.PUT("/:id/", ctrl.Put)
 }
 
 // Get feedback
@@ -30,6 +32,23 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, feedbackResponse)
+}
+
+// Put feedback
+func (ctrl FeedbackController) Put(c *gin.Context) {
+	id := c.Param("id")
+	userID, _ := c.Get("userID")
+	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{}
+	if err := c.BindJSON(&feedBackResponseData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+	code, err := ctrl.FeedbackService.Put(id, userID.(uint), feedBackResponseData)
+	if err != nil {
+		c.AbortWithStatusJSON(code, gin.H{"message": "Error while saving the form!!", "error": err.Error()})
+		return
+	}
+	c.JSON(code, nil)
 }
 
 // List Feedbacks
