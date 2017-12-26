@@ -37,12 +37,13 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 // Put feedback
 func (ctrl FeedbackController) Put(c *gin.Context) {
 	id := c.Param("id")
+	userID, _ := c.Get("userID")
 	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{}
 	if err := c.BindJSON(&feedBackResponseData); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
 		return
 	}
-	code, err := ctrl.FeedbackService.Put(id, "1", feedBackResponseData)
+	code, err := ctrl.FeedbackService.Put(id, userID.(uint), feedBackResponseData)
 	if err != nil {
 		c.AbortWithStatusJSON(code, gin.H{"message": "Error while saving the form!!", "error": err.Error()})
 		return

@@ -177,7 +177,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 }
 
 // Put feedback data
-func (service FeedbackService) Put(feedbackID string, userID string,
+func (service FeedbackService) Put(feedbackID string, userID uint,
 	feedBackResponseData feedbackSerializers.FeedbackResponseSerializer) (code int, err error) {
 	db := service.DB
 	feedback := feedbackModels.Feedback{}
@@ -209,9 +209,16 @@ func (service FeedbackService) Put(feedbackID string, userID string,
 		}
 	}
 	if feedBackResponseData.SaveAndSubmit && feedBackResponseData.Status == 2 {
+		submittedAt, err := time.Parse(time.RFC3339, feedBackResponseData.SubmittedAt)
+		if err != nil {
+			// If an invalid date value is provided in the response
+			tx.Rollback()
+			code = http.StatusBadRequest
+			return code, err
+		}
 		if err := tx.Model(&feedback).Update(map[string]interface{}{
 			"status":       2,
-			"submitted_at": time.Now(),
+			"submitted_at": submittedAt,
 		}).Error; err != nil {
 			// Roll back the transaction if feedback status update fails to execute
 			tx.Rollback()

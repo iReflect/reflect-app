@@ -38,6 +38,7 @@ type FeedbackResponseSerializer struct {
 	// Data is a 3-level nested structure (category -> skill -> question)
 	Data map[uint]map[uint]map[uint]QuestionResponseSerializer `json:"data" binding:"required"`
 	// SaveAndSubmit default value is false, i.e., if not present then it will be assumed false
-	SaveAndSubmit bool `json:"saveAndSubmit"`
-	Status        int8 `json:"status" binding:"required"`
+	SaveAndSubmit bool   `json:"saveAndSubmit"`
+	Status        int8   `json:"status" binding:"required"`
+	SubmittedAt   string `json:"submittedAt"`
 }
