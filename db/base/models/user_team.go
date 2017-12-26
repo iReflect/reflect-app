@@ -9,7 +9,7 @@ type UserTeam struct {
 	Team      Team
 	TeamID    uint `gorm:"primary_key"`
 	Role      int8 `gorm:"default:0; not null"` // TODO Add enum
-	Active    bool `gorm:"default:true; not null"`
+	Active    bool `gorm:"default:false; not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
