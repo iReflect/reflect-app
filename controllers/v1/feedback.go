@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
@@ -53,7 +54,14 @@ func (ctrl FeedbackController) Put(c *gin.Context) {
 func (ctrl FeedbackController) List(c *gin.Context) {
 	statuses := c.QueryArray("status")
 	userID, _ := c.Get("userID")
-	response, err := ctrl.FeedbackService.List(userID.(uint), statuses)
+	perPage, _ := c.GetQuery("perPage")
+	parsedPerPage, err := strconv.Atoi(perPage)
+	if err != nil {
+		parsedPerPage = -1
+
+	}
+	response, err := ctrl.FeedbackService.List(userID.(uint), statuses, parsedPerPage)
+
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedbacks not found", "error": err})
 		return
