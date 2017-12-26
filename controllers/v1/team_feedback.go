@@ -9,21 +9,21 @@ import (
 )
 
 //FeedbackController ...
-type FeedbackController struct {
+type TeamFeedbackController struct {
 	FeedbackService feedbackServices.FeedbackService
 }
 
 // Routes for Feedback
-func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
+func (ctrl TeamFeedbackController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:id/", ctrl.Get)
 }
 
 // Get feedback
-func (ctrl FeedbackController) Get(c *gin.Context) {
+func (ctrl TeamFeedbackController) Get(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("userID")
-	feedbackResponse, err := ctrl.FeedbackService.Get(id, userID.(uint))
+	feedbackResponse, err := ctrl.FeedbackService.TeamGet(id, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
 		return
@@ -33,7 +33,7 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 }
 
 // List Feedbacks
-func (ctrl FeedbackController) List(c *gin.Context) {
+func (ctrl TeamFeedbackController) List(c *gin.Context) {
 	statuses := c.QueryArray("status")
 	userID, _ := c.Get("userID")
 	perPage, _ := c.GetQuery("perPage")

@@ -14,8 +14,8 @@ type FeedbackService struct {
 }
 
 // Get feedback by id
-func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *feedbackSerializers.
-	FeedbackDetailSerializer,
+func (service FeedbackService) Get(feedbackID string, userID uint) (
+	feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {
 	db := service.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
@@ -28,6 +28,83 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 		return nil, err
 	}
 
+	return service.getFeedbackDetail(feedback)
+}
+
+// Get feedback by id
+func (service FeedbackService) TeamGet(feedbackID string, userID uint) (
+	feedback *feedbackSerializers.FeedbackDetailSerializer,
+	err error) {
+	db := service.DB
+	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
+	feedbackIds := service.getTeamFeedbackIDs(userID)
+
+	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
+		Where("id in (?)", feedbackIds).
+		Select("id, title, duration_start,duration_end, submitted_at, expire_at, status, feedback_form_id").
+		Scan(&feedback).Error; err != nil {
+		return nil, err
+	}
+
+	return service.getFeedbackDetail(feedback)
+}
+
+// List users Feedback
+func (service FeedbackService) List(userID uint, statuses []string, perPage int) (
+	feedbacks *feedbackSerializers.FeedbackListSerializer,
+	err error) {
+	db := service.DB
+	baseQuery := db.Model(&feedbackModels.Feedback{}).
+		Where("by_user_profile_id in (?)",
+			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr())
+
+	return service.getFeedbackList(baseQuery, statuses, perPage)
+}
+
+// TeamList users Feedback
+func (service FeedbackService) TeamList(userID uint, statuses []string, perPage int) (
+	feedbacks *feedbackSerializers.FeedbackListSerializer,
+	err error) {
+	db := service.DB
+	feedbackIds := service.getTeamFeedbackIDs(userID)
+	baseQuery := db.Model(&feedbackModels.Feedback{}).
+		Where("id in (?)", feedbackIds)
+
+	return service.getFeedbackList(baseQuery, statuses, perPage)
+}
+
+func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []string, perPage int) (
+	feedbacks *feedbackSerializers.FeedbackListSerializer,
+	err error) {
+	listQuery := baseQuery
+	if len(statuses) > 0 {
+		listQuery = listQuery.Where("status in (?)", statuses)
+	}
+
+	feedbacks = new(feedbackSerializers.FeedbackListSerializer)
+	if err := listQuery.
+		Preload("Team").
+		Preload("ByUserProfile").
+		Preload("ByUserProfile.User").
+		Preload("ByUserProfile.Role").
+		Preload("ForUserProfile").
+		Preload("ForUserProfile.User").
+		Preload("ForUserProfile.Role").
+		Preload("FeedbackForm").
+		Limit(perPage).
+		Find(&feedbacks.Feedbacks).Error; err != nil {
+		return nil, err
+	}
+	baseQuery.Where("status = 0").Count(&feedbacks.NewFeedbackCount)
+	baseQuery.Where("status = 1").Count(&feedbacks.DraftFeedbackCount)
+	baseQuery.Where("status = 2").Count(&feedbacks.SubmittedFeedbackCount)
+	return feedbacks, nil
+}
+
+func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.FeedbackDetailSerializer) (
+	*feedbackSerializers.FeedbackDetailSerializer,
+	error) {
+	db := service.DB
 	feedBackFormContents := []feedbackModels.FeedbackFormContent{}
 
 	if err := db.Model(&feedbackModels.FeedbackFormContent{}).
@@ -95,36 +172,46 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 	feedback.Categories = categories
 	return feedback, nil
 }
-
-// List users Feedback
-func (service FeedbackService) List(userID uint, statuses []string) (
-	feedbacks *feedbackSerializers.FeedbackListSerializer,
-	err error) {
+func (service FeedbackService) getTeamFeedbackIDs(userID uint) []uint {
 	db := service.DB
-	baseQuery := db.Model(&feedbackModels.Feedback{}).
-		Where("by_user_profile_id in (?)",
-			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr())
+	filterQuery := `
+        SELECT id
+        FROM feedbacks
+        WHERE (team_id, for_user_profile_id) IN (SELECT
+                                                    ut.team_id team_id,
+                                                    up.id for_user_profile_id
+                                                FROM user_teams ut
+                                                    JOIN user_profiles up
+                                                        ON ut.user_id = up.user_id
+                                                WHERE ut.role = 0 AND ut.team_id IN (SELECT team_id
+                                                                                    FROM user_teams
+                                                                                    WHERE user_id = ? AND role = 1))
+        UNION
+        SELECT id
+        FROM feedbacks
+        WHERE (team_id, for_user_profile_id) IN (SELECT
+                                                    ut.team_id team_id,
+                                                    up.id for_user_profile_id
+                                                FROM user_teams ut
+                                                    JOIN user_profiles up
+                                                        ON ut.user_id = up.user_id
+                                                WHERE ut.team_id IN (SELECT team_id
+                                                                     FROM user_teams
+                                                                     WHERE user_id = ? AND role = 2))
+        UNION
+        SELECT id
+        FROM feedbacks
+        WHERE by_user_profile_id IN (SELECT id FROM user_profiles WHERE user_id = ?);
+    `
+	var feedbackIds []uint
 
-	listQuery := baseQuery
-	if len(statuses) > 0 {
-		listQuery = listQuery.Where("status in (?)", statuses)
+	rows, _ := db.Raw(filterQuery, userID, userID, userID).Select("id").Rows()
+	defer rows.Close()
+	for rows.Next() {
+		var feedbackId uint
+		rows.Scan(&feedbackId)
+		feedbackIds = append(feedbackIds, feedbackId)
 	}
+	return feedbackIds
 
-	feedbacks = new(feedbackSerializers.FeedbackListSerializer)
-	if err := listQuery.
-		Preload("Team").
-		Preload("ByUserProfile").
-		Preload("ByUserProfile.User").
-		Preload("ByUserProfile.Role").
-		Preload("ForUserProfile").
-		Preload("ForUserProfile.User").
-		Preload("ForUserProfile.Role").
-		Preload("FeedbackForm").
-		Find(&feedbacks.Feedbacks).Error; err != nil {
-		return nil, err
-	}
-	baseQuery.Where("status = 0").Count(&feedbacks.NewFeedbackCount)
-	baseQuery.Where("status = 1").Count(&feedbacks.DraftFeedbackCount)
-	baseQuery.Where("status = 2").Count(&feedbacks.SubmittedFeedbackCount)
-	return feedbacks, nil
 }
