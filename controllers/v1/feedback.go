@@ -1,10 +1,12 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
@@ -14,8 +16,28 @@ type FeedbackController struct {
 	FeedbackService feedbaclServices.FeedbackService
 }
 
+func (ctrl FeedbackController) registerValidators() {
+	if err := binding.Validator.RegisterValidation("isvalidquestionresponse",
+		feedbackSerializers.IsValidQuestionResponse); err != nil {
+		fmt.Println(err.Error())
+	}
+	if err := binding.Validator.RegisterValidation("isvalidsubmittedat",
+		feedbackSerializers.IsValidSubmittedAt); err != nil {
+		fmt.Println(err.Error())
+	}
+	if err := binding.Validator.RegisterValidation("isvalidsaveandsubmit",
+		feedbackSerializers.IsValidSaveAndSubmit); err != nil {
+		fmt.Println(err.Error())
+	}
+	if err := binding.Validator.RegisterValidation("allquestionpresent",
+		feedbackSerializers.IsAllQuestionPresent(ctrl.FeedbackService.DB)); err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
 // Routes for Feedback
 func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
+	ctrl.registerValidators()
 	r.GET("/", ctrl.List)
 	r.GET("/:id/", ctrl.Get)
 	r.PUT("/:id/", ctrl.Put)
@@ -38,7 +60,7 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 func (ctrl FeedbackController) Put(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("userID")
-	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{}
+	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{FeedbackID: id}
 	if err := c.BindJSON(&feedBackResponseData); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
 		return
@@ -59,7 +81,6 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 	parsedPerPage, err := strconv.Atoi(perPage)
 	if err != nil {
 		parsedPerPage = -1
-
 	}
 	response, err := ctrl.FeedbackService.List(userID.(uint), statuses, parsedPerPage)
 

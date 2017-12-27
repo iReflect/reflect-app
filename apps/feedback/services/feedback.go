@@ -182,7 +182,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 	db := service.DB
 	feedback := feedbackModels.Feedback{}
 	// Find a feedback with the given ID which hasn't been submitted before
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ? AND status != ?", feedbackID, 2).
+	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ? AND status != ? AND expire_at >= ?", feedbackID, 2, time.Now()).
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
 		First(&feedback).Error; err != nil {
@@ -209,13 +209,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 		}
 	}
 	if feedBackResponseData.SaveAndSubmit && feedBackResponseData.Status == 2 {
-		submittedAt, err := time.Parse(time.RFC3339, feedBackResponseData.SubmittedAt)
-		if err != nil {
-			// If an invalid date value is provided in the response
-			tx.Rollback()
-			code = http.StatusBadRequest
-			return code, err
-		}
+		submittedAt, _ := time.Parse(time.RFC3339, feedBackResponseData.SubmittedAt)
 		if err := tx.Model(&feedback).Update(map[string]interface{}{
 			"status":       2,
 			"submitted_at": submittedAt,
