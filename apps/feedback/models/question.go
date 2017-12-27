@@ -22,9 +22,20 @@ type Question struct {
 }
 
 func RegisterQuestionToAdmin(Admin *admin.Admin, config admin.Config) {
-	question := Admin.AddResource(Question{}, &config)
+	question := Admin.AddResource(&Question{}, &config)
+	optionsMeta := getOptionsFieldMeta()
 
-	question.Meta(&admin.Meta{
+	question.Meta(&optionsMeta)
+
+}
+
+func SetQuestionRelatedFieldMeta(res *admin.Resource) {
+	optionsMeta := getOptionsFieldMeta()
+	res.Meta(&optionsMeta)
+}
+
+func getOptionsFieldMeta() admin.Meta {
+	return admin.Meta{
 		Name: "Options",
 		Type: "text",
 		Valuer: func(value interface{}, context *qor.Context) interface{} {
@@ -35,6 +46,6 @@ func RegisterQuestionToAdmin(Admin *admin.Admin, config admin.Config) {
 			question := resource.(*Question)
 			value := metaValue.Value.([]string)[0]
 			question.Options = fields.JSONB(value)
-		}})
+		}}
 
 }
