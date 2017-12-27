@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/caarlos0/env"
   packages = ["."]
-  revision = "9de094f90fa8a13dc162e10ae8a3b95c0c2c33e1"
-  version = "v3.1.1"
+  revision = "7cd7992b3bc86f920394f8de92c13900da1a46b7"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/garyburd/redigo"
@@ -114,7 +114,7 @@
   branch = "master"
   name = "github.com/microcosm-cc/bluemonday"
   packages = ["."]
-  revision = "68fecaef60268522d2ac3f0123cec9d3bcab7b6e"
+  revision = "542fd4642604d0d0c26112396ce5b1a9d01eee0b"
 
 [[projects]]
   branch = "master"
@@ -150,8 +150,8 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
-  version = "v1.0.3"
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -163,31 +163,31 @@
   branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "f0aa215a7d653544d39d0e27dfa10fa4b183f397"
+  revision = "7bdfbc68187228a730beb5b825508079b9e757b6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
+  revision = "d585fd2cc9195196078f516b69daff6744ef5e84"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
+  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
+  revision = "83801418e1b59fb1880e363299581ee543af32ca"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","unicode/cldr"]
-  revision = "57961680700a5336d15015c8c50686ca5ba362a4"
+  revision = "eb22672bea55af56d225d4e35405f4d2e9f062a0"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v8"
@@ -204,6 +204,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "33af29c2e1e2c5e419117509a4d03730912c46decbddeace51488227ba97d8e9"
+  inputs-digest = "0630b9cccc1b341d652bcf6d0712e79b1f8b8f8ce2e7098b0ac5a404ee543d63"
   solver-name = "gps-cdcl"
   solver-version = 1

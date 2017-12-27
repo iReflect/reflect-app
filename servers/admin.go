@@ -1,14 +1,12 @@
 package server
 
 import (
-	"net/http"
-
+	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
-
-	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"net/http"
 )
 
 type Admin struct {
@@ -31,7 +29,8 @@ func (a *Admin) Router() *http.ServeMux {
 
 	Admin.AddResource(&feedbackModels.Category{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
 	Admin.AddResource(&feedbackModels.Skill{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
-	Admin.AddResource(&feedbackModels.Question{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
+
+	feedbackModels.RegisterQuestionToAdmin(Admin, admin.Config{Menu: []string{"Feedback Form Management"}})
 	Admin.AddResource(&feedbackModels.FeedbackForm{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
 	Admin.AddResource(&feedbackModels.FeedbackFormContent{}, &admin.Config{Menu: []string{"Feedback Form Management"}})
 	Admin.AddResource(&feedbackModels.TeamFeedbackForm{}, &admin.Config{Menu: []string{"Feedback Form Management"}})

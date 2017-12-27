@@ -33,7 +33,6 @@ func Up00002(tx *sql.Tx) error {
 	gormdb.Model(&models.FeedbackFormContent{}).AddForeignKey("skill_id", "skills(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.FeedbackFormContent{}).AddForeignKey("category_id", "categories(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.FeedbackFormContent{}).AddUniqueIndex("unique_feedback_form_skill", "feedback_form_id", "skill_id")
-	gormdb.Model(&models.FeedbackFormContent{}).AddUniqueIndex("unique_feedback_form_category", "feedback_form_id", "category_id")
 
 	gormdb.Model(&models.TeamFeedbackForm{}).AddForeignKey("team_id", "teams(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.TeamFeedbackForm{}).AddForeignKey("for_role_id", "roles(id)", "RESTRICT", "RESTRICT")
@@ -79,7 +78,6 @@ func Down00002(tx *sql.Tx) error {
 	gormdb.Model(&models.TeamFeedbackForm{}).RemoveForeignKey("for_role_id", "roles(id)")
 	gormdb.Model(&models.TeamFeedbackForm{}).RemoveForeignKey("team_id", "teams(id)")
 
-	gormdb.Model(&models.FeedbackFormContent{}).RemoveIndex("unique_feedback_form_category")
 	gormdb.Model(&models.FeedbackFormContent{}).RemoveIndex("unique_feedback_form_skill")
 	gormdb.Model(&models.FeedbackFormContent{}).RemoveForeignKey("category_id", "categories(id)")
 	gormdb.Model(&models.FeedbackFormContent{}).RemoveForeignKey("skill_id", "skills(id)")
