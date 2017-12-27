@@ -10,6 +10,7 @@ import (
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	utils "github.com/iReflect/reflect-app/libs/utils"
 )
 
 //FeedbackService ...
@@ -133,16 +134,21 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 					FeedbackFormContentID: feedBackFormContent.ID,
 				}).
 				FirstOrCreate(&questionResponse)
-
+			questionOptions := utils.ByteToMap(question.Options)
+			response := questionResponse.Response
+			defaultValue, exists := questionOptions["defaultValue"].(string)
+			if feedback.Status != 2 && exists && response == "" {
+				response = defaultValue
+			}
 			questionResponses = append(questionResponses,
 				feedbackSerializers.QuestionResponseDetailSerializer{
 					ID:         question.ID,
 					Type:       question.Type,
 					Text:       question.Text,
-					Options:    question.Options,
+					Options:    questionOptions["values"],
 					Weight:     question.Weight,
 					ResponseID: questionResponse.ID,
-					Response:   questionResponse.Response,
+					Response:   response,
 					Comment:    questionResponse.Comment,
 				})
 		}
