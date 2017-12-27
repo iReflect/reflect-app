@@ -2,6 +2,9 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
+	"github.com/qor/qor/resource"
 
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
@@ -16,4 +19,33 @@ type Question struct {
 	SkillID uint         `gorm:"not null"`
 	Options fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	Weight  int          `gorm:"default:1; not null"`
+}
+
+func RegisterQuestionToAdmin(Admin *admin.Admin, config admin.Config) {
+	question := Admin.AddResource(&Question{}, &config)
+	optionsMeta := getOptionsFieldMeta()
+
+	question.Meta(&optionsMeta)
+
+}
+
+func SetQuestionRelatedFieldMeta(res *admin.Resource) {
+	optionsMeta := getOptionsFieldMeta()
+	res.Meta(&optionsMeta)
+}
+
+func getOptionsFieldMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Options",
+		Type: "text",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			question := value.(*Question)
+			return string(question.Options)
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			question := resource.(*Question)
+			value := metaValue.Value.([]string)[0]
+			question.Options = fields.JSONB(value)
+		}}
+
 }

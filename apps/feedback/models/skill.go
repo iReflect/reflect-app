@@ -1,6 +1,9 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
+)
 
 // Skill represent the skill comprised by category
 // TODO Add support for versioning and making it non-editable
@@ -11,4 +14,10 @@ type Skill struct {
 	Description  string `gorm:"type:text"`
 	Weight       int    `gorm:"default:1"`
 	Questions    []Question
+}
+
+func RegisterSkillToAdmin(Admin *admin.Admin, config admin.Config) {
+	skill := Admin.AddResource(&Skill{}, &config)
+	questionsMeta := skill.Meta(&admin.Meta{Name: "Questions"})
+	SetQuestionRelatedFieldMeta(questionsMeta.Resource)
 }
