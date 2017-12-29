@@ -8,6 +8,25 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
+var StatusValues = [...]string {
+	"New",
+	"In Progress",
+	"Submitted",
+}
+
+type Status int8
+
+func (status Status) String() string {
+	return StatusValues[status]
+}
+
+const (
+	NewFeedback Status  = iota
+	InProgressFeedback
+	SubmittedFeedback
+)
+
+
 // Feedback represent a submitted/in-progress feedback form by a user
 type Feedback struct {
 	gorm.Model
@@ -20,7 +39,7 @@ type Feedback struct {
 	ByUserProfileID  uint `gorm:"not null"`
 	Team             userModels.Team
 	TeamID           uint `gorm:"not null"`
-	Status           int8 `gorm:"default:0; not null"` // TODO Add enum
+	Status           Status `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
 	SubmittedAt      *time.Time
 	DurationStart    time.Time `gorm:"not null"`
 	DurationEnd      time.Time `gorm:"not null"`

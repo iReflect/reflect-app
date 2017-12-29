@@ -13,6 +13,7 @@ debug
 
 # IDE
 .vscode
+.idea/
 
 vendor
 /.gopath

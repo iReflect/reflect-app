@@ -11,3 +11,9 @@ type QuestionResponseDetailSerializer struct {
 	Response   string
 	Comment    string
 }
+
+// QuestionResponseSerializer returns the question response
+type QuestionResponseSerializer struct {
+	Response string `json:"response" binding:"is_valid_question_response"`
+	Comment  string `json:"comment"`
+}

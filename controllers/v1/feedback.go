@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
+	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
 
@@ -17,20 +18,16 @@ type FeedbackController struct {
 }
 
 func (ctrl FeedbackController) registerValidators() {
-	if err := binding.Validator.RegisterValidation("isvalidquestionresponse",
-		feedbackSerializers.IsValidQuestionResponse); err != nil {
+	if err := binding.Validator.RegisterValidation("is_valid_question_response",
+		feedbackValidators.IsValidQuestionResponse); err != nil {
 		fmt.Println(err.Error())
 	}
-	if err := binding.Validator.RegisterValidation("isvalidsubmittedat",
-		feedbackSerializers.IsValidSubmittedAt); err != nil {
+	if err := binding.Validator.RegisterValidation("is_valid_submitted_at",
+		feedbackValidators.IsValidSubmittedAt); err != nil {
 		fmt.Println(err.Error())
 	}
-	if err := binding.Validator.RegisterValidation("isvalidsaveandsubmit",
-		feedbackSerializers.IsValidSaveAndSubmit); err != nil {
-		fmt.Println(err.Error())
-	}
-	if err := binding.Validator.RegisterValidation("allquestionpresent",
-		feedbackSerializers.IsAllQuestionPresent(ctrl.FeedbackService.DB)); err != nil {
+	if err := binding.Validator.RegisterValidation("all_questions_present",
+		feedbackValidators.IsAllQuestionPresent(ctrl.FeedbackService.DB)); err != nil {
 		fmt.Println(err.Error())
 	}
 }
