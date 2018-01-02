@@ -1,6 +1,9 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/iReflect/reflect-app/apps/feedback/models"
+)
 
 // FeedbackForm represent template form for feedback
 // TODO Add support for versioning
@@ -8,6 +11,6 @@ type FeedbackForm struct {
 	gorm.Model
 	Title       string `gorm:"type:varchar(255); not null"`
 	Description string `gorm:"type:text;"`
-	Status      int8   `gorm:"default:0; not null"` // TODO Add enum
+	Status      models.FeedbackFormStatus   `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
 	Archive     bool   `gorm:"default:false; not null"`
 }
