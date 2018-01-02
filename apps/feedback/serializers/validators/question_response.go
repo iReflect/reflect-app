@@ -2,15 +2,11 @@ package validators
 
 import (
 	"reflect"
-	"regexp"
+	"gopkg.in/go-playground/validator.v8"
 
-	validator "gopkg.in/go-playground/validator.v8"
+	"github.com/iReflect/reflect-app/apps/feedback/models"
 )
 
-// Regex to test the response format of a question
-const questionResponseRegexString = "^[0-9]+(,[0-9]+)*$"
-
-var questionResponseRegex = regexp.MustCompile(questionResponseRegexString)
 
 // IsValidQuestionResponse validates the "Response" value of QuestionResponseSerializer
 func IsValidQuestionResponse(
@@ -22,7 +18,5 @@ func IsValidQuestionResponse(
 	fieldKind reflect.Kind,
 	param string,
 ) bool {
-	questionResponse := field.String()
-	// Response can be an empty string only if the feedback is not getting submitted
-	return questionResponse == "" || questionResponseRegex.MatchString(questionResponse)
+	return models.ValidateResponseRegex(field.String())
 }

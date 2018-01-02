@@ -10,7 +10,6 @@ import (
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
-	utils "github.com/iReflect/reflect-app/libs/utils"
 )
 
 //FeedbackService ...
@@ -134,7 +133,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 					FeedbackFormContentID: feedBackFormContent.ID,
 				}).
 				FirstOrCreate(&questionResponse)
-			questionOptions := utils.ByteToMap(question.Options)
+			questionOptions := question.GetOptions()
 			response := questionResponse.Response
 			defaultValue, exists := questionOptions["defaultValue"].(string)
 			if feedback.Status != feedbackModels.SubmittedFeedback && exists && response == "" {
@@ -199,13 +198,20 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 	for _, categoryData := range feedBackResponseData.Data {
 		for _, skillData := range categoryData {
 			for questionResponseID, questionResponseData := range skillData {
-				if rowsAffected := tx.Model(&feedbackModels.QuestionResponse{}).
+				questionResponse := feedbackModels.QuestionResponse{}
+				if err := tx.Model(&feedbackModels.QuestionResponse{}).
 					Where("id = ? AND feedback_id = ?", questionResponseID, feedbackID).
-					Update(map[string]interface{}{
-						"response": questionResponseData.Response,
-						"comment":  questionResponseData.Comment,
-					}).RowsAffected; rowsAffected == 0 {
-					// Roll back the transaction if any question fails to execute
+					Find(&questionResponse).Error; err != nil {
+					// Roll back the transaction if any question response is not found
+					tx.Rollback()
+					code = http.StatusBadRequest
+					err := errors.New("question not found")
+					return code, err
+				}
+				questionResponse.Response = questionResponseData.Response
+				questionResponse.Comment = questionResponseData.Comment
+				if err := tx.Save(&questionResponse).Error; err != nil {
+					// Roll back the transaction if any question response fails to update
 					tx.Rollback()
 					code = http.StatusBadRequest
 					err := errors.New("Failed to update the question response")

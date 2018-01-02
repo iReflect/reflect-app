@@ -22,7 +22,7 @@ type FeedbackDetailSerializer struct {
 	DurationEnd    time.Time
 	SubmittedAt    time.Time
 	ExpireAt       time.Time
-	Status         models.Status
+	Status         models.FeedbackStatus
 	FeedbackFormID uint
 	Categories     map[uint]CategoryDetailSerializer
 }
@@ -34,8 +34,8 @@ type FeedbackResponseData map[int64]map[int64]map[int64]QuestionResponseSerializ
 
 // FeedbackResponseSerializer returns the feedback response
 type FeedbackResponseSerializer struct {
-	Data        FeedbackResponseData `json:"data" binding:"required,all_questions_present,dive,dive,dive"`
-	Status      models.Status                 `json:"status" binding:"required"`
-	SubmittedAt string               `json:"submittedAt" binding:"is_valid_submitted_at"`
+	Data        FeedbackResponseData  `json:"data" binding:"required,all_questions_present,dive,dive,dive"`
+	Status      models.FeedbackStatus `json:"status" binding:"required"`
+	SubmittedAt string                `json:"submittedAt" binding:"is_valid_submitted_at"`
 	FeedbackID  string
 }

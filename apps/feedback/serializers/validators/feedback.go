@@ -7,12 +7,10 @@ import (
 	"github.com/deckarep/golang-set"
 
 	"github.com/jinzhu/gorm"
-	"github.com/gin-gonic/gin/binding"
 
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
-	validator "gopkg.in/go-playground/validator.v8"
-	"fmt"
+	"gopkg.in/go-playground/validator.v8"
 )
 
 // IsValidSubmittedAt validates the "SubmittedAt" value of FeedbackResponseSerializer
@@ -67,16 +65,5 @@ func IsAllQuestionPresent(db *gorm.DB) validator.Func {
 		expectedResponseIDSet := mapset.NewSetFromSlice(expectedResponseIDs)
 		actualResponseIDSet := mapset.NewSetFromSlice(actualResponseIDs)
 		return expectedResponseIDSet.Equal(actualResponseIDSet)
-	}
-}
-
-func validators() {
-	if err := binding.Validator.RegisterValidation("is_valid_submitted_at",
-		IsValidSubmittedAt); err != nil {
-		fmt.Println(err.Error())
-	}
-	if err := binding.Validator.RegisterValidation("all_questions_present",
-		IsAllQuestionPresent(ctrl.FeedbackService.DB)); err != nil {
-		fmt.Println(err.Error())
 	}
 }

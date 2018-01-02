@@ -1,10 +1,12 @@
 package serializers
 
+import "github.com/iReflect/reflect-app/apps/feedback/models"
+
 // QuestionResponseDetailSerializer returns the question response for a particular question
 type QuestionResponseDetailSerializer struct {
 	ID         uint
 	Text       string
-	Type       int8
+	Type       models.QuestionType
 	Options    interface{}
 	Weight     int
 	ResponseID uint

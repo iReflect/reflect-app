@@ -1,14 +1,11 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
-	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
 
@@ -17,24 +14,8 @@ type FeedbackController struct {
 	FeedbackService feedbaclServices.FeedbackService
 }
 
-func (ctrl FeedbackController) registerValidators() {
-	if err := binding.Validator.RegisterValidation("is_valid_question_response",
-		feedbackValidators.IsValidQuestionResponse); err != nil {
-		fmt.Println(err.Error())
-	}
-	if err := binding.Validator.RegisterValidation("is_valid_submitted_at",
-		feedbackValidators.IsValidSubmittedAt); err != nil {
-		fmt.Println(err.Error())
-	}
-	if err := binding.Validator.RegisterValidation("all_questions_present",
-		feedbackValidators.IsAllQuestionPresent(ctrl.FeedbackService.DB)); err != nil {
-		fmt.Println(err.Error())
-	}
-}
-
 // Routes for Feedback
 func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
-	ctrl.registerValidators()
 	r.GET("/", ctrl.List)
 	r.GET("/:id/", ctrl.Get)
 	r.PUT("/:id/", ctrl.Put)

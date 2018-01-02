@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/iReflect/reflect-app/apps/feedback/models"
 )
 
 // Feedback represent a submitted/in-progress feedback form by a user
@@ -18,7 +19,7 @@ type Feedback struct {
 	ByUserProfileID  uint `gorm:"not null"`
 	Team             Team
 	TeamID           uint `gorm:"not null"`
-	Status           int8 `gorm:"default:0; not null"` // TODO Add enum
+	Status           models.QuestionType `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
 	SubmittedAt      *time.Time
 	DurationStart    time.Time `gorm:"not null"`
 	DurationEnd      time.Time `gorm:"not null"`
