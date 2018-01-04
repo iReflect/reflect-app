@@ -11,7 +11,7 @@ type UserTeam struct {
 	UserID    uint `gorm:"primary_key"`
 	Team      Team
 	TeamID    uint `gorm:"primary_key"`
-	Role      models.TeamRole `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
+	Role      models.TeamRole `gorm:"default:0; not null"`
 	Active    bool `gorm:"default:false; not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time

@@ -34,7 +34,7 @@ type FeedbackForm struct {
 	gorm.Model
 	Title       string `gorm:"type:varchar(255); not null"`
 	Description string `gorm:"type:text;"`
-	Status      FeedbackFormStatus   `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
+	Status      FeedbackFormStatus   `gorm:"default:0; not null"`
 	Archive     bool   `gorm:"default:false; not null"`
 }
 

@@ -44,7 +44,7 @@ type Feedback struct {
 	ByUserProfileID  uint `gorm:"not null"`
 	Team             userModels.Team
 	TeamID           uint `gorm:"not null"`
-	Status           FeedbackStatus `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
+	Status           FeedbackStatus `gorm:"default:0; not null"`
 	SubmittedAt      *time.Time
 	DurationStart    time.Time `gorm:"not null"`
 	DurationEnd      time.Time `gorm:"not null"`

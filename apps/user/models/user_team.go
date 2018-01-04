@@ -34,7 +34,7 @@ type UserTeam struct {
 	Team      Team
 	TeamID    uint `gorm:"primary_key"`
 	Active    bool `gorm:"default:false; not null"`
-	Role      TeamRole `gorm:"default:0; not null;type:ENUM(0, 1, 2)"`
+	Role      TeamRole `gorm:"default:0; not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
