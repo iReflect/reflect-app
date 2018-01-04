@@ -1,15 +1,15 @@
 package models
 
 import (
-	"time"
-	"strconv"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
+	"strconv"
+	"time"
 )
 
-var TeamRoleValues = [...]string {
+var TeamRoleValues = [...]string{
 	"Member",
 	"Manager",
 	"Admin",
@@ -22,7 +22,7 @@ func (teamRole TeamRole) String() string {
 }
 
 const (
-	MemberRole	TeamRole = iota
+	MemberRole TeamRole = iota
 	ManagerRole
 	AdminRole
 )
@@ -32,8 +32,8 @@ type UserTeam struct {
 	User      User
 	UserID    uint `gorm:"primary_key"`
 	Team      Team
-	TeamID    uint `gorm:"primary_key"`
-	Active    bool `gorm:"default:false; not null"`
+	TeamID    uint     `gorm:"primary_key"`
+	Active    bool     `gorm:"default:false; not null"`
 	Role      TeamRole `gorm:"default:0; not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time

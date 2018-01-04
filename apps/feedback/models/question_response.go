@@ -1,10 +1,10 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
 	"errors"
-	"strings"
+	"github.com/jinzhu/gorm"
 	"regexp"
+	"strings"
 )
 
 const QuestionResponseSeparator = ","
@@ -35,7 +35,7 @@ func GetQuestionResponseList(questionResponse string) []string {
 	return []string{}
 }
 
-func ValidateResponseRegex (questionResponse string) bool {
+func ValidateResponseRegex(questionResponse string) bool {
 	// Response can either be an empty string or should match the regex
 	return questionResponse == "" || questionResponseRegex.MatchString(questionResponse)
 }

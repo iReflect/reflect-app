@@ -2,26 +2,23 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
-	"strconv"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
-
+	"strconv"
 )
 
 type FeedbackFormStatus int8
 
 const (
-	DraftFeedbackForm        FeedbackFormStatus = iota
+	DraftFeedbackForm FeedbackFormStatus = iota
 	PublishedFeedbackForm
-	ArchiveFeedbackForm
 )
 
-var FeedbackFormStatusValues = [...]string {
+var FeedbackFormStatusValues = [...]string{
 	"Draft",
 	"Published",
-	"Archived",
 }
 
 func (status FeedbackFormStatus) String() string {
@@ -32,10 +29,10 @@ func (status FeedbackFormStatus) String() string {
 // TODO Add support for versioning
 type FeedbackForm struct {
 	gorm.Model
-	Title       string `gorm:"type:varchar(255); not null"`
-	Description string `gorm:"type:text;"`
-	Status      FeedbackFormStatus   `gorm:"default:0; not null"`
-	Archive     bool   `gorm:"default:false; not null"`
+	Title       string             `gorm:"type:varchar(255); not null"`
+	Description string             `gorm:"type:text;"`
+	Status      FeedbackFormStatus `gorm:"default:0; not null"`
+	Archive     bool               `gorm:"default:false; not null"`
 }
 
 func RegisterFeedbackFormToAdmin(Admin *admin.Admin, config admin.Config) {

@@ -6,13 +6,12 @@ import (
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
+	"errors"
 	"github.com/iReflect/reflect-app/db/models/fields"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strconv"
 	"github.com/sirupsen/logrus"
-	"errors"
+	"strconv"
 )
-
 
 type QuestionType int8
 
@@ -22,7 +21,7 @@ const (
 	BooleanType
 )
 
-var QuestionTypeValues = [...]string {
+var QuestionTypeValues = [...]string{
 	"Multi Choice",
 	"Grade",
 	"Boolean",
@@ -36,8 +35,8 @@ func (questionType QuestionType) String() string {
 // TODO Add support for versioning and making it non-editable
 type Question struct {
 	gorm.Model
-	Text    string `gorm:"type:text; not null"`
-	Type    QuestionType   `gorm:"default:0; not null)"`
+	Text    string       `gorm:"type:text; not null"`
+	Type    QuestionType `gorm:"default:0; not null)"`
 	Skill   Skill
 	SkillID uint         `gorm:"not null"`
 	Options fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
@@ -60,25 +59,29 @@ func (question *Question) ValidateQuestionResponse(questionResponse string) bool
 	}
 
 	// Check even if the response is valid based on question type
-	if question.Type == BooleanType || question.Type == GradingType {
-		if len(questionResponseList) > 1 {
-			return false
+	if (question.Type == BooleanType || question.Type == GradingType) && len(questionResponseList) > 1 {
+		return false
+	}
+
+	if question.Type == MultiChoiceType {
+		questionOptions := question.GetOptions()
+		validValues := map[float64]float64{}
+		for _, val := range questionOptions["values"].([]interface{}) {
+			responseID := val.(map[string]interface{})["id"].(float64)
+			validValues[responseID] = responseID
 		}
-	}
-	questionOptions := question.GetOptions()
-	validValues := map[float64]float64{}
-	for _, val := range questionOptions["values"].([]interface{}) {
-		responseID := val.(map[string]interface{})["id"].(float64)
-		validValues[responseID] = responseID
-	}
-	for _, response := range questionResponseList {
-		if response != "" {
-			value, _ := strconv.ParseFloat(response, 64)
-			_, isValid := validValues[value]
-			if !isValid {return isValid}
+		for _, response := range questionResponseList {
+			if response != "" {
+				value, _ := strconv.ParseFloat(response, 64)
+				_, isValid := validValues[value]
+				if !isValid {
+					return isValid
+				}
+			}
 		}
+		return true
 	}
-	return true
+	return false
 }
 
 func (question *Question) BeforeSave(db *gorm.DB) (err error) {
@@ -95,22 +98,22 @@ func (question *Question) BeforeSave(db *gorm.DB) (err error) {
 
 func RegisterQuestionToAdmin(Admin *admin.Admin, config admin.Config) {
 	question := Admin.AddResource(&Question{}, &config)
-	optionsMeta := getOptionsFieldMeta()
-	typesMeta := getTypeFieldMeta()
+	optionsMeta := getQuestionOptionsFieldMeta()
+	typesMeta := getQuestionTypeFieldMeta()
 	question.Meta(&optionsMeta)
 	question.Meta(&typesMeta)
 
 }
 
 func SetQuestionRelatedFieldMeta(res *admin.Resource) {
-	optionsMeta := getOptionsFieldMeta()
-	typesMeta := getTypeFieldMeta()
+	optionsMeta := getQuestionOptionsFieldMeta()
+	typesMeta := getQuestionTypeFieldMeta()
 	res.Meta(&optionsMeta)
 	res.Meta(&typesMeta)
 }
 
-// getOptionsFieldMeta is the meta config for the question's options field
-func getOptionsFieldMeta() admin.Meta {
+// getQuestionOptionsFieldMeta is the meta config for the question's options field
+func getQuestionOptionsFieldMeta() admin.Meta {
 	return admin.Meta{
 		Name: "Options",
 		Type: "text",
@@ -126,8 +129,8 @@ func getOptionsFieldMeta() admin.Meta {
 
 }
 
-// getTypeFieldMeta is the meta config for the question's type field
-func getTypeFieldMeta() admin.Meta {
+// getQuestionTypeFieldMeta is the meta config for the question's type field
+func getQuestionTypeFieldMeta() admin.Meta {
 	return admin.Meta{
 		Name: "Type",
 		Type: "select_one",

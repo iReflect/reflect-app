@@ -6,14 +6,14 @@ import (
 	"github.com/jinzhu/gorm"
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
-	"strconv"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
-var FeedbackStatusValues = [...]string {
+var FeedbackStatusValues = [...]string{
 	"New",
 	"In Progress",
 	"Submitted",
@@ -26,11 +26,10 @@ func (status FeedbackStatus) String() string {
 }
 
 const (
-	NewFeedback        FeedbackStatus = iota
+	NewFeedback FeedbackStatus = iota
 	InProgressFeedback
 	SubmittedFeedback
 )
-
 
 // Feedback represent a submitted/in-progress feedback form by a user
 type Feedback struct {
@@ -43,7 +42,7 @@ type Feedback struct {
 	ByUserProfile    userModels.UserProfile
 	ByUserProfileID  uint `gorm:"not null"`
 	Team             userModels.Team
-	TeamID           uint `gorm:"not null"`
+	TeamID           uint           `gorm:"not null"`
 	Status           FeedbackStatus `gorm:"default:0; not null"`
 	SubmittedAt      *time.Time
 	DurationStart    time.Time `gorm:"not null"`
@@ -51,15 +50,14 @@ type Feedback struct {
 	ExpireAt         time.Time `gorm:"not null"`
 }
 
-
 func RegisterFeedbackToAdmin(Admin *admin.Admin, config admin.Config) {
 	feedback := Admin.AddResource(&Feedback{}, &config)
-	statusMeta := getStatusFieldMeta()
+	statusMeta := getFeedbackStatusFieldMeta()
 	feedback.Meta(&statusMeta)
 }
 
-// getStatusFieldMeta is the meta config for the feedback status field
-func getStatusFieldMeta() admin.Meta {
+// getFeedbackStatusFieldMeta is the meta config for the feedback status field
+func getFeedbackStatusFieldMeta() admin.Meta {
 	return admin.Meta{
 		Name: "Status",
 		Type: "select_one",
