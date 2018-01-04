@@ -20,7 +20,7 @@ func Initialize(config *config.Config) *gorm.DB {
 	if err != nil {
 		log.Fatal("Could not connect database", err)
 	}
-
+	db.LogMode(config.DB.LogEnabled)
 	return db
 }
 
