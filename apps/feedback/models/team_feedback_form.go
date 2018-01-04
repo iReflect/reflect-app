@@ -15,5 +15,5 @@ type TeamFeedbackForm struct {
 	ForRoleID      uint `gorm:"not null"`
 	FeedbackForm   FeedbackForm
 	FeedbackFormID uint `gorm:"not null"`
-	Active         bool `gorm:"default:true; not null"`
+	Active         bool `gorm:"default:false; not null"`
 }

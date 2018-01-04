@@ -10,5 +10,5 @@ type UserProfile struct {
 	UserID uint `gorm:"not null"`
 	Role   Role
 	RoleID uint `gorm:"not null"`
-	Active bool `gorm:"default:true; not null"`
+	Active bool `gorm:"default:false; not null"`
 }

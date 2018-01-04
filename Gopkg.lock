@@ -10,14 +10,26 @@
 [[projects]]
   name = "github.com/caarlos0/env"
   packages = ["."]
-  revision = "9de094f90fa8a13dc162e10ae8a3b95c0c2c33e1"
-  version = "v3.1.1"
+  revision = "7cd7992b3bc86f920394f8de92c13900da1a46b7"
+  version = "v3.2.0"
+
+[[projects]]
+  name = "github.com/deckarep/golang-set"
+  packages = ["."]
+  revision = "1d4478f51bed434f1dadf96dcd9b43aabac66795"
+  version = "v1.7"
 
 [[projects]]
   name = "github.com/garyburd/redigo"
   packages = ["internal","redis"]
   revision = "47dc60e71eed504e3ef8e77ee3c6fe720f3be57f"
   version = "v1.3.0"
+
+[[projects]]
+  name = "github.com/gin-contrib/cors"
+  packages = ["."]
+  revision = "cf4846e6a636a76237a28d9286f163c132e841bc"
+  version = "v1.2"
 
 [[projects]]
   branch = "master"
@@ -32,10 +44,10 @@
   revision = "8f08bc9b92a9734916abda03656c5f1b99ad10be"
 
 [[projects]]
+  branch = "master"
   name = "github.com/gin-gonic/gin"
-  packages = [".","binding","render"]
-  revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
-  version = "v1.2"
+  packages = [".","binding","json","render"]
+  revision = "6626358d4fefa40ec37ca4b502c6c7d0cdea6d18"
 
 [[projects]]
   branch = "master"
@@ -81,6 +93,12 @@
   revision = "d939ba741945c047cac69c329c5fb0d6b4a06520"
 
 [[projects]]
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  revision = "f7279a603edee96fe7764d3de9c6ff8cf9970994"
+  version = "1.0.4"
+
+[[projects]]
   branch = "master"
   name = "github.com/kr/pretty"
   packages = ["."]
@@ -96,7 +114,7 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","hstore","oid"]
-  revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
+  revision = "83612a56d3dd153a94a629cd64925371c9adad78"
 
 [[projects]]
   name = "github.com/mattn/go-isatty"
@@ -108,7 +126,7 @@
   branch = "master"
   name = "github.com/microcosm-cc/bluemonday"
   packages = ["."]
-  revision = "68fecaef60268522d2ac3f0123cec9d3bcab7b6e"
+  revision = "542fd4642604d0d0c26112396ce5b1a9d01eee0b"
 
 [[projects]]
   branch = "master"
@@ -144,8 +162,8 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
-  version = "v1.0.3"
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -157,31 +175,31 @@
   branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "b051152d28096a3a49ab8c09fc773863befb1728"
+  revision = "7bdfbc68187228a730beb5b825508079b9e757b6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
+  revision = "d585fd2cc9195196078f516b69daff6744ef5e84"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom"]
-  revision = "9dfe39835686865bff950a07b394c12a98ddc811"
+  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "82aafbf43bf885069dc71b7e7c2f9d7a614d47da"
+  revision = "83801418e1b59fb1880e363299581ee543af32ca"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","unicode/cldr"]
-  revision = "88f656faf3f37f690df1a32515b479415e1a6769"
+  revision = "eb22672bea55af56d225d4e35405f4d2e9f062a0"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v8"
@@ -198,6 +216,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8aa2d112973b5c966a13f31930450f312e12ea29fa4da8d46c02ef83a94c3fac"
+  inputs-digest = "17fc5840484af736b9bd6e6316646bb85a02f7e6487503e62ba396cd2c145c7f"
   solver-name = "gps-cdcl"
   solver-version = 1
