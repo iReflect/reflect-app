@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
+	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
 	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
@@ -67,7 +68,8 @@ func (a *App) SetRoutes() {
 
 	v1.Use(oauth.CookieAuthenticationMiddleWare(authenticationService))
 	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
-
+	feedbackValidator := feedbackValidators.FeedbackValidators{DB: a.DB}
+	feedbackValidator.Register()
 	feedbackController := apiControllers.FeedbackController{FeedbackService: feedbackService}
 	feedbackController.Routes(v1.Group("feedbacks"))
 	teamFeedbackController := apiControllers.TeamFeedbackController{FeedbackService: feedbackService}

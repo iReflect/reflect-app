@@ -11,7 +11,7 @@ import (
 type Question struct {
 	gorm.Model
 	Text    string `gorm:"type:text; not null"`
-	Type    int8   `gorm:"default:0; not null"` // TODO Add enum
+	Type    int8   `gorm:"default:0; not null"`
 	Skill   Skill
 	SkillID uint         `gorm:"not null"`
 	Options fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`

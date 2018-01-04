@@ -38,7 +38,7 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 func (ctrl FeedbackController) Put(c *gin.Context) {
 	id := c.Param("id")
 	userID, _ := c.Get("userID")
-	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{}
+	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{FeedbackID: id}
 	if err := c.BindJSON(&feedBackResponseData); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
 		return
@@ -59,7 +59,6 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 	parsedPerPage, err := strconv.Atoi(perPage)
 	if err != nil {
 		parsedPerPage = -1
-
 	}
 	response, err := ctrl.FeedbackService.List(userID.(uint), statuses, parsedPerPage)
 

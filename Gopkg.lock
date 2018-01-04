@@ -14,6 +14,12 @@
   version = "v3.2.0"
 
 [[projects]]
+  name = "github.com/deckarep/golang-set"
+  packages = ["."]
+  revision = "1d4478f51bed434f1dadf96dcd9b43aabac66795"
+  version = "v1.7"
+
+[[projects]]
   name = "github.com/garyburd/redigo"
   packages = ["internal","redis"]
   revision = "47dc60e71eed504e3ef8e77ee3c6fe720f3be57f"
@@ -38,10 +44,10 @@
   revision = "8f08bc9b92a9734916abda03656c5f1b99ad10be"
 
 [[projects]]
+  branch = "master"
   name = "github.com/gin-gonic/gin"
-  packages = [".","binding","render"]
-  revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
-  version = "v1.2"
+  packages = [".","binding","json","render"]
+  revision = "6626358d4fefa40ec37ca4b502c6c7d0cdea6d18"
 
 [[projects]]
   branch = "master"
@@ -85,6 +91,12 @@
   name = "github.com/jinzhu/now"
   packages = ["."]
   revision = "d939ba741945c047cac69c329c5fb0d6b4a06520"
+
+[[projects]]
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  revision = "f7279a603edee96fe7764d3de9c6ff8cf9970994"
+  version = "1.0.4"
 
 [[projects]]
   branch = "master"
@@ -204,6 +216,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0630b9cccc1b341d652bcf6d0712e79b1f8b8f8ce2e7098b0ac5a404ee543d63"
+  inputs-digest = "17fc5840484af736b9bd6e6316646bb85a02f7e6487503e62ba396cd2c145c7f"
   solver-name = "gps-cdcl"
   solver-version = 1

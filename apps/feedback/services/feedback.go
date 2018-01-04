@@ -98,9 +98,9 @@ func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []st
 		Find(&feedbacks.Feedbacks).Error; err != nil {
 		return nil, err
 	}
-	baseQuery.Where("status = 0").Count(&feedbacks.NewFeedbackCount)
-	baseQuery.Where("status = 1").Count(&feedbacks.DraftFeedbackCount)
-	baseQuery.Where("status = 2").Count(&feedbacks.SubmittedFeedbackCount)
+	baseQuery.Where("status = ?", feedbackModels.NewFeedback).Count(&feedbacks.NewFeedbackCount)
+	baseQuery.Where("status = ?", feedbackModels.InProgressFeedback).Count(&feedbacks.DraftFeedbackCount)
+	baseQuery.Where("status = ?", feedbackModels.SubmittedFeedback).Count(&feedbacks.SubmittedFeedbackCount)
 	return feedbacks, nil
 }
 
@@ -133,16 +133,21 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 					FeedbackFormContentID: feedBackFormContent.ID,
 				}).
 				FirstOrCreate(&questionResponse)
-
+			questionOptions := question.GetOptions()
+			response := questionResponse.Response
+			defaultValue, exists := questionOptions["defaultValue"].(string)
+			if feedback.Status != feedbackModels.SubmittedFeedback && exists && response == "" {
+				response = defaultValue
+			}
 			questionResponses = append(questionResponses,
 				feedbackSerializers.QuestionResponseDetailSerializer{
 					ID:         question.ID,
 					Type:       question.Type,
 					Text:       question.Text,
-					Options:    question.Options,
+					Options:    questionOptions["values"],
 					Weight:     question.Weight,
 					ResponseID: questionResponse.ID,
-					Response:   questionResponse.Response,
+					Response:   response,
 					Comment:    questionResponse.Comment,
 				})
 		}
@@ -182,7 +187,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 	db := service.DB
 	feedback := feedbackModels.Feedback{}
 	// Find a feedback with the given ID which hasn't been submitted before
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ? AND status != ?", feedbackID, 2).
+	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ? AND status != ? AND expire_at >= ?", feedbackID, feedbackModels.SubmittedFeedback, time.Now()).
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
 		First(&feedback).Error; err != nil {
@@ -193,13 +198,20 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 	for _, categoryData := range feedBackResponseData.Data {
 		for _, skillData := range categoryData {
 			for questionResponseID, questionResponseData := range skillData {
-				if rowsAffected := tx.Model(&feedbackModels.QuestionResponse{}).
+				questionResponse := feedbackModels.QuestionResponse{}
+				if err := tx.Model(&feedbackModels.QuestionResponse{}).
 					Where("id = ? AND feedback_id = ?", questionResponseID, feedbackID).
-					Update(map[string]interface{}{
-						"response": questionResponseData.Response,
-						"comment":  questionResponseData.Comment,
-					}).RowsAffected; rowsAffected == 0 {
-					// Roll back the transaction if any question fails to execute
+					Find(&questionResponse).Error; err != nil {
+					// Roll back the transaction if any question response is not found
+					tx.Rollback()
+					code = http.StatusBadRequest
+					err := errors.New("question not found")
+					return code, err
+				}
+				questionResponse.Response = questionResponseData.Response
+				questionResponse.Comment = questionResponseData.Comment
+				if err := tx.Save(&questionResponse).Error; err != nil {
+					// Roll back the transaction if any question response fails to update
 					tx.Rollback()
 					code = http.StatusBadRequest
 					err := errors.New("Failed to update the question response")
@@ -208,16 +220,10 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 			}
 		}
 	}
-	if feedBackResponseData.SaveAndSubmit && feedBackResponseData.Status == 2 {
-		submittedAt, err := time.Parse(time.RFC3339, feedBackResponseData.SubmittedAt)
-		if err != nil {
-			// If an invalid date value is provided in the response
-			tx.Rollback()
-			code = http.StatusBadRequest
-			return code, err
-		}
+	if feedBackResponseData.Status == feedbackModels.SubmittedFeedback {
+		submittedAt, _ := time.Parse(time.RFC3339, feedBackResponseData.SubmittedAt)
 		if err := tx.Model(&feedback).Update(map[string]interface{}{
-			"status":       2,
+			"status":       feedBackResponseData.Status,
 			"submitted_at": submittedAt,
 		}).Error; err != nil {
 			// Roll back the transaction if feedback status update fails to execute

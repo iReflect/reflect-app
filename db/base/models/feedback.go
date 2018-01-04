@@ -18,7 +18,7 @@ type Feedback struct {
 	ByUserProfileID  uint `gorm:"not null"`
 	Team             Team
 	TeamID           uint `gorm:"not null"`
-	Status           int8 `gorm:"default:0; not null"` // TODO Add enum
+	Status           int8 `gorm:"default:0; not null;"`
 	SubmittedAt      *time.Time
 	DurationStart    time.Time `gorm:"not null"`
 	DurationEnd      time.Time `gorm:"not null"`
