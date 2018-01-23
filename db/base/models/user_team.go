@@ -1,18 +1,18 @@
 package models
 
 import (
+	"github.com/jinzhu/gorm"
 	"time"
 )
 
 // UserTeam represent team associations of a users
 type UserTeam struct {
-	User      User
-	UserID    uint `gorm:"primary_key"`
-	Team      Team
-	TeamID    uint `gorm:"primary_key"`
-	Role      int8 `gorm:"default:0; not null"`
-	Active    bool `gorm:"default:false; not null"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
+	gorm.Model
+	User     User
+	UserID   uint `gorm:"not null"`
+	Team     Team
+	TeamID   uint      `gorm:"not null"`
+	Role     int8      `gorm:"default:0; not null"`
+	JoinedAt time.Time `gorm:"not null"`
+	LeavedAt *time.Time
 }
