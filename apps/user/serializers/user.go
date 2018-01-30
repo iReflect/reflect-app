@@ -6,3 +6,16 @@ type UserAuthSerializer struct {
 	models.User
 	Token string
 }
+
+type User struct {
+	ID        uint
+	Email     string
+	FirstName string
+	LastName  string
+	Active    bool
+}
+
+// MemberSerializer ...
+type MembersSerializer struct {
+	Members       []User
+}
