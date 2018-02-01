@@ -3,17 +3,20 @@ package providers
 import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+
+	"github.com/andygrunwald/go-jira"
 )
 
 //JIRATaskProvider ...
 type JIRATaskProvider struct {
 }
 
-//JIRATaskConnection ...
+//JIRAConnection ...
 type JIRAConnection struct {
 	config JIRAConfig
 }
 
+//JIRAConfig ...
 type JIRAConfig struct {
 	Credentials string
 	BaseURL     string
@@ -21,16 +24,17 @@ type JIRAConfig struct {
 	JQL         string
 }
 
+// TaskProviderJiraAgile ...
 const (
-	TASK_PROVIDER_JIRA_AGILE = "jira"
+	TaskProviderJiraAgile = "jira"
 )
 
 func init() {
 	provider := &JIRATaskProvider{}
-	tasktracker.RegisterTaskProvider(TASK_PROVIDER_JIRA_AGILE, provider)
+	tasktracker.RegisterTaskProvider(TaskProviderJiraAgile, provider)
 }
 
-//Configure ...
+//New ...
 func (m *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 	c, ok := config.(JIRAConfig)
 	if !ok {
@@ -41,6 +45,7 @@ func (m *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 
 //GetTaskList ...
 func (m *JIRAConnection) GetTaskList(query string) []serializers.Task {
+	jira.NewClient(nil, "")
 	return nil
 }
 

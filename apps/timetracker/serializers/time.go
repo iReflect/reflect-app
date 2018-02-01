@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+//TimeLog ...
 type TimeLog struct {
 	ID        string
 	ProjectID string
@@ -14,6 +15,7 @@ type TimeLog struct {
 	Date      time.Time
 }
 
+//Project ...
 type Project struct {
 	ID   string
 	Name *string

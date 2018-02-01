@@ -7,6 +7,7 @@ type TaskProvider interface {
 	New(config interface{}) Connection
 }
 
+//Connection ...
 type Connection interface {
 	GetTaskList(query string) []serializers.Task
 	GetSprint(sprint string) *serializers.Sprint

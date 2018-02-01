@@ -6,11 +6,12 @@ import (
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 )
 
-//TimeProvider ...
+// TimeProvider ...
 type TimeProvider interface {
 	New(config interface{}) Connection
 }
 
+// Connection ...
 type Connection interface {
 	GetProjects() []serializers.Project
 	GetTimeLogs(startTime time.Time, endTime time.Time) []serializers.TimeLog
@@ -19,12 +20,12 @@ type Connection interface {
 
 var timeProviders = make(map[string]TimeProvider)
 
-//RegisterTimeProvider ...
+// RegisterTimeProvider ...
 func RegisterTimeProvider(name string, newProvider TimeProvider) {
 	timeProviders[name] = newProvider
 }
 
-//GetTimeProvider ...
+// GetTimeProvider ...
 func GetTimeProvider(name string) TimeProvider {
 	provider, ok := timeProviders[name]
 	if ok {

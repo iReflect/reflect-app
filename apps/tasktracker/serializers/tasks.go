@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+//Task ...
 type Task struct {
 	ID          string
 	ProjectID   string
@@ -21,6 +22,7 @@ type Task struct {
 	UpdatedAt   time.Time
 }
 
+//Sprint ...
 type Sprint struct {
 	ID       string
 	BoardID  string
@@ -29,6 +31,7 @@ type Sprint struct {
 	ToDate   time.Time
 }
 
+//Board ...
 type Board struct {
 	ID   string
 	Name string

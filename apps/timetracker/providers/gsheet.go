@@ -11,22 +11,25 @@ import (
 type GSheetTimeProvider struct {
 }
 
+//GsheetConnection ...
 type GsheetConnection struct {
 	config GsheetConfig
 }
 
+//GsheetConfig ...
 type GsheetConfig struct {
 	Credentials string
 	SheetID     string
 }
 
+// TimeProviderGSheet ...
 const (
-	TIME_PROVIDER_GSHEET = "gsheet"
+	TimeProviderGSheet = "gsheet"
 )
 
 func init() {
 	provider := &GSheetTimeProvider{}
-	timetracker.RegisterTimeProvider(TIME_PROVIDER_GSHEET, provider)
+	timetracker.RegisterTimeProvider(TimeProviderGSheet, provider)
 }
 
 //New ...
