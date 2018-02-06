@@ -15,6 +15,7 @@ import (
 	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	_ "github.com/iReflect/reflect-app/apps/tasktracker/providers"
 	taskTrackerServices "github.com/iReflect/reflect-app/apps/tasktracker/services"
 	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
@@ -23,7 +24,6 @@ import (
 	apiControllers "github.com/iReflect/reflect-app/controllers/v1"
 	"github.com/iReflect/reflect-app/db"
 	dbMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
-	_ "github.com/iReflect/reflect-app/apps/tasktracker/providers"
 )
 
 type App struct {
@@ -96,7 +96,7 @@ func (a *App) SetRoutes() {
 	retrospectiveService := retrospectiveServices.RetrospectiveService{DB: a.DB}
 	retrospectiveRoute := v1.Group("retrospectives")
 
-	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService}
+	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService, PermissionService: permissionService}
 	retrospectiveController.Routes(retrospectiveRoute)
 	sprintRoute := retrospectiveRoute.Group(":retroID/sprints")
 
