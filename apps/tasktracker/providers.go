@@ -18,6 +18,7 @@ type Credentials struct {
 // TaskProvider ...
 type TaskProvider interface {
 	New(config interface{}) Connection
+	ConfigTemplate() []byte
 }
 
 // Connection ...
