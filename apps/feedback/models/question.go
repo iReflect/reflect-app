@@ -44,7 +44,7 @@ type Question struct {
 }
 
 func (question Question) GetOptions() map[string]interface{} {
-	return utils.ByteToMap(question.Options)
+	return utils.ByteToMap(question.Options).(map[string]interface{})
 }
 
 // ValidateQuestionResponse validates the question response (default also), against the question options
