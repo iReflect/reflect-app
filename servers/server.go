@@ -14,6 +14,7 @@ import (
 
 	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	retroSpectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/config"
@@ -88,6 +89,12 @@ func (a *App) SetRoutes() {
 
 	authController := controllers.UserAuthController{AuthService: authenticationService}
 	authController.Routes(r.Group("/"))
+
+	retroSpectiveService := retroSpectiveServices.RetroSpectiveService{DB: a.DB}
+	retroSpectiveRoute := v1.Group("retrospective")
+
+	retroSpectiveController := apiControllers.RetroSpectiveController{RetroSpectiveService: retroSpectiveService}
+	retroSpectiveController.Routes(retroSpectiveRoute)
 }
 
 func (a *App) SetAdminRoutes() {
