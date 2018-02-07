@@ -15,6 +15,7 @@ import (
 	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	taskTrackerServices "github.com/iReflect/reflect-app/apps/tasktracker/services"
 	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/config"
@@ -22,6 +23,7 @@ import (
 	apiControllers "github.com/iReflect/reflect-app/controllers/v1"
 	"github.com/iReflect/reflect-app/db"
 	dbMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
+	_ "github.com/iReflect/reflect-app/apps/tasktracker/providers"
 )
 
 type App struct {
@@ -101,6 +103,10 @@ func (a *App) SetRoutes() {
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
 	tasksController := apiControllers.TaskController{TaskService: taskService, RetrospectiveService: retrospectiveService}
 	tasksController.Routes(taskRoute)
+
+	taskTrackerService := taskTrackerServices.TaskTrackerService{}
+	taskTrackerController := apiControllers.TaskTrackerController{TaskTrackerService: taskTrackerService}
+	taskTrackerController.Routes(v1.Group("task-tracker"))
 }
 
 func (a *App) SetAdminRoutes() {
