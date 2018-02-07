@@ -73,6 +73,36 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 	return &JIRAConnection{config: c, client: client}
 }
 
+// ConfigTemplate ...
+func (p *JIRATaskProvider) ConfigTemplate() []byte {
+	template := `{
+      "Type": "jira",
+      "DisplayTitle": "JIRA",
+      "SupportedAuthTypes": ["basicAuth"],
+      "Fields": [
+        {
+          "FieldName": "BaseURL",
+          "FieldDisplayName": "Base URL of the project. eg. 'ireflect.atlassian.net'",
+          "Type": "string",
+          "Required": true
+        },
+        {
+          "FieldName": "BoardIds",
+          "FieldDisplayName": "Board IDs (Comma Separated)",
+          "Type": "string",
+          "Required": true
+        },
+        {
+          "FieldName": "JQL",
+          "FieldDisplayName": "JQL",
+          "Type": "string",
+          "Required": false
+        }
+      ]
+    }`
+	return []byte(template)
+}
+
 // GetTaskList ...
 func (c *JIRAConnection) GetTaskList(query string) []serializers.Task {
 	return nil
