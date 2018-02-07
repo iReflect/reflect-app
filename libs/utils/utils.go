@@ -22,3 +22,12 @@ func ByteToMap(data []byte) map[string]interface{} {
 	}
 	return res
 }
+
+func UIntInSlice(element uint, slice []uint) bool {
+	for _, sliceElement := range slice {
+		if sliceElement == element {
+			return true
+		}
+	}
+	return false
+}

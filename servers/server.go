@@ -67,19 +67,26 @@ func (a *App) SetRoutes() {
 	v1 := r.Group("/api/v1")
 
 	v1.Use(oauth.CookieAuthenticationMiddleWare(authenticationService))
-	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
+
 	feedbackValidator := feedbackValidators.FeedbackValidators{DB: a.DB}
 	feedbackValidator.Register()
+
+	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
 	feedbackController := apiControllers.FeedbackController{FeedbackService: feedbackService}
 	feedbackController.Routes(v1.Group("feedbacks"))
+
 	teamFeedbackController := apiControllers.TeamFeedbackController{FeedbackService: feedbackService}
-	teamFeedbackController.Routes(v1.Group("teams").Group("feedbacks"))
+	teamFeedbackController.Routes(v1.Group("team-feedbacks"))
 
 	userController := apiControllers.UserController{}
 	userController.Routes(v1.Group("users"))
 
-	authController := controllers.UserAuthController{AuthService: authenticationService}
+	teamService := userServices.TeamService{DB: a.DB}
+	teamControllerRoute := v1.Group("teams")
+	teamController := apiControllers.TeamController{TeamService: teamService}
+	teamController.Routes(teamControllerRoute)
 
+	authController := controllers.UserAuthController{AuthService: authenticationService}
 	authController.Routes(r.Group("/"))
 }
 
