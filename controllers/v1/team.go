@@ -26,7 +26,7 @@ func (ctrl TeamController) GetMembers(c *gin.Context) {
 	members, err := ctrl.TeamService.MemberList(id, userID.(uint), all != "true")
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{ "message": "Could not get members", "error": err.Error() })
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get members", "error": err.Error()})
 		return
 	}
 

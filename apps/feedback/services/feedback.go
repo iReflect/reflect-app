@@ -34,7 +34,7 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 	return service.getFeedbackDetail(feedback)
 }
 
-// Get feedback by id
+// TeamGet feedback by id
 func (service FeedbackService) TeamGet(feedbackID string, userID uint) (
 	feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {

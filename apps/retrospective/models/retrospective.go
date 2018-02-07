@@ -23,6 +23,7 @@ type Retrospective struct {
 	CreatedByID        uint `gorm:"not null"`
 }
 
+// RegisterRetrospectiveToAdmin ...
 func RegisterRetrospectiveToAdmin(Admin *admin.Admin, config admin.Config) {
 	retrospective := Admin.AddResource(&Retrospective{}, &config)
 	taskProviderConfigMeta := getTaskProviderConfigMetaFieldMeta()

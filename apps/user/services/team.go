@@ -4,9 +4,9 @@ import (
 	"errors"
 	"github.com/jinzhu/gorm"
 
-	"github.com/iReflect/reflect-app/libs/utils"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 //TeamService ...
@@ -28,7 +28,7 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 	if onlyActive {
 		memberIDs = activeMemberIDs
 	} else {
-	    memberIDs = service.getTeamMemberIDs(teamID, false)
+		memberIDs = service.getTeamMemberIDs(teamID, false)
 	}
 
 	err = db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Scan(&members.Members).Error

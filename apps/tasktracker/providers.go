@@ -47,6 +47,7 @@ func GetTaskProvider(name string) TaskProvider {
 }
 
 // EncryptTaskProviders ...
+//ToDo: Generalize these methods
 func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
 	configMap, ok := utils.ByteToMap(decrypted).([]map[string]interface{})
 

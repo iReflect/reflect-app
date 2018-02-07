@@ -16,7 +16,7 @@ type User struct {
 }
 
 type Team struct {
-	ID			uint
+	ID          uint
 	Name        string
 	Description string
 	Active      bool
@@ -24,5 +24,5 @@ type Team struct {
 
 // MemberSerializer ...
 type MembersSerializer struct {
-	Members       []User
+	Members []User
 }
