@@ -25,8 +25,8 @@ func Up00004(tx *sql.Tx) error {
 	gormdb.Model(&models.Sprint{}).AddForeignKey("retrospective_id", "retrospectives(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.Sprint{}).AddForeignKey("created_by_id", "users(id)", "RESTRICT", "RESTRICT")
 
-	gormdb.Model(&models.Sprint{}).AddIndex("idx_sprints_retro_id_end_date", "retro_id", "end_date")
-	gormdb.Model(&models.Sprint{}).AddIndex("idx_sprints_retro_id_status_end_date", "retro_id", "status", "end_date")
+	gormdb.Model(&models.Sprint{}).AddIndex("idx_sprints_retro_id_end_date", "retrospective_id", "end_date")
+	gormdb.Model(&models.Sprint{}).AddIndex("idx_sprints_retro_id_status_end_date", "retrospective_id", "status", "end_date")
 
 	return nil
 }

@@ -15,6 +15,13 @@ type User struct {
 	Active    bool
 }
 
+type Team struct {
+	ID			uint
+	Name        string
+	Description string
+	Active      bool
+}
+
 // MemberSerializer ...
 type MembersSerializer struct {
 	Members       []User
