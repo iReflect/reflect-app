@@ -45,15 +45,3 @@ func (service RetrospectiveService) List(userID uint, perPage int, page int) (
 	}
 	return retrospectiveList, nil
 }
-
-// UserCanAccessRetro ...
-func (service RetrospectiveService) UserCanAccessRetro(retroID string, userID uint) bool {
-	db := service.DB
-	exists := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
-		Where("user_teams.user_id=?", userID).
-		Where("retrospectives.id=?", retroID).
-		First(&retrospectiveSerializers.Retrospective{}).
-		RecordNotFound()
-	return !exists
-}

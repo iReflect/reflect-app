@@ -79,7 +79,7 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 
 		// Active sprint must begin exactly 1 day after last completed sprint
 		lastSprint := Sprint{}
-		if !baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").First(&lastSprint).RecordNotFound() {
+		if baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").Find(&lastSprint).Error != nil {
 			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
 			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
 				err = errors.New("sprint must begin the day after the last completed sprint ended")
