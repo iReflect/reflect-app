@@ -33,3 +33,26 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 
 	return taskList, nil
 }
+
+// Get ...
+func (service TaskService) Get(id string, retroID string, sprintID string) (task *retroSerializers.Task, err error) {
+	db := service.DB
+	tasks := []retroSerializers.Task{}
+
+	dbs := db.Model(retroModels.Task{}).
+		Where("retrospective_id = ?", retroID).
+		Where("tasks.id = ?", id).
+		Joins("JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id").
+		Joins("JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id").
+		Select("tasks.*, sm.sprint_id, SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id) as total_time, SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id, sm.sprint_id) as sprint_time").
+		QueryExpr()
+
+	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) as t WHERE t.sprint_id = ?", dbs, sprintID).
+		Scan(&tasks).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &tasks[0], nil
+}
