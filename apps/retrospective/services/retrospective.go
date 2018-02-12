@@ -3,8 +3,12 @@ package services
 import (
 	"github.com/jinzhu/gorm"
 
+	"encoding/json"
+	"errors"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/apps/tasktracker"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 // RetrospectiveService ...
@@ -77,4 +81,46 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retrospect
 		return nil, err
 	}
 	return &sprint, nil
+}
+
+// Create the Retrospective with the given values (provided the user is a member of the retrospective's team.
+func (service RetrospectiveService) Create(userID uint,
+	retrospectiveData *retrospectiveSerializers.RetrospectiveCreateSerializer) (err error) {
+	db := service.DB
+
+	// Check if the user has the permission to create the retro
+	if err = db.Model(&userModels.UserTeam{}).
+		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
+			retrospectiveData.TeamID, userID).
+		Find(&userModels.UserTeam{}).Error; err != nil {
+		err = errors.New("user doesn't have the permission to create the retro")
+		return err
+	}
+
+	var retrospective retroModels.Retrospective
+	var taskProviders []byte
+	var encryptedTaskProviders []byte
+
+	retrospective.TeamID = retrospectiveData.TeamID
+	retrospective.CreatedByID = userID
+	retrospective.Title = retrospectiveData.Title
+	retrospective.HrsPerStoryPoint = retrospectiveData.HrsPerStoryPoint
+
+	if err = tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
+		return err
+	}
+
+	if taskProviders, err = json.Marshal(retrospectiveData.TaskProviderConfig); err != nil {
+		return err
+	}
+
+	if encryptedTaskProviders, err = tasktracker.EncryptTaskProviders(taskProviders); err != nil {
+		return err
+	}
+	retrospective.TaskProviderConfig = encryptedTaskProviders
+
+	if err := db.Create(&retrospective).Error; err != nil {
+		return err
+	}
+	return nil
 }

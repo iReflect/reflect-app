@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
 )
 
@@ -19,6 +20,7 @@ func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:retroID", ctrl.Get)
 	r.GET(":retroID/latest-sprint", ctrl.GetLatestSprint)
+	r.POST("/", ctrl.Create)
 }
 
 // List RetroSpectives
@@ -36,7 +38,6 @@ func (ctrl RetrospectiveController) List(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Retrospectives not found", "error": err})
-		return
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -74,4 +75,23 @@ func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, sprint)
+
+}
+
+// Create RetroSpective
+func (ctrl RetrospectiveController) Create(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var err error
+	retrospectiveData := retrospectiveSerializers.RetrospectiveCreateSerializer{CreatedByID: userID.(uint)}
+	if err = c.BindJSON(&retrospectiveData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+	err = ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest,
+			gin.H{"message": "Retrospective can't be created", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
 }

@@ -1,15 +1,14 @@
 package providers
 
 import (
-	"encoding/json"
 	"strconv"
+	"strings"
 
 	"github.com/andygrunwald/go-jira"
 
+	"encoding/json"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
-	"github.com/iReflect/reflect-app/libs/utils"
-	"strings"
 )
 
 // JIRATaskProvider ...
@@ -24,11 +23,11 @@ type JIRAConnection struct {
 
 // JIRAConfig ...
 type JIRAConfig struct {
-	Credentials   tasktracker.Credentials
-	BaseURL       string `json:"BaseURL"`
-	BoardIds      string `json:"BoardIds"`
-	JQL           string `json:"JQL"`
-	EstimateField string `json:"EstimateField"`
+	Credentials   tasktracker.Credentials `json:"Credentials"`
+	BaseURL       string                  `json:"BaseURL"`
+	BoardIds      string                  `json:"BoardIds"`
+	JQL           string                  `json:"JQL"`
+	EstimateField string                  `json:"EstimateField"`
 }
 
 // TaskProviderJira ...
@@ -43,13 +42,36 @@ func init() {
 
 // New ...
 func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
+	var jiraConfig JIRAConfig
+	config = p.getConfigObject(config)
+
+	if config == nil {
+		return nil
+	}
+
+	jiraConfig = config.(JIRAConfig)
+	client, err := jira.NewClient(nil, jiraConfig.BaseURL)
+
+	if err != nil {
+		return nil
+	}
+	switch jiraConfig.Credentials.Type {
+	case "basicAuth":
+		client.Authentication.SetBasicAuth(jiraConfig.Credentials.Username, jiraConfig.Credentials.Password)
+	default:
+		return nil
+	}
+	return &JIRAConnection{config: jiraConfig, client: client}
+}
+
+// GetConfigObject ...
+func (p *JIRATaskProvider) getConfigObject(config interface{}) interface{} {
 	var c JIRAConfig
 
 	switch config.(type) {
 	case []byte:
 		c = JIRAConfig{}
 		err := json.Unmarshal(config.([]byte), &c)
-
 		if err != nil {
 			return nil
 		}
@@ -70,25 +92,11 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 	default:
 		return nil
 	}
-
-	client, err := jira.NewClient(nil, c.BaseURL)
-
-	if err != nil {
-		return nil
-	}
-
-	switch c.Credentials.Type {
-	case "basicAuth":
-		client.Authentication.SetBasicAuth(c.Credentials.Username, c.Credentials.Password)
-	default:
-		return nil
-	}
-
-	return &JIRAConnection{config: c, client: client}
+	return c
 }
 
 // ConfigTemplate ...
-func (p *JIRATaskProvider) ConfigTemplate() map[string]interface{} {
+func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 	template := `{
       "Type": "jira",
       "DisplayTitle": "JIRA",
@@ -120,7 +128,8 @@ func (p *JIRATaskProvider) ConfigTemplate() map[string]interface{} {
         }
       ]
     }`
-	return utils.ByteToMap([]byte(template)).(map[string]interface{})
+	json.Unmarshal([]byte(template), &configMap)
+	return configMap
 }
 
 // GetTaskList ...
@@ -153,11 +162,11 @@ func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
 	for _, sprint := range sprints {
 		if strconv.Itoa(sprint.ID) == sprintID {
 			return &serializers.Sprint{
-				ID: sprintID,
-				BoardID: strconv.Itoa(sprint.OriginBoardID),
-				Name: sprint.Name,
+				ID:       sprintID,
+				BoardID:  strconv.Itoa(sprint.OriginBoardID),
+				Name:     sprint.Name,
 				FromDate: sprint.StartDate,
-				ToDate: sprint.EndDate,
+				ToDate:   sprint.EndDate,
 			}
 		}
 	}
