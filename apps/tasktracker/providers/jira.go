@@ -9,6 +9,7 @@ import (
 
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // JIRATaskProvider ...
@@ -74,7 +75,7 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 }
 
 // ConfigTemplate ...
-func (p *JIRATaskProvider) ConfigTemplate() []byte {
+func (p *JIRATaskProvider) ConfigTemplate() map[string]interface{} {
 	template := `{
       "Type": "jira",
       "DisplayTitle": "JIRA",
@@ -100,7 +101,7 @@ func (p *JIRATaskProvider) ConfigTemplate() []byte {
         }
       ]
     }`
-	return []byte(template)
+	return utils.ByteToMap([]byte(template)).(map[string]interface{})
 }
 
 // GetTaskList ...
