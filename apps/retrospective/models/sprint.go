@@ -67,8 +67,14 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 		sprints := []Sprint{}
 		activeSprintCount := uint(0)
 
+		// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
+		// so we need to add checks for both the cases.
+		retroID := sprint.RetrospectiveID
+		if retroID == 0 {
+			retroID = sprint.Retrospective.ID
+		}
 		db.LogMode(true)
-		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", sprint.RetrospectiveID)
+		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
 
 		// More than one entries with status active for given retro should not be allowed
 		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints).Count(&activeSprintCount)
@@ -79,7 +85,7 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 
 		// Active sprint must begin exactly 1 day after last completed sprint
 		lastSprint := Sprint{}
-		if baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").Find(&lastSprint).Error != nil {
+		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").Find(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
 			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
 				err = errors.New("sprint must begin the day after the last completed sprint ended")
