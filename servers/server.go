@@ -14,7 +14,7 @@ import (
 
 	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
-	retroSpectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/config"
@@ -90,11 +90,17 @@ func (a *App) SetRoutes() {
 	authController := controllers.UserAuthController{AuthService: authenticationService}
 	authController.Routes(r.Group("/"))
 
-	retroSpectiveService := retroSpectiveServices.RetroSpectiveService{DB: a.DB}
-	retroSpectiveRoute := v1.Group("retrospective")
+	retrospectiveService := retrospectiveServices.RetrospectiveService{DB: a.DB}
+	retrospectiveRoute := v1.Group("retrospectives")
 
-	retroSpectiveController := apiControllers.RetroSpectiveController{RetroSpectiveService: retroSpectiveService}
-	retroSpectiveController.Routes(retroSpectiveRoute)
+	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService}
+	retrospectiveController.Routes(retrospectiveRoute)
+	sprintRoute := retrospectiveRoute.Group(":retroID/sprints")
+
+	taskService := retrospectiveServices.TaskService{DB: a.DB}
+	taskRoute := sprintRoute.Group(":sprintID/tasks")
+	tasksController := apiControllers.TaskController{TaskService: taskService, RetrospectiveService: retrospectiveService}
+	tasksController.Routes(taskRoute)
 }
 
 func (a *App) SetAdminRoutes() {

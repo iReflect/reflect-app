@@ -7,6 +7,11 @@ import (
 	"github.com/jinzhu/gorm"
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
+	"github.com/qor/qor/resource"
+	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 // SprintStatusValues ...
@@ -63,7 +68,7 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 		activeSprintCount := uint(0)
 
 		db.LogMode(true)
-		baseQuery := db.Where("retrospective_id = ?", sprint.RetrospectiveID)
+		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", sprint.RetrospectiveID)
 
 		// More than one entries with status active for given retro should not be allowed
 		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints).Count(&activeSprintCount)
@@ -84,4 +89,42 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 	}
 
 	return
+}
+
+// RegisterSprintToAdmin ...
+func RegisterSprintToAdmin(Admin *admin.Admin, config admin.Config) {
+	sprint := Admin.AddResource(&Sprint{}, &config)
+	statusMeta := getSprintStatusFieldMeta()
+	sprint.Meta(&statusMeta)
+}
+
+// getSprintStatusFieldMeta is the meta config for the sprint status field
+func getSprintStatusFieldMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Status",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			sprint := value.(*Sprint)
+			return strconv.Itoa(int(sprint.Status))
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			sprint := resource.(*Sprint)
+			value, err := strconv.Atoi(metaValue.Value.([]string)[0])
+			if err != nil {
+				logrus.Error("Cannot convert string to int")
+				return
+			}
+			sprint.Status = SprintStatus(value)
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for index, value := range SprintStatusValues {
+				results = append(results, []string{strconv.Itoa(index), value})
+			}
+			return
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			sprint := value.(*Sprint)
+			return sprint.Status.String()
+		},
+	}
 }

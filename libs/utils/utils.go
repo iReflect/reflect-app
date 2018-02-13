@@ -39,7 +39,7 @@ func UIntInSlice(element uint, slice []uint) bool {
 }
 
 func EncryptString(text []byte) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(os.Getenv("ENCRYPTION_KEY")))
+	block, err := aes.NewCipher(encryptionKey())
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func EncryptString(text []byte) ([]byte, error) {
 }
 
 func DecryptString(text []byte) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(os.Getenv("ENCRYPTION_KEY")))
+	block, err := aes.NewCipher(encryptionKey())
 	if err != nil {
 		return nil, err
 	}
@@ -72,4 +72,12 @@ func DecryptString(text []byte) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func encryptionKey() []byte {
+	key := os.Getenv("ENCRYPTION_KEY")
+	if len(key) == 0 {
+		key = "DUMMY_KEY__FOR_LOCAL_DEV"
+	}
+	return []byte(key)
 }

@@ -40,7 +40,13 @@ func (a *Admin) Router() *http.ServeMux {
 	Admin.AddResource(&feedbackModels.QuestionResponse{}, &admin.Config{Menu: []string{"Feedback Management"}})
 
 	Admin.AddResource(&feedbackModels.Schedule{}, &admin.Config{Menu: []string{"Schedule Management"}})
+
 	retrospectiveModels.RegisterRetrospectiveToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	retrospectiveModels.RegisterTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	retrospectiveModels.RegisterSprintToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	Admin.AddResource(&retrospectiveModels.SprintMember{}, &admin.Config{Menu: []string{"Retrospective Management"}})
+	Admin.AddResource(&retrospectiveModels.SprintMemberTask{}, &admin.Config{Menu: []string{"Retrospective Management"}})
+	//Todo: Fix SMT Creation
 
 	Admin.MountTo("/admin/", adminRouter)
 
