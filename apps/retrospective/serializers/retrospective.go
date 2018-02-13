@@ -39,3 +39,21 @@ type Task struct {
 type TasksSerializer struct {
 	Tasks []Task
 }
+
+// TaskMember ...
+type TaskMember struct {
+	ID           uint
+	FirstName    string
+	LastName     string
+	TotalTime    uint
+	SprintTime   uint
+	TotalPoints  float64
+	SprintPoints float64
+	Rating       uint
+	Comment      string
+}
+
+// TaskMembersSerializer ...
+type TaskMembersSerializer struct {
+	Members []TaskMember
+}

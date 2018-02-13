@@ -2,11 +2,13 @@ package serializers
 
 import "github.com/iReflect/reflect-app/apps/user/models"
 
+// UserAuthSerializer ...
 type UserAuthSerializer struct {
 	models.User
 	Token string
 }
 
+// User ...
 type User struct {
 	ID        uint
 	Email     string
@@ -15,6 +17,7 @@ type User struct {
 	Active    bool
 }
 
+// Team ...
 type Team struct {
 	ID          uint
 	Name        string
@@ -22,7 +25,7 @@ type Team struct {
 	Active      bool
 }
 
-// MemberSerializer ...
+// MembersSerializer ...
 type MembersSerializer struct {
 	Members []User
 }
