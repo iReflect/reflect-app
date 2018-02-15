@@ -32,6 +32,7 @@ type Task struct {
 	Summary    string
 	Type       string
 	Status     string
+	Priority   string
 	Assignee   string
 	Estimate   float64
 	TotalTime  uint

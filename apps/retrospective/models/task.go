@@ -18,6 +18,7 @@ type Task struct {
 	Summary           string       `gorm:"type:varchar(255); not null"`
 	Type              string       `gorm:"type:varchar(30); not null"`
 	Status            string       `gorm:"type:varchar(50); not null"`
+	Priority          string       `gorm:"type:varchar(50); not null"`
 	Assignee          string       `gorm:"type:varchar(100); not null"`
 	Estimate          float64      `gorm:"not null"`
 	Fields            fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`

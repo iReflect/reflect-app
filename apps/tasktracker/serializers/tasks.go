@@ -1,25 +1,19 @@
 package serializers
 
 import (
-	"encoding/json"
 	"time"
 )
 
 //Task ...
 type Task struct {
-	ID          string
-	ProjectID   string
-	Summary     string
-	Description string
-	Type        string
-	Priority    string
-	Estimate    *int
-	Assignee    string
-	Status      string
-	SprintID    *string
-	Fields      *json.RawMessage
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID        string
+	ProjectID string
+	Summary   string
+	Type      string
+	Priority  string
+	Estimate  *float64
+	Assignee  string
+	Status    string
 }
 
 //Sprint ...

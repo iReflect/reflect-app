@@ -24,10 +24,11 @@ type JIRAConnection struct {
 
 // JIRAConfig ...
 type JIRAConfig struct {
-	Credentials tasktracker.Credentials
-	BaseURL     string `json:"BaseURL"`
-	BoardIds    string `json:"BoardIds"`
-	JQL         string `json:"JQL"`
+	Credentials   tasktracker.Credentials
+	BaseURL       string `json:"BaseURL"`
+	BoardIds      string `json:"BoardIds"`
+	JQL           string `json:"JQL"`
+	EstimateField string `json:"EstimateField"`
 }
 
 // TaskProviderJira ...
@@ -98,6 +99,12 @@ func (p *JIRATaskProvider) ConfigTemplate() map[string]interface{} {
           "FieldDisplayName": "JQL",
           "Type": "string",
           "Required": false
+        },
+        {
+          "FieldName": "EstimateField",
+          "FieldDisplayName": "Estimate Field (Leave blank to use TimeEstimate)",
+          "Type": "string",
+          "Required": false
         }
       ]
     }`
@@ -116,22 +123,66 @@ func (c *JIRAConnection) GetSprint(sprint string) *serializers.Sprint {
 
 // GetSprintTaskList ...
 func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
-	return nil
+	tickets, _ := c.getTicketsFromJQL("Sprint  in (" + sprint + ")")
+	return tickets
 }
 
 // ValidateConfig ...
 func (c *JIRAConnection) ValidateConfig() error {
-	boardIDs := strings.Split(c.config.BoardIds, ",")
+	searchOptions := jira.SearchOptions{MaxResults: 1}
 
-	for _, boardID := range boardIDs {
-		boardID, err := strconv.Atoi(boardID)
-		if err != nil {
-			return err
-		}
-		_, _, err = c.client.Board.GetBoard(boardID)
-		if err != nil {
-			return err
-		}
+	_, _, err := c.client.Issue.Search(c.config.JQL, &searchOptions)
+	return err
+}
+
+func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized []serializers.Task, err error) {
+	searchOptions := jira.SearchOptions{MaxResults: 50000}
+
+	jql := extraJQL + " AND " + c.config.JQL
+
+	if extraJQL == "" {
+		jql = c.config.JQL
 	}
-	return nil
+
+	// ToDo: Use pagination
+	tickets, _, err := c.client.Issue.Search(jql, &searchOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ticket := range tickets {
+		var estimate *float64
+		if c.config.EstimateField != "" {
+			estimates := ticket.Fields.Unknowns[c.config.EstimateField]
+
+			switch estimates.(type) {
+			case string:
+				estimateFromString, err := strconv.ParseFloat(estimates.(string), 64)
+				if err.(error) == nil {
+					estimate = &estimateFromString
+				}
+			case int:
+				estimateFromInt := float64(estimates.(int))
+				estimate = &estimateFromInt
+			case float64:
+				estimateFromFloat := estimates.(float64)
+				estimate = &estimateFromFloat
+			}
+		} else {
+			timeEstimate := float64(ticket.Fields.TimeOriginalEstimate) / 3600
+			estimate = &timeEstimate
+		}
+
+		ticketsSerialized = append(ticketsSerialized, serializers.Task{
+			ID:        ticket.Key,
+			ProjectID: ticket.Fields.Project.ID,
+			Summary:   ticket.Fields.Summary,
+			Type:      ticket.Fields.Type.Name,
+			Priority:  ticket.Fields.Priority.Name,
+			Estimate:  estimate,
+			Assignee:  ticket.Fields.Assignee.DisplayName,
+			Status:    ticket.Fields.Status.Name,
+		})
+	}
+	return ticketsSerialized,nil
 }
