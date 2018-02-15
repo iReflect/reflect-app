@@ -16,6 +16,7 @@ type SprintController struct {
 // Routes for Sprints
 func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.DELETE("/:sprintID", ctrl.Delete)
+	r.GET("/:sprintID", ctrl.Get)
 	r.POST("/:sprintID/activate", ctrl.ActivateSprint)
 }
 
@@ -49,4 +50,21 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// Get Sprint Data
+func (ctrl SprintController) Get(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	if !ctrl.PermissionService.UserCanAccessSprint(sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	sprint, err := ctrl.SprintService.Get(sprintID, userID.(uint))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint data", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, sprint)
 }

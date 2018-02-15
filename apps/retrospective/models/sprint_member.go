@@ -29,7 +29,7 @@ func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
 	//ToDo: Investigate failing association during SMT save
 	// Vacations should not be more than sprint length
 	//ToDo: Add vacation support - Working Days calculation
-	if sprintMember.Sprint.EndDate.Sub(*sprintMember.Sprint.StartDate).Hours()/24 < float64(sprintMember.Vacations) {
+	if sprintMember.Sprint.EndDate != nil && sprintMember.Sprint.EndDate.Sub(*sprintMember.Sprint.StartDate).Hours()/24 < float64(sprintMember.Vacations) {
 		err = errors.New("vacations cannot be more than sprint length")
 		return err
 	}

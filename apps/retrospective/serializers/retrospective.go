@@ -60,3 +60,17 @@ type TaskMember struct {
 type TaskMembersSerializer struct {
 	Members []TaskMember
 }
+
+// Sprint is a serializer used in the Get sprint APIs
+type Sprint struct {
+	ID               uint
+	Title            string
+	SprintID         string
+	Status           int8
+	StartDate        time.Time
+	EndDate          time.Time
+	LastSyncedAt     *time.Time
+	CurrentlySyncing bool
+	CreatedBy        userSerializer.User
+	CreatedByID      uint
+}

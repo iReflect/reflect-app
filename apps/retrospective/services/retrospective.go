@@ -63,3 +63,18 @@ func (service RetrospectiveService) Get(retrospectiveID string) (retrospective *
 	}
 	return retrospective, nil
 }
+
+// GetLatestSprint returns the latest sprint for the retro
+func (service RetrospectiveService) GetLatestSprint(retroID string) (*retrospectiveSerializers.Sprint, error) {
+	db := service.DB
+	var sprint retrospectiveSerializers.Sprint
+	if err := db.Model(&retroModels.Sprint{}).
+		Where("retrospective_id = ?", retroID).
+		Where("status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
+		Order("end_date desc").
+		Preload("CreatedBy").
+		First(&sprint).Error; err != nil {
+		return nil, err
+	}
+	return &sprint, nil
+}

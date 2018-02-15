@@ -18,6 +18,7 @@ type RetrospectiveController struct {
 func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:retroID", ctrl.Get)
+	r.GET(":retroID/latest-sprint", ctrl.GetLatestSprint)
 }
 
 // List RetroSpectives
@@ -56,4 +57,21 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+// GetLatestSprint returns the latest active/freezed sprint's data
+func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	sprint, err := ctrl.RetrospectiveService.GetLatestSprint(retroID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get latest sprint data", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, sprint)
 }
