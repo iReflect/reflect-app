@@ -31,7 +31,8 @@ func (service PermissionService) UserCanAccessSprint(sprintID string, userID uin
 		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
 		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
 		Where("user_teams.user_id=?", userID).
-		Where("sprints.id=?", sprintID).
+		Where("sprints.id = ? AND (sprints.status <> ? OR sprints.created_by_id = ?)",
+			sprintID, retroModels.DraftSprint, userID).
 		Find(&retroSerializers.Retrospective{}).
 		Error
 	return err == nil
