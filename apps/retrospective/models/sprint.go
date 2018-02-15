@@ -25,8 +25,8 @@ var SprintStatusValues = [...]string{
 // SprintStatus ...
 type SprintStatus int8
 
-// String ...
-func (status SprintStatus) String() string {
+// GetStringValue ...
+func (status SprintStatus) GetStringValue() string {
 	return SprintStatusValues[status]
 }
 
@@ -124,7 +124,7 @@ func getSprintStatusFieldMeta() admin.Meta {
 		},
 		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
 			sprint := value.(*Sprint)
-			return sprint.Status.String()
+			return sprint.Status.GetStringValue()
 		},
 	}
 }
