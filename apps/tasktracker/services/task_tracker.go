@@ -1,8 +1,6 @@
 package services
 
-import (
-	"github.com/iReflect/reflect-app/apps/tasktracker"
-)
+import "github.com/iReflect/reflect-app/apps/tasktracker"
 
 //TaskTrackerService ...
 type TaskTrackerService struct {

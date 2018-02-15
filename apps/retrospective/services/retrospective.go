@@ -31,10 +31,12 @@ func (service RetrospectiveService) List(userID uint, perPage int, page int) (
 	}
 
 	baseQuery := db.Model(&retroModels.Retrospective{}).
+		Joins("JOIN user_teams on user_teams.user_id = ? AND"+
+			" retrospectives.team_id = user_teams.team_id", userID).
 		Preload("Team").
 		Preload("CreatedBy").
-		Joins("JOIN user_teams ON user_teams.user_id=? AND retrospectives.team_id=user_teams.team_id", userID).
-		Limit(perPage)
+		Limit(perPage).
+		Order("created_at desc")
 
 	if offset != 0 {
 		baseQuery = baseQuery.Offset(offset)
@@ -44,4 +46,20 @@ func (service RetrospectiveService) List(userID uint, perPage int, page int) (
 		return nil, err
 	}
 	return retrospectiveList, nil
+}
+
+// Get the details of the given RetroSpective.
+func (service RetrospectiveService) Get(retrospectiveID string) (retrospective *retrospectiveSerializers.Retrospective, err error) {
+	db := service.DB
+
+	retrospective = new(retrospectiveSerializers.Retrospective)
+
+	if err = db.Model(&retroModels.Retrospective{}).
+		Preload("Team").
+		Preload("CreatedBy").
+		Where("retrospectives.id = ?", retrospectiveID).
+		First(&retrospective).Error; err != nil {
+		return nil, err
+	}
+	return retrospective, nil
 }
