@@ -3,7 +3,6 @@ package providers
 import (
 	"encoding/json"
 	"strconv"
-	"strings"
 
 	"github.com/andygrunwald/go-jira"
 
@@ -184,5 +183,5 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 			Status:    ticket.Fields.Status.Name,
 		})
 	}
-	return ticketsSerialized,nil
+	return ticketsSerialized, nil
 }
