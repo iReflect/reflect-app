@@ -11,7 +11,7 @@ type TimeLog struct {
 	TaskID    string
 	Summary   string
 	Logger    string
-	Minutes   int
+	Minutes   uint
 	Date      time.Time
 }
 

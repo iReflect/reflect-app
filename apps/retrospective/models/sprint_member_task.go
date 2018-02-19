@@ -17,9 +17,9 @@ type SprintMemberTask struct {
 	TaskID           uint                 `gorm:"not null"`
 	TimeSpentMinutes uint                 `gorm:"not null"`
 	PointsEarned     float64              `gorm:"not null"`
-	PointsAssigned   float64              `gorm:"not null"`
+	PointsAssigned   float64              `gorm:"default:0; not null"`
 	Rating           retrospective.Rating `gorm:"default:0; not null"`
-	Comment          string               `gorm:"type:text; not null"`
+	Comment          string               `gorm:"type:text"`
 }
 
 // BeforeSave ...
@@ -39,7 +39,7 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	db.Model(SprintMemberTask{}).Where("task_id = ? AND id <> ?", task.ID, sprintMemberTask.ID).Select("SUM(points_earned)").Row().Scan(&pointSum)
 
 	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate
-	if pointSum+sprintMemberTask.PointsEarned > task.Estimate {
+	if task.Estimate != nil && pointSum+sprintMemberTask.PointsEarned > *task.Estimate {
 		err = errors.New("cannot earn more than estimate")
 		return err
 	}

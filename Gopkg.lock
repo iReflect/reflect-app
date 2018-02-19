@@ -62,6 +62,12 @@
   revision = "6626358d4fefa40ec37ca4b502c6c7d0cdea6d18"
 
 [[projects]]
+  name = "github.com/gocraft/work"
+  packages = ["."]
+  revision = "67c8dc210ce647e8d8a4206c7f5856ea2390f290"
+  version = "v0.5.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
@@ -178,6 +184,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/robfig/cron"
+  packages = ["."]
+  revision = "b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4"
+  version = "v1"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
@@ -240,6 +252,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3411fdd7d457651491ec13e3f9945bb45ffe11f35f21e7fb6a73ae0f1a5d8852"
+  inputs-digest = "4541f2e552b823f1c3075a764380c88afc5ef6ee06c44478a3603f8f21775eb1"
   solver-name = "gps-cdcl"
   solver-version = 1
