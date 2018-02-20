@@ -15,6 +15,7 @@ debug
 .vscode
 .idea/
 .history
+reflect-app.iml
 
 vendor
 /.gopath

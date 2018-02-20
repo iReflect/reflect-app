@@ -14,6 +14,27 @@ type TeamService struct {
 	DB *gorm.DB
 }
 
+// UserTeamList ...
+func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, err error) {
+	db := service.DB
+	teams = new(userSerializers.TeamsSerializer)
+
+	filterQuery := db.Model(&userModels.Team{}).
+		Joins("JOIN user_teams ON teams.id = user_teams.team_id").
+		Where("user_teams.user_id = ?", userID).
+		Where("teams.active = true")
+
+	if onlyActive {
+		filterQuery = filterQuery.Where("(leaved_at IS NULL OR leaved_at > NOW())")
+	}
+
+	err = filterQuery.Scan(&teams.Teams).Error
+	if err != nil {
+		return nil, err
+	}
+	return teams, nil
+}
+
 // MemberList ...
 func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (members *userSerializers.MembersSerializer, err error) {
 	db := service.DB

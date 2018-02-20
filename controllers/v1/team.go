@@ -15,6 +15,20 @@ type TeamController struct {
 // Routes for Team
 func (ctrl TeamController) Routes(r *gin.RouterGroup) {
 	r.GET("/:id/members", ctrl.GetMembers)
+	r.GET("/", ctrl.GetTeams)
+}
+
+// GetTeams ...
+func (ctrl TeamController) GetTeams(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	teams, err := ctrl.TeamService.UserTeamList(userID.(uint), true)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get teams", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, teams)
 }
 
 // GetMembers ...
