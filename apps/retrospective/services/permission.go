@@ -32,7 +32,7 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
-                Where("sprints.id=?", sprintID).
+		Where("sprints.id=?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
 			sprintID, retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
@@ -49,7 +49,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
-                Where("sprints.id=?", sprintID).
+		Where("sprints.id=?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
 			sprintID, retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
@@ -68,7 +68,7 @@ func (service PermissionService) UserCanAccessTask(retroID string, sprintID stri
 		Where("user_teams.user_id=?", userID).
 		Where("tasks.id=?", taskID).
 		Where("retrospectives.id=?", retroID).
-                Where("sprints.id=?", sprintID).
+		Where("sprints.id=?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
 			sprintID, retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
