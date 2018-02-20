@@ -9,6 +9,7 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"strings"
 )
 
 // JIRATaskProvider ...
@@ -137,7 +138,30 @@ func (c *JIRAConnection) GetTaskList(ticketIDs []string) []serializers.Task {
 }
 
 // GetSprint ...
-func (c *JIRAConnection) GetSprint(sprint string) *serializers.Sprint {
+func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
+	boardIDs := strings.Split(c.config.BoardIds, ",")
+
+	var sprints []jira.Sprint
+	for _, boardID := range boardIDs {
+		sprint, _, err := c.client.Board.GetAllSprints(boardID)
+
+		if err != nil {
+			sprints = append(sprints, sprint...)
+		}
+	}
+
+	for _, sprint := range sprints {
+		if strconv.Itoa(sprint.ID) == sprintID {
+			return &serializers.Sprint{
+				ID: sprintID,
+				BoardID: strconv.Itoa(sprint.OriginBoardID),
+				Name: sprint.Name,
+				FromDate: sprint.StartDate,
+				ToDate: sprint.EndDate,
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -25,7 +25,7 @@ type TaskProvider interface {
 // Connection ...
 type Connection interface {
 	GetTaskList(ticketIDs []string) []serializers.Task
-	GetSprint(sprint string) *serializers.Sprint
+	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint string) []serializers.Task
 	ValidateConfig() error
 }
@@ -110,6 +110,7 @@ func DecryptTaskProviders(encrypted []byte) (decrypted []byte, err error) {
 	return json.Marshal(configMap)
 }
 
+// GetTaskList ...
 func GetTaskList(config []byte, taskIDs []string) (tasks []serializers.Task, err error) {
 	connections, err := GetConnections(config)
 	if err != nil {
@@ -122,6 +123,7 @@ func GetTaskList(config []byte, taskIDs []string) (tasks []serializers.Task, err
 	return tasks, nil
 }
 
+// GetSprintTaskList ...
 func GetSprintTaskList(config []byte, sprintIDs string) (tasks []serializers.Task, err error) {
 	connections, err := GetConnections(config)
 	if err != nil {
@@ -134,6 +136,7 @@ func GetSprintTaskList(config []byte, sprintIDs string) (tasks []serializers.Tas
 	return tasks, nil
 }
 
+// GetConnections ...
 func GetConnections(config []byte) (connections []Connection, err error) {
 	configMap, ok := utils.ByteToMap(config).([]interface{})
 
