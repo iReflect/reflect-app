@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gocraft/work"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/workers"
 )
 
 // SprintController ...
@@ -20,6 +22,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.GET("/:sprintID", ctrl.Get)
 	r.POST("/:sprintID/activate", ctrl.ActivateSprint)
 	r.POST("/:sprintID/freeze", ctrl.FreezeSprint)
+	r.POST("/:sprintID/process", ctrl.Process)
 }
 
 // GetSprints ...
@@ -107,4 +110,18 @@ func (ctrl SprintController) Get(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, sprint)
+}
+
+// Process Sprint
+func (ctrl SprintController) Process(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	if !ctrl.PermissionService.UserCanAccessSprint(sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": sprintID})
+
+	c.JSON(http.StatusNoContent, nil)
 }

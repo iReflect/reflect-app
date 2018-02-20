@@ -12,6 +12,7 @@ import (
 	"github.com/iReflect/reflect-app/servers"
 
 	_ "github.com/iReflect/reflect-app/db/migrations" //Init for all migrations
+	"github.com/iReflect/reflect-app/workers"
 )
 
 func main() {
@@ -35,11 +36,17 @@ func main() {
 		}
 	}()
 
+	workers := &workers.Workers{}
+	workers.Initialize(configuration)
+
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
+
+	workers.Shutdown()
+
 	log.Println("Shutdown Server ...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
