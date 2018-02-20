@@ -165,7 +165,7 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 
 	var jql string
 
-	switch true {
+	switch {
 	case extraJQL != "" && c.config.JQL != "":
 		jql = extraJQL + " AND " + c.config.JQL
 	case extraJQL != "":
@@ -180,7 +180,7 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 		return nil, err
 	}
 
-	return c.serializeTickets(tickets),nil
+	return c.serializeTickets(tickets), nil
 }
 
 func (c *JIRAConnection) serializeTickets(tickets []jira.Issue) (ticketsSerialized []serializers.Task) {

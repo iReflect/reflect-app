@@ -145,6 +145,15 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 		}
 	}
 
+	// Reset existing time_spent
+	err = db.Model(&retroModels.SprintMemberTask{}).
+		Where("sprint_member_id = ?", sprintMemberID).
+		UpdateColumn("time_spent_minutes", 0).Error
+
+	if err != nil {
+		return err
+	}
+
 	for _, timeLog := range timeLogs {
 		err = service.addOrUpdateSMT(timeLog, sprintMember.ID)
 		if err != nil {
@@ -181,6 +190,7 @@ func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task,
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog, sprintMemberID uint) (err error) {
 	db := service.DB
 	var sprintMemberTask retroModels.SprintMemberTask
+	var task retroModels.Task
 	err = db.Model(&retroModels.SprintMemberTask{}).
 		Where("sprint_member_id = ?", sprintMemberID).
 		Joins("tasks ON tasks.id=sprint_member_tasks.task_id").
@@ -189,6 +199,17 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	if err != nil {
 		return err
 	}
+
+	err = db.Model(&retroModels.Task{}).
+		Where("task_id = ?", timeLog.TaskID).
+		First(&task).Error
+	if err != nil {
+		return err
+	}
+
+	sprintMemberTask.SprintMemberID = sprintMemberID
+	sprintMemberTask.TaskID = task.ID
 	sprintMemberTask.TimeSpentMinutes = timeLog.Minutes
+
 	return db.Save(&sprintMemberTask).Error
 }
