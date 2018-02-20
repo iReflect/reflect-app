@@ -23,6 +23,8 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/activate", ctrl.ActivateSprint)
 	r.POST("/:sprintID/freeze", ctrl.FreezeSprint)
 	r.POST("/:sprintID/process", ctrl.Process)
+	r.GET("/:sprintID/members", ctrl.GetSprintMemberList)
+	r.GET("/:sprintID/member-summary", ctrl.GetSprintMemberSummary)
 }
 
 // GetSprints ...
@@ -112,16 +114,50 @@ func (ctrl SprintController) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, sprint)
 }
 
+// GetSprintMemberList returns the sprint member list
+func (ctrl SprintController) GetSprintMemberList(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	response, err := ctrl.SprintService.GetSprintMemberList(sprintID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint member list", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, response)
+}
+
 // Process Sprint
 func (ctrl SprintController) Process(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
-	if !ctrl.PermissionService.UserCanAccessSprint(sprintID, userID.(uint)) {
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": sprintID})
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// GetSprintMemberSummary returns the sprint member summary list
+func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	response, err := ctrl.SprintService.GetSprintMembersSummary(sprintID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint member summary", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, response)
 }

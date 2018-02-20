@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func RandToken() string {
@@ -80,4 +81,44 @@ func encryptionKey() []byte {
 		key = "DUMMY_KEY__FOR_LOCAL_DEV"
 	}
 	return []byte(key)
+}
+
+// GetWorkingDaysBetweenTwoDates calculates the working days between two dates,
+// i.e., number of days between two dates excluding weekends
+func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time, includeBoth bool) int {
+	if endDate.Before(startDate) {
+		return -1
+	}
+	workingDays := 0
+	startDay := startDate.Weekday()
+	endDay := endDate.Weekday()
+
+	// normalize dates to calculate time difference
+	startDate = startDate.AddDate(0, 0, int(-startDay))
+	endDate = endDate.AddDate(0, 0, int(-endDay))
+
+	diffDays := endDate.Sub(startDate).Hours() / 24
+	daysWithoutWeekendDays := int(diffDays - (diffDays * 2 / 7))
+
+	if includeBoth && ((startDay != time.Saturday && startDay != time.Sunday) || (endDay != time.Saturday && endDay != time.Sunday)) {
+		workingDays++
+	}
+
+	// normalize start day to account for saturday/sunday
+	if startDay == time.Sunday && endDay != time.Saturday {
+		startDay = time.Monday
+	} else if startDay == time.Saturday && endDay != time.Sunday {
+		startDay = time.Friday
+	}
+
+	// normalize end day to account for saturday/sunday
+	if endDay == time.Sunday {
+		endDay = time.Monday
+	} else if endDay == time.Saturday {
+		endDay = time.Friday
+	}
+
+	workingDays += daysWithoutWeekendDays - int(startDay) + int(endDay)
+
+	return workingDays
 }

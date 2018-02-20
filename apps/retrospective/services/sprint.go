@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"strconv"
+	"math"
 
 	"github.com/jinzhu/gorm"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
+	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // SprintService ...
@@ -75,7 +78,6 @@ func (service SprintService) Get(sprintID string, userID uint) (*retrospectiveSe
 	db := service.DB
 	var sprint retrospectiveSerializers.Sprint
 	if err := db.Model(&retroModels.Sprint{}).
-		Scopes(retroModels.NotDeletedSprint).
 		Where("id = ?", sprintID).
 		Preload("CreatedBy").
 		Find(&sprint).Error; err != nil {
@@ -248,4 +250,52 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint)
 		return nil, err
 	}
 	return sprints, nil
+}
+
+// GetSprintMembersSummary returns the sprint member summary list
+func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMemberSummaryList *retrospectiveSerializers.SprintMemberSummaryListSerializer, err error) {
+	db := service.DB
+	sprintMemberSummaryList = new(retrospectiveSerializers.SprintMemberSummaryListSerializer)
+
+	var sprint retroModels.Sprint
+	if err = db.Where("id = ?", sprintID).
+		Preload("Retrospective").
+		Find(&sprint).
+		Error; err != nil {
+		return nil, err
+	}
+	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
+	if err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_id = ?", sprint.ID).
+		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
+		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
+		Select("DISTINCT sprint_members.*, users.*, " +
+			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity").
+		Scan(&sprintMemberSummaryList.Members).
+		Error; err != nil {
+		return nil, err
+	}
+	for _, sprintMemberSummary := range sprintMemberSummaryList.Members {
+		memberWorkingDays := float64(sprintWorkingDays - int(sprintMemberSummary.Vacations))
+		sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
+			(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
+
+	}
+	return sprintMemberSummaryList, nil
+}
+
+// GetSprintMemberList returns the sprint member list
+func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberList *userSerializers.MembersSerializer, err error) {
+	db := service.DB
+	sprintMemberList = new(userSerializers.MembersSerializer)
+
+	if err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_id = ?", sprintID).
+		Joins("JOIN users ON users.id = sprint_members.member_id").
+		Select("users.*").
+		Scan(&sprintMemberList.Members).
+		Error; err != nil {
+		return nil, err
+	}
+	return sprintMemberList, nil
 }
