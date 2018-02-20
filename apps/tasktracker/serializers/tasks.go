@@ -21,8 +21,8 @@ type Sprint struct {
 	ID       string
 	BoardID  string
 	Name     string
-	FromDate time.Time
-	ToDate   time.Time
+	FromDate *time.Time
+	ToDate   *time.Time
 }
 
 //Board ...

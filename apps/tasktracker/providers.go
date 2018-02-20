@@ -25,7 +25,7 @@ type TaskProvider interface {
 // Connection ...
 type Connection interface {
 	GetTaskList(ticketIDs []string) []serializers.Task
-	GetSprint(sprint string) *serializers.Sprint
+	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint string) []serializers.Task
 	ValidateConfig() error
 }
