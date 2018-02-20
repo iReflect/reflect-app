@@ -26,7 +26,7 @@ func (ctrl TaskController) List(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessSprint(retroID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -48,7 +48,7 @@ func (ctrl TaskController) Get(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessTask(retroID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanAccessTask(retroID, sprintID, id, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -70,7 +70,7 @@ func (ctrl TaskController) GetMembers(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessTask(id, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanAccessTask(retroID, sprintID, id, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}

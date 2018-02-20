@@ -46,6 +46,24 @@ func (service SprintService) ActivateSprint(sprintID string) error {
 	return nil
 }
 
+// FreezeSprint freezes the given sprint
+func (service SprintService) FreezeSprint(sprintID string) error {
+	db := service.DB
+	var sprint retroModels.Sprint
+
+	if err := db.Where("id = ?", sprintID).
+		Where("status = ?", retroModels.ActiveSprint).
+		Find(&sprint).Error; err != nil {
+		return err
+	}
+
+	sprint.Status = retroModels.CompletedSprint
+	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
+		return errors.New("sprint couldn't be frozen")
+	}
+	return nil
+}
+
 // Get return details of the given sprint
 func (service SprintService) Get(sprintID string, userID uint) (*retrospectiveSerializers.Sprint, error) {
 	db := service.DB

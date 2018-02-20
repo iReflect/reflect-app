@@ -19,6 +19,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.DELETE("/:sprintID", ctrl.Delete)
 	r.GET("/:sprintID", ctrl.Get)
 	r.POST("/:sprintID/activate", ctrl.ActivateSprint)
+	r.POST("/:sprintID/freeze", ctrl.FreezeSprint)
 }
 
 // GetSprints ...
@@ -42,7 +43,8 @@ func (ctrl SprintController) GetSprints(c *gin.Context) {
 func (ctrl SprintController) Delete(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
-	if !ctrl.PermissionService.UserCanEditSprint(sprintID, userID.(uint)) {
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -58,7 +60,8 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
-	if !ctrl.PermissionService.UserCanEditSprint(sprintID, userID.(uint)) {
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -70,11 +73,30 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// FreezeSprint freezes the given sprint
+func (ctrl SprintController) FreezeSprint(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	if err := ctrl.SprintService.FreezeSprint(sprintID); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be frozen", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusNoContent, nil)
+}
+
+
 // Get Sprint Data
 func (ctrl SprintController) Get(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
-	if !ctrl.PermissionService.UserCanAccessSprint(sprintID, userID.(uint)) {
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}

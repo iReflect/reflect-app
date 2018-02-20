@@ -43,14 +43,14 @@ func (ctrl RetrospectiveController) List(c *gin.Context) {
 
 // Get RetroSpective by id
 func (ctrl RetrospectiveController) Get(c *gin.Context) {
-	retrospectiveID := c.Param("retroID")
+	retroID := c.Param("retroID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessRetro(retrospectiveID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	response, err := ctrl.RetrospectiveService.Get(retrospectiveID)
+	response, err := ctrl.RetrospectiveService.Get(retroID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Retrospective not found", "error": err})
