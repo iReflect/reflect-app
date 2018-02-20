@@ -15,7 +15,7 @@ func (ctrl UserController) Routes(r *gin.RouterGroup) {
 	r.GET("/current/", ctrl.Current)
 }
 
-// Get current user
+// Current Get current user
 func (ctrl UserController) Current(c *gin.Context) {
 	user, ok := c.Get("user")
 	if !ok {

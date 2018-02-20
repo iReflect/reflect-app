@@ -20,7 +20,6 @@ type Credentials struct {
 type TaskProvider interface {
 	New(config interface{}) Connection
 	ConfigTemplate() map[string]interface{}
-	getConfigObject(config interface{}) interface{}
 }
 
 // Connection ...
@@ -57,20 +56,20 @@ func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
 	}
 
 	var providerData map[string]interface{}
-	var credentials map[string][]byte
+	var credentials map[string]interface{}
 
 	for _, taskProviderConfig := range configList {
 		providerData = taskProviderConfig["data"].(map[string]interface{})
-		credentials = providerData["credentials"].(map[string][]byte)
+		credentials = providerData["credentials"].(map[string]interface{})
 		if val, ok := credentials["password"]; ok {
-			credentials["password"], err = utils.EncryptString(val)
+			credentials["password"], err = utils.EncryptString(val.([]byte))
 
 			if err != nil {
 				return nil, err
 			}
 		}
 		if val, ok := credentials["apiToken"]; ok {
-			credentials["apiToken"], err = utils.EncryptString(val)
+			credentials["apiToken"], err = utils.EncryptString(val.([]byte))
 			if err != nil {
 				return nil, err
 			}
@@ -87,23 +86,24 @@ func DecryptTaskProviders(encrypted []byte) (decrypted []byte, err error) {
 	}
 
 	var providerData map[string]interface{}
-	var credentials map[string][]byte
+	var credentials map[string]interface{}
 	for _, taskProviderConfig := range configList {
 		providerData = taskProviderConfig["data"].(map[string]interface{})
-		credentials = providerData["credentials"].(map[string][]byte)
+		credentials = providerData["credentials"].(map[string]interface{})
 		if val, ok := credentials["password"]; ok {
-			credentials["password"], err = utils.DecryptString(val)
+			credentials["password"], err = utils.DecryptString(val.([]byte))
 			if err != nil {
 				return nil, err
 			}
 		}
 		if val, ok := credentials["apiToken"]; ok {
-			credentials["apiToken"], err = utils.DecryptString(val)
+			credentials["apiToken"], err = utils.DecryptString(val.([]byte))
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
+
 	return json.Marshal(configList)
 }
 

@@ -119,8 +119,6 @@ func (service RetrospectiveService) Create(userID uint,
 	}
 	retrospective.TaskProviderConfig = encryptedTaskProviders
 
-	if err := db.Create(&retrospective).Error; err != nil {
-		return err
-	}
-	return nil
+	err = db.Create(&retrospective).Error
+	return err
 }

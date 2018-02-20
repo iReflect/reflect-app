@@ -8,7 +8,7 @@ import (
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
 )
 
-//FeedbackController ...
+// TeamFeedbackController ...
 type TeamFeedbackController struct {
 	FeedbackService feedbackServices.FeedbackService
 }

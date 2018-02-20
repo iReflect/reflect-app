@@ -24,3 +24,8 @@ type Sprint struct {
 type SprintsSerializer struct {
 	Sprints []Sprint
 }
+
+// AddMemberSerializer ...
+type AddMemberSerializer struct {
+	MemberID uint `json:"memberID" binding:"required"`
+}

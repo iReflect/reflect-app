@@ -17,7 +17,7 @@ func (ctrl TaskTrackerController) Routes(r *gin.RouterGroup) {
 	r.GET("/config-list/", ctrl.ConfigList)
 }
 
-//List task tracker config
+// ConfigList List task tracker config
 func (ctrl TaskTrackerController) ConfigList(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"TaskProviders": ctrl.TaskTrackerService.ConfigList()})
 }
