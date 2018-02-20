@@ -20,6 +20,7 @@ type Credentials struct {
 type TaskProvider interface {
 	New(config interface{}) Connection
 	ConfigTemplate() map[string]interface{}
+	getConfigObject(config interface{}) interface{}
 }
 
 // Connection ...
@@ -50,64 +51,78 @@ func GetTaskProvider(name string) TaskProvider {
 // EncryptTaskProviders ...
 //ToDo: Generalize these methods
 func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
-	configMap, ok := utils.ByteToMap(decrypted).([]interface{})
-
-	if !ok {
-		return nil, errors.New("JSON Error")
+	var configList []map[string]interface{}
+	if err = json.Unmarshal(decrypted, &configList); err != nil {
+		return nil, err
 	}
 
-	var data map[string]interface{}
-	var creds map[string]interface{}
-	for _, tpConfig := range configMap {
-		tp := tpConfig.(map[string]interface{})
-		data = tp["data"].(map[string]interface{})
-		creds = data["credentials"].(map[string]interface{})
-		if val, ok := creds["password"]; ok {
-			creds["password"], err = utils.EncryptString(val.([]byte))
+	var providerData map[string]interface{}
+	var credentials map[string][]byte
+
+	for _, taskProviderConfig := range configList {
+		providerData = taskProviderConfig["data"].(map[string]interface{})
+		credentials = providerData["credentials"].(map[string][]byte)
+		if val, ok := credentials["password"]; ok {
+			credentials["password"], err = utils.EncryptString(val)
+
 			if err != nil {
 				return nil, err
 			}
 		}
-		if val, ok := creds["apiToken"]; ok {
-			creds["apiToken"], err = utils.EncryptString(val.([]byte))
+		if val, ok := credentials["apiToken"]; ok {
+			credentials["apiToken"], err = utils.EncryptString(val)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-
-	return json.Marshal(configMap)
+	return json.Marshal(configList)
 }
 
 // DecryptTaskProviders ...
 func DecryptTaskProviders(encrypted []byte) (decrypted []byte, err error) {
-	configMap, ok := utils.ByteToMap(encrypted).([]interface{})
-
-	if !ok {
-		return nil, errors.New("JSON Error")
+	var configList []map[string]interface{}
+	if err = json.Unmarshal(encrypted, &configList); err != nil {
+		return nil, err
 	}
 
-	var data map[string]interface{}
-	var creds map[string]interface{}
-	for _, tpConfig := range configMap {
-		tp := tpConfig.(map[string]interface{})
-		data = tp["data"].(map[string]interface{})
-		creds = data["credentials"].(map[string]interface{})
-		if val, ok := creds["password"]; ok {
-			creds["password"], err = utils.DecryptString(val.([]byte))
+	var providerData map[string]interface{}
+	var credentials map[string][]byte
+	for _, taskProviderConfig := range configList {
+		providerData = taskProviderConfig["data"].(map[string]interface{})
+		credentials = providerData["credentials"].(map[string][]byte)
+		if val, ok := credentials["password"]; ok {
+			credentials["password"], err = utils.DecryptString(val)
 			if err != nil {
 				return nil, err
 			}
 		}
-		if val, ok := creds["apiToken"]; ok {
-			creds["apiToken"], err = utils.DecryptString(val.([]byte))
+		if val, ok := credentials["apiToken"]; ok {
+			credentials["apiToken"], err = utils.DecryptString(val)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
+	return json.Marshal(configList)
+}
 
-	return json.Marshal(configMap)
+// ValidateCredentials ...
+func ValidateCredentials(credentials map[string]interface{}) (err error) {
+	authType, _ := credentials["type"]
+	err = errors.New("invalid credentials")
+	if authType == "basicAuth" {
+		if _, ok := credentials["password"]; !ok {
+			return err
+		}
+	} else if authType == "apiToken" {
+		if _, ok := credentials["apiToken"]; !ok {
+			return err
+		}
+	} else {
+		return err
+	}
+	return nil
 }
 
 // GetTaskList ...
@@ -138,19 +153,18 @@ func GetSprintTaskList(config []byte, sprintIDs string) (tasks []serializers.Tas
 
 // GetConnections ...
 func GetConnections(config []byte) (connections []Connection, err error) {
-	configMap, ok := utils.ByteToMap(config).([]interface{})
-
-	if !ok {
-		return nil, errors.New("JSON Error")
+	var configList []interface{}
+	if err = json.Unmarshal(config, &configList); err != nil {
+		return nil, err
 	}
 
 	var data map[string]interface{}
 	var name string
 	var connection Connection
-	for _, tpConfig := range configMap {
+	for _, tpConfig := range configList {
 		tp := tpConfig.(map[string]interface{})
 		data = tp["data"].(map[string]interface{})
-		name = tp["name"].(string)
+		name = tp["type"].(string)
 		connection = GetTaskProvider(name).New(data)
 		if connection != nil {
 			connections = append(connections, connection)
@@ -158,4 +172,16 @@ func GetConnections(config []byte) (connections []Connection, err error) {
 	}
 
 	return connections, nil
+}
+
+// ValidateConfigs ...
+func ValidateConfigs(taskProviderConfigList []map[string]interface{}) (err error) {
+	for _, taskProviderConfig := range taskProviderConfigList {
+		taskProvider := GetTaskProvider(taskProviderConfig["type"].(string))
+		taskProviderConnection := taskProvider.New(taskProviderConfig["data"])
+		if err = taskProviderConnection.ValidateConfig(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

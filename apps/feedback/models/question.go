@@ -1,16 +1,17 @@
 package models
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
-	"errors"
+	"encoding/json"
 	"github.com/iReflect/reflect-app/db/models/fields"
-	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type QuestionType int8
@@ -43,8 +44,11 @@ type Question struct {
 	Weight  int          `gorm:"default:1; not null"`
 }
 
-func (question Question) GetOptions() map[string]interface{} {
-	return utils.ByteToMap(question.Options).(map[string]interface{})
+func (question Question) GetOptions() (questionOptions map[string]interface{}) {
+	if err := json.Unmarshal(question.Options, &questionOptions); err != nil {
+		return map[string]interface{}{}
+	}
+	return questionOptions
 }
 
 // ValidateQuestionResponse validates the question response (default also), against the question options
@@ -66,8 +70,15 @@ func (question *Question) ValidateQuestionResponse(questionResponse string) bool
 	if question.Type == MultiChoiceType {
 		questionOptions := question.GetOptions()
 		validValues := map[float64]float64{}
-		for _, val := range questionOptions["values"].([]interface{}) {
-			responseID := val.(map[string]interface{})["id"].(float64)
+		questionOptionsList, exists := questionOptions["values"].([]interface{})
+		if !exists {
+			return false
+		}
+		for _, val := range questionOptionsList {
+			var responseID float64
+			if responseID, exists = val.(map[string]interface{})["id"].(float64); !exists {
+				return false
+			}
 			validValues[responseID] = responseID
 		}
 		for _, response := range questionResponseList {

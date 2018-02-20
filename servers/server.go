@@ -14,6 +14,7 @@ import (
 
 	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
 	feedbackServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	retrospectiveValidators "github.com/iReflect/reflect-app/apps/retrospective/serializers/validators"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	_ "github.com/iReflect/reflect-app/apps/tasktracker/providers" // Register all the task-tracker providers
 	taskTrackerServices "github.com/iReflect/reflect-app/apps/tasktracker/services"
@@ -73,6 +74,9 @@ func (a *App) SetRoutes() {
 
 	feedbackValidator := feedbackValidators.FeedbackValidators{DB: a.DB}
 	feedbackValidator.Register()
+
+	retrospectiveValidator := retrospectiveValidators.RetrospectiveValidators{DB: a.DB}
+	retrospectiveValidator.Register()
 
 	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
 	feedbackController := apiControllers.FeedbackController{FeedbackService: feedbackService}
