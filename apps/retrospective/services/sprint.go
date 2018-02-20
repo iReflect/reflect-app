@@ -99,7 +99,6 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprintID).
 		Where("member_id = ?", memberID).
-		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Find(&retroModels.SprintMember{}).
 		Error
 
@@ -136,7 +135,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	}
 	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": sprintMember.ID})
 
-	sprintWorkingDays := float64(utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true))
+	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
 		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
@@ -147,7 +146,9 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	}
 
 	sprintMemberSummary.ActualVelocity = 0
-	sprintMemberSummary.ExpectedVelocity = math.Floor((sprintWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint))
+	memberWorkingDays := float64(sprintWorkingDays - int(sprintMemberSummary.Vacations))
+	sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
+		(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
 
 	return sprintMemberSummary, nil
 }
