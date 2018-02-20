@@ -137,5 +137,5 @@ func getSprintStatusFieldMeta() admin.Meta {
 
 // NotDeletedSprint is a gorm scope used to exclude the deleted/discard sprints
 func NotDeletedSprint(db *gorm.DB) *gorm.DB {
-	return db.Not("status = ?", DeletedSprint)
+	return db.Not("sprints.status = ?", DeletedSprint)
 }

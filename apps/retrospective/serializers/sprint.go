@@ -6,7 +6,7 @@ import (
 	userSerializer "github.com/iReflect/reflect-app/apps/user/serializers"
 )
 
-// Sprint ...
+// Sprint is a serializer used in the Get sprint APIs
 type Sprint struct {
 	ID               uint
 	Title            string
