@@ -1,14 +1,10 @@
 package workers
 
 import (
-	"errors"
 	"github.com/garyburd/redigo/redis"
 	"github.com/gocraft/work"
 	"github.com/iReflect/reflect-app/config"
-	"github.com/iReflect/reflect-app/db"
 	"log"
-
-	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 )
 
 var redisPool = &redis.Pool{
@@ -29,6 +25,12 @@ var Enqueuer = work.NewEnqueuer(redisNamespace, redisPool)
 var Config *config.Config
 var Pool *work.WorkerPool
 
+type job struct {
+	name string
+	function func(*work.Job) error
+}
+var jobs []job
+
 // Initialize ...
 func (w *Workers) Initialize(config *config.Config) {
 	Config = config
@@ -41,9 +43,9 @@ func (w *Workers) Initialize(config *config.Config) {
 	Pool = work.NewWorkerPool(*w, 10, redisNamespace, redisPool)
 
 	// Add middleware that will be executed for each job
-	Pool.Middleware((*Workers).Log)
+	Pool.Middleware(Log)
 
-	w.assignJobs()
+	assignJobs()
 
 	// Start processing jobs
 	Pool.Start()
@@ -60,55 +62,18 @@ func (w *Workers) Shutdown() {
 }
 
 // Log ...
-func (w *Workers) Log(job *work.Job, next work.NextMiddlewareFunc) error {
+func Log(job *work.Job, next work.NextMiddlewareFunc) error {
 	log.Println("Starting job: ", job.Name)
 	return next()
 }
 
-// ToDo: Make generic
-func (w *Workers) assignJobs() {
+func assignJobs() {
 	// Map the name of jobs to handler functions
-	Pool.Job("sync_sprint_data", (*Workers).SyncSprintData)
-	Pool.Job("sync_sprint_member_data", (*Workers).SyncSprintMemberData)
+	for _, job := range jobs {
+		Pool.Job(job.name, job.function)
+	}
 }
 
-// SyncSprintData ...
-func (w *Workers) SyncSprintData(job *work.Job) error {
-	sprintService := retroServices.SprintService{DB: db.Initialize(Config)}
-
-	sprintID := job.ArgString("sprintID")
-	if sprintID == "" {
-		log.Println("Job failed: ", job.Name, " with error: sprintID cannot be blank")
-		return errors.New("sprintID cannot be blank")
-	}
-
-	err := sprintService.SyncSprintData(sprintID)
-
-	if err != nil {
-		log.Println("Job failed: ", job.Name, " with error: ", err)
-		return err
-	}
-
-	log.Println("Completed job: ", job.Name)
-	return nil
-}
-
-// SyncSprintMemberData ...
-func (w *Workers) SyncSprintMemberData(job *work.Job) error {
-	sprintService := retroServices.SprintService{DB: db.Initialize(Config)}
-
-	sprintMemberID := job.ArgString("sprintMemberID")
-	if sprintMemberID == "" {
-		log.Println("Job failed: ", job.Name, " with error: sprintMemberID cannot be blank")
-		return errors.New("sprintMemberID cannot be blank")
-	}
-	err := sprintService.SyncSprintMemberData(sprintMemberID)
-
-	if err != nil {
-		log.Println("Job failed: ", job.Name, " with error: ", err)
-		return err
-	}
-
-	log.Println("Completed job: ", job.Name)
-	return nil
+func RegisterJob(name string, function func(*work.Job) error) {
+	jobs = append(jobs, job{name: name, function: function})
 }

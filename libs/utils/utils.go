@@ -5,12 +5,10 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"io"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"time"
 )
 

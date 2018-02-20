@@ -20,7 +20,7 @@ type SprintMember struct {
 	ExpectationPercent uint `gorm:"not null;default:100"`
 	Tasks              []SprintMemberTask
 	Vacations          uint                 `gorm:"not null;default:0"`
-	Rating             retrospective.Rating `gorm:"default:0; not null"`
+	Rating             retrospective.Rating `gorm:"default:2; not null"`
 	Comment            string               `gorm:"type:text"`
 }
 

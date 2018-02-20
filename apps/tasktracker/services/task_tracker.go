@@ -6,7 +6,7 @@ import "github.com/iReflect/reflect-app/apps/tasktracker"
 type TaskTrackerService struct {
 }
 
-//List TaskTracker Configuration
+// ConfigList List TaskTracker Configuration
 func (service TaskTrackerService) ConfigList() (configList []map[string]interface{}) {
 	for _, taskProvider := range tasktracker.TaskProviders {
 		configList = append(configList, taskProvider.ConfigTemplate())

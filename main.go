@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/iReflect/reflect-app/db/migrations" //Init for all migrations
 	"github.com/iReflect/reflect-app/workers"
+	_ "github.com/iReflect/reflect-app/workers/jobs/retrospective" // Init for jobs
 )
 
 func main() {

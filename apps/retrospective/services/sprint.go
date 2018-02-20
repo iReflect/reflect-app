@@ -7,6 +7,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 
+	"github.com/gocraft/work"
+	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
@@ -14,6 +16,7 @@ import (
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"github.com/iReflect/reflect-app/workers"
 )
 
 // SprintService ...
@@ -84,6 +87,70 @@ func (service SprintService) Get(sprintID string, userID uint) (*retrospectiveSe
 		return nil, err
 	}
 	return &sprint, nil
+}
+
+// AddSprintMember ...
+func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*retrospectiveSerializers.SprintMemberSummary, error) {
+	db := service.DB
+	var sprintMember retroModels.SprintMember
+	sprintMemberSummary := new(retrospectiveSerializers.SprintMemberSummary)
+	var sprint retroModels.Sprint
+
+	err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_id = ?", sprintID).
+		Where("member_id = ?", memberID).
+		Find(&retroModels.SprintMember{}).
+		Error
+
+	if err == nil {
+		return nil, errors.New("Member already a part of the sprint")
+	}
+
+	err = db.Model(&retroModels.Sprint{}).
+		Joins("JOIN retrospectives ON retrospectives.id=sprints.retrospective_id").
+		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
+		Where("user_teams.user_id=?", memberID).
+		Where("sprints.id=?", sprintID).
+		Find(&sprint).
+		Error
+	if err != nil {
+		return nil, errors.New("Member is not a part of the retrospective team")
+	}
+
+	intSprintID, err := strconv.Atoi(sprintID)
+	if err != nil {
+		return nil, err
+	}
+
+	sprintMember.SprintID = uint(intSprintID)
+	sprintMember.MemberID = memberID
+	sprintMember.Vacations = 0
+	sprintMember.Rating = retrospective.OkayRating
+	sprintMember.AllocationPercent = 100
+	sprintMember.ExpectationPercent = 100
+
+	err = db.Create(&sprintMember).Error
+	if err != nil {
+		return nil, err
+	}
+	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": sprintMember.ID})
+
+	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
+	if err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_id = ?", sprint.ID).
+		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
+		Select("DISTINCT sprint_members.*, users.*").
+		Scan(&sprintMemberSummary).
+		Error; err != nil {
+		return nil, err
+	}
+
+	sprintMemberSummary.ActualVelocity = 0
+	memberWorkingDays := float64(sprintWorkingDays - int(sprintMemberSummary.Vacations))
+	sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
+		(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
+
+	return sprintMemberSummary, nil
 }
 
 // SyncSprintData ...
@@ -267,7 +334,7 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
-		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
+		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
 		Select("DISTINCT sprint_members.*, users.*, " +
 			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity").

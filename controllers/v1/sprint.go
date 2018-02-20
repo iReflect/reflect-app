@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gocraft/work"
+	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	"github.com/iReflect/reflect-app/workers"
 )
@@ -23,6 +24,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/activate", ctrl.ActivateSprint)
 	r.POST("/:sprintID/freeze", ctrl.FreezeSprint)
 	r.POST("/:sprintID/process", ctrl.Process)
+	r.POST("/:sprintID/members", ctrl.AddMember)
 	r.GET("/:sprintID/members", ctrl.GetSprintMemberList)
 	r.GET("/:sprintID/member-summary", ctrl.GetSprintMemberSummary)
 }
@@ -142,6 +144,32 @@ func (ctrl SprintController) Process(c *gin.Context) {
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": sprintID})
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// AddMember to a Sprint
+func (ctrl SprintController) AddMember(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+
+	addMemberData := retroSerializers.AddMemberSerializer{}
+	if err := c.BindJSON(&addMemberData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	response, err := ctrl.SprintService.AddSprintMember(sprintID, addMemberData.MemberID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to add member", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetSprintMemberSummary returns the sprint member summary list

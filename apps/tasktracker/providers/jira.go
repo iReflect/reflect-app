@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"errors"
 )
 
 // JIRATaskProvider ...
@@ -43,13 +44,12 @@ func init() {
 // New ...
 func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 	var jiraConfig JIRAConfig
-	config = p.getConfigObject(config)
+	jiraConfig, err := getConfigObject(config)
 
-	if config == nil {
+	if err != nil {
 		return nil
 	}
 
-	jiraConfig = config.(JIRAConfig)
 	client, err := jira.NewClient(nil, jiraConfig.BaseURL)
 
 	if err != nil {
@@ -65,7 +65,7 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 }
 
 // GetConfigObject ...
-func (p *JIRATaskProvider) getConfigObject(config interface{}) interface{} {
+func getConfigObject(config interface{}) (JIRAConfig, error) {
 	var c JIRAConfig
 
 	switch config.(type) {
@@ -73,26 +73,26 @@ func (p *JIRATaskProvider) getConfigObject(config interface{}) interface{} {
 		c = JIRAConfig{}
 		err := json.Unmarshal(config.([]byte), &c)
 		if err != nil {
-			return nil
+			return c, err
 		}
 	case map[string]interface{}:
 		c = JIRAConfig{}
 
 		jsonConfig, err := json.Marshal(config)
 		if err != nil {
-			return nil
+			return c, err
 		}
 
 		err = json.Unmarshal(jsonConfig, &c)
 		if err != nil {
-			return nil
+			return c, err
 		}
 	case JIRAConfig:
 		c = config.(JIRAConfig)
 	default:
-		return nil
+		return c, errors.New("Invalid type")
 	}
-	return c
+	return c, nil
 }
 
 // ConfigTemplate ...

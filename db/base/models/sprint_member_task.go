@@ -14,6 +14,6 @@ type SprintMemberTask struct {
 	TimeSpentMinutes uint    `gorm:"not null"`
 	PointsEarned     float64 `gorm:"default:0; not null"`
 	PointsAssigned   float64 `gorm:"default:0; not null"`
-	Rating           int8    `gorm:"default:0; not null"`
+	Rating           int8    `gorm:"default:2; not null"`
 	Comment          string  `gorm:"type:text"`
 }

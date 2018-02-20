@@ -9,7 +9,7 @@ import (
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
 )
 
-// RetroSpectiveController ...
+// RetrospectiveController ...
 type RetrospectiveController struct {
 	RetrospectiveService retrospectiveService.RetrospectiveService
 	PermissionService    retrospectiveService.PermissionService
