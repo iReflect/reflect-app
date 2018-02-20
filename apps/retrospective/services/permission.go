@@ -28,12 +28,12 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Scopes(retroModels.NotDeletedSprint).
 		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
 		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
 		Where("user_teams.user_id=?", userID).
-		Where("retrospective.id=?", retroID).
-		Where("sprints.id = ? AND (sprints.status <> ? OR sprints.created_by_id = ?)",
+		Where("retrospectives.id=?", retroID).
+                Where("sprints.id=?", sprintID).
+		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
 			sprintID, retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
@@ -48,8 +48,9 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
 		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
 		Where("user_teams.user_id=?", userID).
-		Where("retrospective.id=?", retroID).
-		Where("sprints.id = ? AND (sprints.status <> ? OR sprints.created_by_id = ?)",
+		Where("retrospectives.id=?", retroID).
+                Where("sprints.id=?", sprintID).
+		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
 			sprintID, retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
@@ -61,14 +62,14 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 func (service PermissionService) UserCanAccessTask(retroID string, sprintID string, taskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Scopes(retroModels.NotDeletedSprint).
 		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
 		Joins("JOIN tasks ON retrospectives.id=tasks.retrospective_id").
 		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
 		Where("user_teams.user_id=?", userID).
 		Where("tasks.id=?", taskID).
-		Where("retrospective.id=?", retroID).
-		Where("sprints.id = ? AND (sprints.status <> ? OR sprints.created_by_id = ?)",
+		Where("retrospectives.id=?", retroID).
+                Where("sprints.id=?", sprintID).
+		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
 			sprintID, retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
