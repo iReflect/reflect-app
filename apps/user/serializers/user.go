@@ -25,6 +25,11 @@ type Team struct {
 	Active      bool
 }
 
+// TeamsSerializer ...
+type TeamsSerializer struct {
+	Teams []Team
+}
+
 // MembersSerializer ...
 type MembersSerializer struct {
 	Members []User

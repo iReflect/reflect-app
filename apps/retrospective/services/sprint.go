@@ -213,3 +213,21 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 
 	return db.Save(&sprintMemberTask).Error
 }
+
+// GetSprintsList ...
+func (service SprintService) GetSprintsList(retrospectiveID string, userID uint) (sprints *retrospectiveSerializers.SprintsSerializer, err error) {
+	db := service.DB
+	sprints = new(retrospectiveSerializers.SprintsSerializer)
+
+	err = db.Model(&retroModels.Sprint{}).
+		Where("retrospective_id = ?", retrospectiveID).
+		Where("status in (?) OR (status = (?) AND created_by_id = (?))", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}, retroModels.DraftSprint, userID).
+		Preload("CreatedBy").
+		Order("end_date desc").
+		Scan(&sprints.Sprints).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return sprints, nil
+}
