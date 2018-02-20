@@ -116,7 +116,8 @@ func (ctrl SprintController) Get(c *gin.Context) {
 func (ctrl SprintController) Process(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
-	if !ctrl.PermissionService.UserCanAccessSprint(sprintID, userID.(uint)) {
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
