@@ -16,7 +16,7 @@ var redisPool = &redis.Pool{
 	MaxIdle:   5,
 	Wait:      true,
 	Dial: func() (redis.Conn, error) {
-		return redis.Dial("tcp", "redis:6379")
+		return redis.Dial("tcp", config.GetConfig().Redis.Address)
 	},
 }
 
