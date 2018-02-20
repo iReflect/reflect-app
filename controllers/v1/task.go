@@ -16,8 +16,8 @@ type TaskController struct {
 // Routes for Tasks
 func (ctrl TaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
-	r.GET("/:id", ctrl.Get)
-	r.GET("/:id/members", ctrl.GetMembers)
+	r.GET("/:taskID", ctrl.Get)
+	r.GET("/:taskID/members", ctrl.GetMembers)
 }
 
 // List ...
@@ -43,7 +43,7 @@ func (ctrl TaskController) List(c *gin.Context) {
 
 // Get ...
 func (ctrl TaskController) Get(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Param("taskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
@@ -65,7 +65,7 @@ func (ctrl TaskController) Get(c *gin.Context) {
 
 // GetMembers ...
 func (ctrl TaskController) GetMembers(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Param("taskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
