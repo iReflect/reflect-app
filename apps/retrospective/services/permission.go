@@ -33,8 +33,7 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
-		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
-			sprintID, retroModels.DraftSprint, userID).
+		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
@@ -50,8 +49,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
-		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
-			sprintID, retroModels.DraftSprint, userID).
+		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
@@ -69,8 +67,7 @@ func (service PermissionService) UserCanAccessTask(retroID string, sprintID stri
 		Where("tasks.id=?", taskID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
-		Where("(sprints.status <> ? OR sprints.created_by_id = ?)",
-			sprintID, retroModels.DraftSprint, userID).
+		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
