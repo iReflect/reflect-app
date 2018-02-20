@@ -9,6 +9,7 @@ import (
 type Config struct {
 	DB   *DBConfig
 	Auth *AuthConfig
+	Redis *RedisConfig
 }
 
 type DBConfig struct {
@@ -22,18 +23,27 @@ type AuthConfig struct {
 	Secret string `env:"AUTH_SECRET"  envDefault:"secret"`
 }
 
+type RedisConfig struct {
+	Address string `env:"REDIS_ADDRESS"  envDefault:":6379"`
+}
+
 func GetConfig() *Config {
 
 	dbConfig := new(DBConfig)
 	authConfig := new(AuthConfig)
+	redisConfig := new(RedisConfig)
 	env.Parse(dbConfig)
 	env.Parse(authConfig)
+	env.Parse(redisConfig)
 	log.Println("DB::")
 	log.Println(dbConfig)
 	log.Println("Auth::")
 	log.Println(authConfig)
+	log.Println("Redis::")
+	log.Println(redisConfig)
 	return &Config{
 		DB:   dbConfig,
 		Auth: authConfig,
+		Redis: redisConfig,
 	}
 }
