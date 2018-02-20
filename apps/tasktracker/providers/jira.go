@@ -52,6 +52,18 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 		if err != nil {
 			return nil
 		}
+	case map[string]interface{}:
+		c = JIRAConfig{}
+
+		jsonConfig, err := json.Marshal(config)
+		if err != nil {
+			return nil
+		}
+
+		err = json.Unmarshal(jsonConfig, &c)
+		if err != nil {
+			return nil
+		}
 	case JIRAConfig:
 		c = config.(JIRAConfig)
 	default:
@@ -83,7 +95,7 @@ func (p *JIRATaskProvider) ConfigTemplate() map[string]interface{} {
       "Fields": [
         {
           "FieldName": "BaseURL",
-          "FieldDisplayName": "Base URL of the project. eg. 'ireflect.atlassian.net'",
+          "FieldDisplayName": "Base URL of the project. eg. 'https://ireflect.atlassian.net'",
           "Type": "string",
           "Required": true
         },
@@ -111,8 +123,17 @@ func (p *JIRATaskProvider) ConfigTemplate() map[string]interface{} {
 }
 
 // GetTaskList ...
-func (c *JIRAConnection) GetTaskList(query string) []serializers.Task {
-	return nil
+func (c *JIRAConnection) GetTaskList(ticketIDs []string) []serializers.Task {
+	var ticket *jira.Issue
+	var tickets []jira.Issue
+	for _, ticketID := range ticketIDs {
+		ticket, _, _ = c.client.Issue.Get(ticketID, nil)
+		if ticket != nil {
+			tickets = append(tickets, *ticket)
+		}
+	}
+
+	return c.serializeTickets(tickets)
 }
 
 // GetSprint ...
@@ -122,6 +143,10 @@ func (c *JIRAConnection) GetSprint(sprint string) *serializers.Sprint {
 
 // GetSprintTaskList ...
 func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
+	if sprint == "" {
+		return nil
+	}
+
 	tickets, _ := c.getTicketsFromJQL("Sprint  in (" + sprint + ")")
 	return tickets
 }
@@ -130,6 +155,7 @@ func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
 func (c *JIRAConnection) ValidateConfig() error {
 	searchOptions := jira.SearchOptions{MaxResults: 1}
 
+	// Todo Verify
 	_, _, err := c.client.Issue.Search(c.config.JQL, &searchOptions)
 	return err
 }
@@ -137,9 +163,14 @@ func (c *JIRAConnection) ValidateConfig() error {
 func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized []serializers.Task, err error) {
 	searchOptions := jira.SearchOptions{MaxResults: 50000}
 
-	jql := extraJQL + " AND " + c.config.JQL
+	var jql string
 
-	if extraJQL == "" {
+	switch true {
+	case extraJQL != "" && c.config.JQL != "":
+		jql = extraJQL + " AND " + c.config.JQL
+	case extraJQL != "":
+		jql = extraJQL
+	case c.config.JQL != "":
 		jql = c.config.JQL
 	}
 
@@ -149,6 +180,10 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 		return nil, err
 	}
 
+	return c.serializeTickets(tickets),nil
+}
+
+func (c *JIRAConnection) serializeTickets(tickets []jira.Issue) (ticketsSerialized []serializers.Task) {
 	for _, ticket := range tickets {
 		var estimate *float64
 		if c.config.EstimateField != "" {
@@ -172,6 +207,11 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 			estimate = &timeEstimate
 		}
 
+		assignee := ""
+		if ticket.Fields.Assignee != nil {
+			assignee = ticket.Fields.Assignee.DisplayName
+		}
+
 		ticketsSerialized = append(ticketsSerialized, serializers.Task{
 			ID:        ticket.Key,
 			ProjectID: ticket.Fields.Project.ID,
@@ -179,9 +219,10 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 			Type:      ticket.Fields.Type.Name,
 			Priority:  ticket.Fields.Priority.Name,
 			Estimate:  estimate,
-			Assignee:  ticket.Fields.Assignee.DisplayName,
+			Assignee:  assignee,
 			Status:    ticket.Fields.Status.Name,
 		})
 	}
-	return ticketsSerialized, nil
+
+	return ticketsSerialized
 }
