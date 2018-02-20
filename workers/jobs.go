@@ -21,7 +21,7 @@ var redisPool = &redis.Pool{
 }
 
 // Workers ...
-type Workers struct {}
+type Workers struct{}
 
 var redisNamespace = "ireflect_worker"
 

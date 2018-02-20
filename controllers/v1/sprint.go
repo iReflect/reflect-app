@@ -95,7 +95,6 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
-
 // Get Sprint Data
 func (ctrl SprintController) Get(c *gin.Context) {
 	userID, _ := c.Get("userID")

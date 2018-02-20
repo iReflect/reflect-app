@@ -7,8 +7,8 @@ import (
 )
 
 type Config struct {
-	DB   *DBConfig
-	Auth *AuthConfig
+	DB    *DBConfig
+	Auth  *AuthConfig
 	Redis *RedisConfig
 }
 
@@ -42,8 +42,8 @@ func GetConfig() *Config {
 	log.Println("Redis::")
 	log.Println(redisConfig)
 	return &Config{
-		DB:   dbConfig,
-		Auth: authConfig,
+		DB:    dbConfig,
+		Auth:  authConfig,
 		Redis: redisConfig,
 	}
 }
