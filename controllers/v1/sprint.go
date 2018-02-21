@@ -19,14 +19,14 @@ type SprintController struct {
 // Routes for Sprints
 func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.GetSprints)
-	r.DELETE("/:sprintID", ctrl.Delete)
-	r.GET("/:sprintID", ctrl.Get)
-	r.POST("/:sprintID/activate", ctrl.ActivateSprint)
-	r.POST("/:sprintID/freeze", ctrl.FreezeSprint)
-	r.POST("/:sprintID/process", ctrl.Process)
-	r.POST("/:sprintID/members", ctrl.AddMember)
-	r.GET("/:sprintID/members", ctrl.GetSprintMemberList)
-	r.GET("/:sprintID/member-summary", ctrl.GetSprintMemberSummary)
+	r.DELETE("/:sprintID/", ctrl.Delete)
+	r.GET("/:sprintID/", ctrl.Get)
+	r.POST("/:sprintID/activate/", ctrl.ActivateSprint)
+	r.POST("/:sprintID/freeze/", ctrl.FreezeSprint)
+	r.POST("/:sprintID/process/", ctrl.Process)
+	r.POST("/:sprintID/members/", ctrl.AddMember)
+	r.GET("/:sprintID/members/", ctrl.GetSprintMemberList)
+	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
 }
 
 // GetSprints ...

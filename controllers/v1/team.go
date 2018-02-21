@@ -14,7 +14,7 @@ type TeamController struct {
 
 // Routes for Team
 func (ctrl TeamController) Routes(r *gin.RouterGroup) {
-	r.GET("/:id/members", ctrl.GetMembers)
+	r.GET("/:teamID/members/", ctrl.GetMembers)
 	r.GET("/", ctrl.GetTeams)
 }
 
@@ -33,7 +33,7 @@ func (ctrl TeamController) GetTeams(c *gin.Context) {
 
 // GetMembers ...
 func (ctrl TeamController) GetMembers(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Param("teamID")
 	all := c.DefaultQuery("all", "false")
 	userID, _ := c.Get("userID")
 

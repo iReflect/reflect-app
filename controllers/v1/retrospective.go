@@ -18,8 +18,8 @@ type RetrospectiveController struct {
 // Routes for RetroSpective
 func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
-	r.GET("/:retroID", ctrl.Get)
-	r.GET(":retroID/latest-sprint", ctrl.GetLatestSprint)
+	r.GET("/:retroID/", ctrl.Get)
+	r.GET(":retroID/latest-sprint/", ctrl.GetLatestSprint)
 	r.POST("/", ctrl.Create)
 }
 
