@@ -17,6 +17,7 @@ import (
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
+	"time"
 )
 
 // SprintService ...
@@ -153,6 +154,40 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	return sprintMemberSummary, nil
 }
 
+// RemoveSprintMember ...
+func (service SprintService) RemoveSprintMember(sprintID string, memberID string) error {
+	db := service.DB
+	var sprintMember retroModels.SprintMember
+
+	err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_id = ?", sprintID).
+		Where("member_id = ?", memberID).
+		Preload("Tasks").
+		Find(&sprintMember).
+		Error
+
+	if err != nil {
+		return errors.New("Member not a part of the sprint")
+	}
+
+	tx := db.Begin()
+	for _, smt := range sprintMember.Tasks {
+		err = tx.Delete(&smt).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	err = tx.Delete(&sprintMember).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
 // SyncSprintData ...
 func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	db := service.DB
@@ -164,6 +199,12 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		Preload("Retrospective").
 		Find(&sprint).Error
 
+	if err != nil {
+		return err
+	}
+
+	sprint.CurrentlySyncing = true
+	err = db.Save(&sprint).Error
 	if err != nil {
 		return err
 	}
@@ -186,7 +227,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	}
 
 	for _, sprintMember := range sprint.SprintMembers {
-		err = service.SyncSprintMemberData(strconv.Itoa(int(sprintMember.ID)))
+		err = service.SyncSprintMemberData(strconv.Itoa(int(sprintMember.ID)), false)
 		if err != nil {
 			return err
 		}
@@ -195,20 +236,40 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	// ToDo: Store tickets not in SMT
 	// Maybe a Join table ST
 
+	var currentTime time.Time
+	currentTime = time.Now()
+	sprint.LastSyncedAt = &currentTime
+	sprint.CurrentlySyncing = false
+	err = db.Save(&sprint).Error
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // SyncSprintMemberData ...
-func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err error) {
+func (service SprintService) SyncSprintMemberData(sprintMemberID string, updateSync bool) (err error) {
 	db := service.DB
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
 		Where("id = ?", sprintMemberID).
+		Preload("Sprint").
 		Preload("Sprint.Retrospective").
 		Find(&sprintMember).Error
 
 	if err != nil {
 		return err
+	}
+
+	sprint := sprintMember.Sprint
+
+	if updateSync {
+		sprint.CurrentlySyncing = true
+		err = db.Save(&sprint).Error
+		if err != nil {
+			return err
+		}
 	}
 
 	// ToDo: Get tickets from TimeTracker
@@ -243,6 +304,17 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 
 	for _, timeLog := range timeLogs {
 		err = service.addOrUpdateSMT(timeLog, sprintMember.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if updateSync {
+		var currentTime time.Time
+		currentTime = time.Now()
+		sprint.LastSyncedAt = &currentTime
+		sprint.CurrentlySyncing = false
+		err = db.Save(&sprint).Error
 		if err != nil {
 			return err
 		}
