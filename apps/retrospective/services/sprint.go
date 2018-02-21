@@ -147,7 +147,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	}
 
 	sprintMemberSummary.ActualVelocity = 0
-	memberWorkingDays := float64(sprintWorkingDays - int(sprintMemberSummary.Vacations))
+	memberWorkingDays := float64(sprintWorkingDays) - sprintMemberSummary.Vacations
 	sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
 		(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
 
@@ -161,7 +161,7 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 
 	err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprintID).
-		Where("member_id = ?", memberID).
+		Where("id = ?", memberID).
 		Preload("Tasks").
 		Find(&sprintMember).
 		Error
@@ -249,7 +249,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 }
 
 // SyncSprintMemberData ...
-func (service SprintService) SyncSprintMemberData(sprintMemberID string, updateSync bool) (err error) {
+func (service SprintService) SyncSprintMemberData(sprintMemberID string, independentRun bool) (err error) {
 	db := service.DB
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
@@ -264,7 +264,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, updateS
 
 	sprint := sprintMember.Sprint
 
-	if updateSync {
+	if independentRun {
 		sprint.CurrentlySyncing = true
 		err = db.Save(&sprint).Error
 		if err != nil {
@@ -309,7 +309,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, updateS
 		}
 	}
 
-	if updateSync {
+	if independentRun {
 		var currentTime time.Time
 		currentTime = time.Now()
 		sprint.LastSyncedAt = &currentTime
@@ -415,7 +415,7 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		return nil, err
 	}
 	for _, sprintMemberSummary := range sprintMemberSummaryList.Members {
-		memberWorkingDays := float64(sprintWorkingDays - int(sprintMemberSummary.Vacations))
+		memberWorkingDays := float64(sprintWorkingDays) - sprintMemberSummary.Vacations
 		sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
 			(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
 

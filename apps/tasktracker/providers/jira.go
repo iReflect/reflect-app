@@ -7,9 +7,9 @@ import (
 	"github.com/andygrunwald/go-jira"
 
 	"encoding/json"
+	"errors"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
-	"errors"
 )
 
 // JIRATaskProvider ...

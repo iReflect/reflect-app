@@ -7,7 +7,7 @@ type SprintMemberSummary struct {
 	userSerializers.User
 	AllocationPercent  float64
 	ExpectationPercent float64
-	Vacations          uint
+	Vacations          float64
 	Rating             uint
 	Comment            string
 	ActualVelocity     float64

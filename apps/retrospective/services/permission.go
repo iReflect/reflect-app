@@ -50,7 +50,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
-		Scopes(retroModels.NotDeletedSprint).
+		Where("(sprints.status <> ?)", retroModels.CompletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
 	return err == nil

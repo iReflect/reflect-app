@@ -10,11 +10,11 @@ type SprintMember struct {
 	Sprint             Sprint
 	SprintID           uint `gorm:"not null"`
 	Member             User
-	MemberID           uint `gorm:"not null"`
-	AllocationPercent  uint `gorm:"not null"`
-	ExpectationPercent uint `gorm:"not null"`
+	MemberID           uint    `gorm:"not null"`
+	AllocationPercent  float64 `gorm:"not null;default:100"`
+	ExpectationPercent float64 `gorm:"not null;default:100"`
 	Tasks              []SprintMemberTask
-	Vacations          uint   `gorm:"not null;default:0"`
-	Rating             int8   `gorm:"default:2; not null"`
-	Comment            string `gorm:"type:text; not null"`
+	Vacations          float64 `gorm:"not null;default:0"`
+	Rating             int8    `gorm:"default:2; not null"`
+	Comment            string  `gorm:"type:text"`
 }

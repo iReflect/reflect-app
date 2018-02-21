@@ -26,9 +26,10 @@ var Config *config.Config
 var Pool *work.WorkerPool
 
 type job struct {
-	name string
+	name     string
 	function func(*work.Job) error
 }
+
 var jobs []job
 
 // Initialize ...

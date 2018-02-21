@@ -13,9 +13,10 @@ import (
 type RetrospectiveController struct {
 	RetrospectiveService retrospectiveService.RetrospectiveService
 	PermissionService    retrospectiveService.PermissionService
+	TrailService         retrospectiveService.TrailService
 }
 
-// Routes for RetroSpective
+// Routes for Retrospective
 func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:retroID/", ctrl.Get)
@@ -23,7 +24,7 @@ func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.Create)
 }
 
-// List RetroSpectives
+// List Retrospectives
 func (ctrl RetrospectiveController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	perPage, err := strconv.Atoi(c.DefaultQuery("perPage", ""))
@@ -42,7 +43,7 @@ func (ctrl RetrospectiveController) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// Get RetroSpective by id
+// Get Retrospective by id
 func (ctrl RetrospectiveController) Get(c *gin.Context) {
 	retroID := c.Param("retroID")
 	userID, _ := c.Get("userID")
@@ -60,7 +61,7 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetLatestSprint returns the latest active/freezed sprint's data
+// GetLatestSprint returns the latest active/frozen sprint's data
 func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	retroID := c.Param("retroID")
@@ -78,7 +79,7 @@ func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
 
 }
 
-// Create RetroSpective
+// Create Retrospective
 func (ctrl RetrospectiveController) Create(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var err error
@@ -93,5 +94,9 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 			gin.H{"message": "Retrospective can't be created", "error": err.Error()})
 		return
 	}
+
+	// ToDo: Pass retrospective ID
+	ctrl.TrailService.Add("Created Retrospective", "Retrospective", "", userID.(uint))
+
 	c.JSON(http.StatusOK, gin.H{})
 }
