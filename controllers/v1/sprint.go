@@ -25,6 +25,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/freeze", ctrl.FreezeSprint)
 	r.POST("/:sprintID/process", ctrl.Process)
 	r.POST("/:sprintID/members", ctrl.AddMember)
+	r.DELETE("/:sprintID/members/:memberID", ctrl.RemoveMember)
 	r.GET("/:sprintID/members", ctrl.GetSprintMemberList)
 	r.GET("/:sprintID/member-summary", ctrl.GetSprintMemberSummary)
 }
@@ -170,6 +171,27 @@ func (ctrl SprintController) AddMember(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// RemoveMember from a Sprint
+func (ctrl SprintController) RemoveMember(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	memberID := c.Param("memberID")
+
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	err := ctrl.SprintService.RemoveSprintMember(sprintID, memberID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to add member", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
 }
 
 // GetSprintMemberSummary returns the sprint member summary list
