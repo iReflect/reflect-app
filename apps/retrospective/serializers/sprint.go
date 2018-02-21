@@ -29,3 +29,12 @@ type SprintsSerializer struct {
 type AddMemberSerializer struct {
 	MemberID uint `json:"memberID" binding:"required"`
 }
+
+// CreateSprintSerializer is used in sprint create API
+type CreateSprintSerializer struct {
+	Title       string     `json:"title" binding:"required"`
+	SprintID    string     `json:"sprintID" binding:"is_valid_sprint"`
+	StartDate   *time.Time `json:"startDate"`
+	EndDate     *time.Time `json:"endDate"`
+	CreatedByID uint
+}

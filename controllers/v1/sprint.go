@@ -21,6 +21,7 @@ type SprintController struct {
 // Routes for Sprints
 func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.GetSprints)
+	r.POST("/", ctrl.CreateNewSprint)
 	r.DELETE("/:sprintID/", ctrl.Delete)
 	r.GET("/:sprintID/", ctrl.Get)
 
@@ -253,4 +254,26 @@ func (ctrl SprintController) UpdateSprintMember(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// CreateNewSprint creates a new draft sprint for the retro
+func (ctrl SprintController) CreateNewSprint(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	sprintData := retroSerializers.CreateSprintSerializer{CreatedByID: userID.(uint)}
+	err := c.BindJSON(&sprintData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+	err = ctrl.SprintService.CreateNewSprint(retroID, sprintData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to create the sprint", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{})
 }
