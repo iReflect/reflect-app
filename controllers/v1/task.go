@@ -16,8 +16,8 @@ type TaskController struct {
 // Routes for Tasks
 func (ctrl TaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
-	r.GET("/:taskID", ctrl.Get)
-	r.GET("/:taskID/members", ctrl.GetMembers)
+	r.GET("/:taskID/", ctrl.Get)
+	r.GET("/:taskID/members/", ctrl.GetMembers)
 }
 
 // List ...
