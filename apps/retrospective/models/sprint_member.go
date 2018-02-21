@@ -7,6 +7,7 @@ import (
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // SprintMember represents a member of a particular sprint
@@ -28,11 +29,12 @@ type SprintMember struct {
 func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
 	//ToDo: Investigate failing association during SMT save
 	// Vacations should not be more than sprint length
-	//ToDo: Add vacation support - Working Days calculation
-	if sprintMember.Sprint.EndDate != nil && sprintMember.Sprint.EndDate.Sub(*sprintMember.Sprint.StartDate).Hours()/24 < sprintMember.Vacations {
-		err = errors.New("vacations cannot be more than sprint length")
-		return err
+	if sprintMember.Sprint.StartDate != nil && sprintMember.Sprint.EndDate != nil {
+		sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprintMember.Sprint.StartDate, *sprintMember.Sprint.EndDate, true)
+		if sprintMember.Vacations > float64(sprintWorkingDays) {
+			err = errors.New("vacations cannot be more than sprint length")
+			return err
+		}
 	}
-
 	return
 }

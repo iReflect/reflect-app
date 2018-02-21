@@ -32,13 +32,30 @@ func (service SprintService) DeleteSprint(sprintID string) error {
 	if err := db.Where("id = ?", sprintID).
 		Where("status in (?)", []retroModels.SprintStatus{retroModels.DraftSprint,
 			retroModels.ActiveSprint}).
+		Preload("SprintMembers.Tasks").
 		Find(&sprint).Error; err != nil {
 		return err
 	}
-	if rowsAffected := db.Delete(&sprint).RowsAffected; rowsAffected == 0 {
-		return errors.New("sprint can't be deleted")
+	tx := db.Begin()
+
+	for _, sprintMember := range sprint.SprintMembers {
+		for _, sprintMemberTask := range sprintMember.Tasks {
+			if err := tx.Delete(&sprintMemberTask).Error; err != nil {
+				tx.Rollback()
+				return errors.New("sprint couldn't be deleted")
+			}
+		}
+		if err := tx.Delete(&sprintMember).Error; err != nil {
+			tx.Rollback()
+			return errors.New("sprint couldn't be deleted")
+		}
 	}
-	return nil
+	sprint.Status = retroModels.DeletedSprint
+	if err := tx.Save(&sprint).Error; err != nil {
+		tx.Rollback()
+		return errors.New("sprint couldn't be deleted")
+	}
+	return tx.Commit().Error
 }
 
 // ActivateSprint activates the given sprint
@@ -437,4 +454,47 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 		return nil, err
 	}
 	return sprintMemberList, nil
+}
+
+// UpdateSprintMember updates the sprint member summary
+func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID string, memberData retrospectiveSerializers.SprintMemberSummary) (*retrospectiveSerializers.SprintMemberSummary, error) {
+	db := service.DB
+
+	var sprintMember retroModels.SprintMember
+	if err := db.Model(&retroModels.SprintMember{}).
+		Where("id = ?", sprintMemberID).
+		Where("sprint_id = ?", sprintID).
+		Preload("Sprint.Retrospective").
+		Find(&sprintMember).
+		Error; err != nil {
+		return nil, err
+	}
+
+	sprintMember.AllocationPercent = memberData.AllocationPercent
+	sprintMember.ExpectationPercent = memberData.ExpectationPercent
+	sprintMember.Vacations = memberData.Vacations
+	sprintMember.Rating = retrospective.Rating(memberData.Rating)
+	sprintMember.Comment = memberData.Comment
+
+	if err := db.Save(&sprintMember).Error; err != nil {
+		return nil, err
+	}
+
+	if err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.id = ?", sprintMemberID).
+		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
+		Select("SUM(smt.points_earned)").
+		Group("sprint_members.id").
+		Row().
+		Scan(&memberData.ActualVelocity); err != nil {
+		return nil, err
+	}
+
+	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprintMember.Sprint.StartDate, *sprintMember.Sprint.EndDate, true)
+	memberWorkingDays := float64(sprintWorkingDays - int(sprintMember.Vacations))
+
+	memberData.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprintMember.Sprint.Retrospective.HrsPerStoryPoint) *
+		(float64(sprintMember.ExpectationPercent) / 100.00) * (float64(sprintMember.AllocationPercent) / 100.00))
+
+	return &memberData, nil
 }
