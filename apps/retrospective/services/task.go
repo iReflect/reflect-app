@@ -75,10 +75,10 @@ func (service TaskService) GetMembers(id string, retroID string, sprintID string
 		Select("sprint_member_tasks.*," +
 			"users.*," +
 			"sm.sprint_id, " +
-			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.sprint_member_id) as total_points, " +
-			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.sprint_member_id, sm.sprint_id) as sprint_points, " +
-			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sprint_member_tasks.task_id) as total_time, " +
-			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) as sprint_time").
+			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sm.member_id) as total_points, " +
+			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sm.member_id, sm.sprint_id) as sprint_points, " +
+			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sm.member_id) as total_time, " +
+			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sm.member_id, sm.sprint_id) as sprint_time").
 		QueryExpr()
 
 	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_id = ?", dbs, sprintID).

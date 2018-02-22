@@ -104,6 +104,7 @@ func (service RetrospectiveService) Create(userID uint,
 	retrospective.TeamID = retrospectiveData.TeamID
 	retrospective.CreatedByID = userID
 	retrospective.Title = retrospectiveData.Title
+	retrospective.ProjectName = retrospectiveData.ProjectName
 	retrospective.HrsPerStoryPoint = retrospectiveData.HrsPerStoryPoint
 
 	if err = tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {

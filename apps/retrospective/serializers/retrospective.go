@@ -23,6 +23,7 @@ type Retrospective struct {
 // RetrospectiveCreateSerializer ...
 type RetrospectiveCreateSerializer struct {
 	Title              string                   `json:"title" binding:"required"`
+	ProjectName        string                   `json:"projectName" binding:"required"`
 	TaskProviderConfig []map[string]interface{} `json:"taskProvider" binding:"required,is_valid_task_provider_config"`
 	TeamID             uint                     `json:"team" binding:"required,is_valid_team"`
 	HrsPerStoryPoint   float64                  `json:"hoursPerStoryPoint" binding:"required"`
