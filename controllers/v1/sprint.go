@@ -8,12 +8,14 @@ import (
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	"github.com/iReflect/reflect-app/workers"
+	"strconv"
 )
 
 // SprintController ...
 type SprintController struct {
 	SprintService     retrospectiveServices.SprintService
 	PermissionService retrospectiveServices.PermissionService
+	TrailService      retrospectiveServices.TrailService
 }
 
 // Routes for Sprints
@@ -25,6 +27,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/freeze/", ctrl.FreezeSprint)
 	r.POST("/:sprintID/process/", ctrl.Process)
 	r.POST("/:sprintID/members/", ctrl.AddMember)
+	r.DELETE("/:sprintID/members/", ctrl.RemoveMember)
 	r.GET("/:sprintID/members/", ctrl.GetSprintMemberList)
 	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
 }
@@ -60,6 +63,9 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be deleted", "error": err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Deleted Sprint", "Sprint", sprintID, userID.(uint))
+
 	c.JSON(http.StatusNoContent, nil)
 }
 
@@ -77,6 +83,9 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be activated", "error": err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Activated Sprint", "Sprint", sprintID, userID.(uint))
+
 	c.JSON(http.StatusNoContent, nil)
 }
 
@@ -94,6 +103,9 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be frozen", "error": err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Froze Sprint", "Sprint", sprintID, userID.(uint))
+
 	c.JSON(http.StatusNoContent, nil)
 }
 
@@ -137,11 +149,13 @@ func (ctrl SprintController) Process(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": sprintID})
+
+	ctrl.TrailService.Add("Triggered Sprint Refresh", "Sprint", sprintID, userID.(uint))
 
 	c.JSON(http.StatusNoContent, nil)
 }
@@ -169,6 +183,8 @@ func (ctrl SprintController) AddMember(c *gin.Context) {
 		return
 	}
 
+	ctrl.TrailService.Add("Added Sprint Member "+strconv.Itoa(int(response.ID)), "Sprint", sprintID, userID.(uint))
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -189,6 +205,8 @@ func (ctrl SprintController) RemoveMember(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to add member", "error": err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Removed Sprint Member "+memberID, "Sprint", sprintID, userID.(uint))
 
 	c.JSON(http.StatusNoContent, nil)
 }

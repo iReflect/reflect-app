@@ -98,15 +98,16 @@ func (a *App) SetRoutes() {
 	authController.Routes(r.Group("/"))
 
 	permissionService := retrospectiveServices.PermissionService{DB: a.DB}
+	trailService := retrospectiveServices.TrailService{DB: a.DB}
 	retrospectiveService := retrospectiveServices.RetrospectiveService{DB: a.DB}
 	retrospectiveRoute := v1.Group("retrospectives")
 
-	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService, PermissionService: permissionService}
+	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService, PermissionService: permissionService, TrailService: trailService}
 	retrospectiveController.Routes(retrospectiveRoute)
 
 	sprintRoute := retrospectiveRoute.Group(":retroID/sprints")
 	sprintService := retrospectiveServices.SprintService{DB: a.DB}
-	sprintController := apiControllers.SprintController{SprintService: sprintService, PermissionService: permissionService}
+	sprintController := apiControllers.SprintController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}
 	sprintController.Routes(sprintRoute)
 
 	taskService := retrospectiveServices.TaskService{DB: a.DB}
