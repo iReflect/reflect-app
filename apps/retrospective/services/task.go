@@ -1,8 +1,12 @@
 package services
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/jinzhu/gorm"
 
+	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 )
@@ -89,4 +93,78 @@ func (service TaskService) GetMembers(id string, retroID string, sprintID string
 	}
 
 	return members, nil
+}
+
+// AddMember ...
+func (service TaskService) AddMember(taskID string, retroID string, sprintID string, memberID uint) (member *retroSerializers.TaskMember, err error) {
+	db := service.DB
+
+	var sprintMember retroModels.SprintMember
+	err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_id = ?", sprintID).
+		Where("member_id = ?", memberID).
+		Find(&sprintMember).Error
+
+	if err != nil {
+		return nil, errors.New("member is not a part of the sprint")
+	}
+
+	err = db.Model(&retroModels.SprintMemberTask{}).
+		Where("sprint_member_id = ?", sprintMember.ID).
+		Where("task_id = ?", taskID).
+		Find(&retroModels.SprintMemberTask{}).
+		Error
+
+	if err == nil {
+		return nil, errors.New("member is already a part of the sprint task")
+	}
+
+	intTaskID, err := strconv.Atoi(taskID)
+	if err != nil {
+		return nil, err
+	}
+
+	sprintMemberTask := retroModels.SprintMemberTask{}
+	sprintMemberTask.SprintMemberID = sprintMember.ID
+	sprintMemberTask.TaskID = uint(intTaskID)
+	sprintMemberTask.TimeSpentMinutes = 0
+	sprintMemberTask.PointsEarned = 0
+	sprintMemberTask.PointsAssigned = 0
+	sprintMemberTask.Rating = retrospective.OkayRating
+	sprintMemberTask.Comment = ""
+
+	err = db.Create(&sprintMemberTask).Error
+	if err != nil {
+		return nil, err
+	}
+
+	member, err = service.GetMember(sprintMemberTask, memberID)
+	return member, err
+}
+
+
+// GetMember returns the task member summary of a task for a particular sprint member
+func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTask, memberID uint) (member *retroSerializers.TaskMember, err error) {
+	db := service.DB
+	member = new(retroSerializers.TaskMember)
+
+	tempDB := db.Model(retroModels.SprintMemberTask{}).
+		Where("task_id = ?", sprintMemberTask.TaskID).
+		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id AND sm.member_id = ?", memberID).
+		Joins("JOIN users ON sm.member_id = users.id").
+		Select("sprint_member_tasks.*," +
+		"users.*," +
+		"sm.sprint_id, " +
+		"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id) as total_points, " +
+		"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) as sprint_points, " +
+		"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sprint_member_tasks.task_id) as total_time, " +
+		"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) as sprint_time").
+		QueryExpr()
+
+	if err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_member_id = ?", tempDB, sprintMemberTask.SprintMemberID).
+		Scan(&member).Error; err != nil {
+		return nil, err
+	}
+
+	return member, nil
 }
