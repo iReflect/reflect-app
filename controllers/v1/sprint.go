@@ -23,12 +23,17 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.GetSprints)
 	r.DELETE("/:sprintID/", ctrl.Delete)
 	r.GET("/:sprintID/", ctrl.Get)
+
 	r.POST("/:sprintID/activate/", ctrl.ActivateSprint)
 	r.POST("/:sprintID/freeze/", ctrl.FreezeSprint)
 	r.POST("/:sprintID/process/", ctrl.Process)
+
 	r.POST("/:sprintID/members/", ctrl.AddMember)
-	r.DELETE("/:sprintID/members/:memberID/", ctrl.RemoveMember)
 	r.GET("/:sprintID/members/", ctrl.GetSprintMemberList)
+
+	r.PUT("/:sprintID/members/:memberID/", ctrl.UpdateSprintMember)
+	r.DELETE("/:sprintID/members/:memberID/", ctrl.RemoveMember)
+
 	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
 }
 
@@ -225,5 +230,27 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint member summary", "error": err.Error()})
 		return
 	}
+	c.JSON(http.StatusOK, response)
+}
+
+// UpdateSprintMember updates the sprint member summary
+func (ctrl SprintController) UpdateSprintMember(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	sprintMemberID := c.Param("memberID")
+
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	var memberData retroSerializers.SprintMemberSummary
+	err := c.BindJSON(&memberData)
+	response, err := ctrl.SprintService.UpdateSprintMember(sprintID, sprintMemberID, memberData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to update the member summary", "error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, response)
 }
