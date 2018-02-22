@@ -14,6 +14,7 @@ import (
 type Retrospective struct {
 	gorm.Model
 	Title              string       `gorm:"type:varchar(255); not null"`
+	ProjectName        string       `gorm:"type:varchar(255); not null"`
 	TaskProviderConfig fields.JSONB `gorm:"type:jsonb; not null; default:'[]'::jsonb"`
 	Team               userModels.Team
 	TeamID             uint `gorm:"not null"`

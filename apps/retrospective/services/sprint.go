@@ -431,7 +431,7 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprintID).
 		Joins("JOIN users ON users.id = sprint_members.member_id").
-		Select("users.*").
+		Select("sprint_members.id, users.email, users.first_name, users.last_name, users.active").
 		Scan(&sprintMemberList.Members).
 		Error; err != nil {
 		return nil, err
