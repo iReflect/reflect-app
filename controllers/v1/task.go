@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 )
 
 // TaskController ...
@@ -18,6 +19,7 @@ func (ctrl TaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:taskID/", ctrl.Get)
 	r.GET("/:taskID/members/", ctrl.GetMembers)
+	r.POST("/:taskID/members/", ctrl.AddMember)
 }
 
 // List ...
@@ -79,6 +81,34 @@ func (ctrl TaskController) GetMembers(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get members", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, members)
+}
+
+// AddMember adds a member for a task in a particular sprint of a retro
+func (ctrl TaskController) AddMember(c *gin.Context) {
+	taskID := c.Param("taskID")
+	retroID := c.Param("retroID")
+	sprintID := c.Param("sprintID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanAccessTask(retroID, sprintID, taskID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	addTaskMemberData := retroSerializers.AddTaskMemberSerializer{}
+	if err := c.BindJSON(&addTaskMemberData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	members, err := ctrl.TaskService.AddMember(taskID, retroID, sprintID, addTaskMemberData.MemberID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Couldn't add member", "error": err.Error()})
 		return
 	}
 

@@ -36,3 +36,8 @@ type TaskMember struct {
 type TaskMembersSerializer struct {
 	Members []TaskMember
 }
+
+// AddTaskMemberSerializer ...
+type AddTaskMemberSerializer struct {
+	MemberID uint `json:"memberID" binding:"required"`
+}

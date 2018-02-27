@@ -12,8 +12,8 @@ var RatingValues = [...]string{
 // Rating ...
 type Rating int8
 
-// String ...
-func (rating Rating) String() string {
+// GetStringValue ...
+func (rating Rating) GetStringValue() string {
 	return RatingValues[rating]
 }
 
