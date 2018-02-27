@@ -5,6 +5,7 @@ import (
 	"gopkg.in/go-playground/validator.v8"
 	"reflect"
 
+	"github.com/iReflect/reflect-app/apps/retrospective"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
@@ -75,4 +76,21 @@ func IsValidTeam(db *gorm.DB) validator.Func {
 		}
 		return true
 	}
+}
+
+// IsValidRating ...
+func IsValidRating(
+	v *validator.Validate,
+	topStruct reflect.Value,
+	currentStruct reflect.Value,
+	field reflect.Value,
+	fieldType reflect.Type,
+	fieldKind reflect.Kind,
+	param string,
+) bool {
+	rating := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskMemberUpdate).Rating
+	if rating >= 0 && int(rating) < len(retrospective.RatingValues) {
+		return true
+	}
+	return false
 }

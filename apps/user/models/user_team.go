@@ -41,6 +41,7 @@ type UserTeam struct {
 	LeavedAt *time.Time
 }
 
+// BeforeSave ...
 func (userTeam *UserTeam) BeforeSave(db *gorm.DB) (err error) {
 
 	userTeams := []UserTeam{}

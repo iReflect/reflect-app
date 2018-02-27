@@ -26,4 +26,9 @@ func (validator RetrospectiveValidators) Register() {
 		IsValidSprint); err != nil {
 		logrus.Error(err.Error())
 	}
+
+	if err := binding.Validator.RegisterValidation("is_valid_rating",
+		IsValidRating); err != nil {
+		logrus.Error(err.Error())
+	}
 }

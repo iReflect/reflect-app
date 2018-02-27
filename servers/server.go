@@ -57,7 +57,7 @@ func (a *App) Initialize(config *config.Config) {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:4200", "http://localhost:3000"}
 	corsConfig.AllowCredentials = true
-	corsConfig.AllowMethods =  []string{"GET", "POST", "PUT", "PATCH", "HEAD", "DELETE", "OPTIONS"}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "HEAD", "DELETE", "OPTIONS"}
 	r.Use(cors.New(corsConfig))
 
 	// Middleware
@@ -112,7 +112,7 @@ func (a *App) SetRoutes() {
 
 	taskService := retrospectiveServices.TaskService{DB: a.DB}
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
-	tasksController := apiControllers.TaskController{TaskService: taskService, PermissionService: permissionService}
+	tasksController := apiControllers.TaskController{TaskService: taskService, PermissionService: permissionService, TrailService: trailService}
 	tasksController.Routes(taskRoute)
 
 	taskTrackerService := taskTrackerServices.TaskTrackerService{}

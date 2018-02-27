@@ -4,14 +4,16 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"strconv"
 )
 
 // TaskController ...
 type TaskController struct {
 	TaskService       retroServices.TaskService
 	PermissionService retroServices.PermissionService
+	TrailService      retroServices.TrailService
 }
 
 // Routes for Tasks
@@ -20,6 +22,7 @@ func (ctrl TaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/:taskID/", ctrl.Get)
 	r.GET("/:taskID/members/", ctrl.GetMembers)
 	r.POST("/:taskID/members/", ctrl.AddMember)
+	r.PUT("/:taskID/members/:smtID/", ctrl.UpdateTaskMember)
 }
 
 // List ...
@@ -94,7 +97,7 @@ func (ctrl TaskController) AddMember(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessTask(retroID, sprintID, taskID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, taskID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -113,4 +116,35 @@ func (ctrl TaskController) AddMember(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, members)
+}
+
+// UpdateTaskMember updates a member for a task in a particular sprint of a retro
+func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
+	taskID := c.Param("taskID")
+	retroID := c.Param("retroID")
+	sprintID := c.Param("sprintID")
+	smtID := c.Param("smtID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, taskID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	taskMemberData := retroSerializers.SprintTaskMemberUpdate{}
+	if err := c.BindJSON(&taskMemberData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	taskMember, err := ctrl.TaskService.UpdateTaskMember(taskID, retroID, sprintID, smtID, &taskMemberData)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not update member", "error": err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Updated Task Member", "Sprint Task Member", strconv.Itoa(int(taskMember.ID)), userID.(uint))
+
+	c.JSON(http.StatusOK, taskMember)
 }
