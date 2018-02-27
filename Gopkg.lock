@@ -8,6 +8,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/blaskovicz/go-cryptkeeper"
+  packages = ["."]
+  revision = "501fcfe3c5e966e9ff6b103e512d9f45d39d7a7f"
+
+[[projects]]
   name = "github.com/boj/redistore"
   packages = ["."]
   revision = "fc113767cd6b051980f260d6dbe84b2740c46ab0"
@@ -252,6 +258,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ffaf6ec5ba889fff71af798e6a930d5598ac3a90c91c7479c5ef7ff5db76afad"
+  inputs-digest = "19829f0f7ecd1f3a5edb6499aabfe7c6e4ec959ae71eb0b9bcc657d38e299864"
   solver-name = "gps-cdcl"
   solver-version = 1

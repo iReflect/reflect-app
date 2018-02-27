@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"errors"
+	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
@@ -55,6 +56,7 @@ func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
 		return nil, err
 	}
 
+	cryptkeeper.SetCryptKey(utils.EncryptionKey())
 	var providerData map[string]interface{}
 	var credentials map[string]interface{}
 
@@ -62,14 +64,14 @@ func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
 		providerData = taskProviderConfig["data"].(map[string]interface{})
 		credentials = providerData["credentials"].(map[string]interface{})
 		if val, ok := credentials["password"]; ok {
-			credentials["password"], err = utils.EncryptString(val.([]byte))
+			credentials["password"], err = cryptkeeper.Encrypt(val.(string))
 
 			if err != nil {
 				return nil, err
 			}
 		}
 		if val, ok := credentials["apiToken"]; ok {
-			credentials["apiToken"], err = utils.EncryptString(val.([]byte))
+			credentials["apiToken"], err = cryptkeeper.Encrypt(val.(string))
 			if err != nil {
 				return nil, err
 			}
@@ -85,19 +87,20 @@ func DecryptTaskProviders(encrypted []byte) (decrypted []byte, err error) {
 		return nil, err
 	}
 
+	cryptkeeper.SetCryptKey(utils.EncryptionKey())
 	var providerData map[string]interface{}
 	var credentials map[string]interface{}
 	for _, taskProviderConfig := range configList {
 		providerData = taskProviderConfig["data"].(map[string]interface{})
 		credentials = providerData["credentials"].(map[string]interface{})
 		if val, ok := credentials["password"]; ok {
-			credentials["password"], err = utils.DecryptString(val.([]byte))
+			credentials["password"], err = cryptkeeper.Decrypt(val.(string))
 			if err != nil {
 				return nil, err
 			}
 		}
 		if val, ok := credentials["apiToken"]; ok {
-			credentials["apiToken"], err = utils.DecryptString(val.([]byte))
+			credentials["apiToken"], err = cryptkeeper.Decrypt(val.(string))
 			if err != nil {
 				return nil, err
 			}

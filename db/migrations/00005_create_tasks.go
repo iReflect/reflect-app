@@ -24,7 +24,7 @@ func Up00005(tx *sql.Tx) error {
 
 	gormdb.Model(&models.Task{}).AddForeignKey("retrospective_id", "retrospectives(id)", "RESTRICT", "RESTRICT")
 
-	gormdb.Model(&models.Task{}).AddUniqueIndex("unique_tasks_retro_id_task_id", "retrospective_id", "task_id")
+	gormdb.Model(&models.Task{}).AddIndex("index_tasks_retro_id_task_id", "retrospective_id", "task_id")
 
 	return nil
 }
@@ -37,7 +37,7 @@ func Down00005(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&models.Task{}).RemoveIndex("unique_tasks_retro_id_task_id")
+	gormdb.Model(&models.Task{}).RemoveIndex("index_tasks_retro_id_task_id")
 
 	gormdb.Model(&models.Task{}).RemoveForeignKey("retrospective_id", "retrospectives(id)")
 

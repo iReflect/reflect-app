@@ -64,7 +64,7 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 	return &JIRAConnection{config: jiraConfig, client: client}
 }
 
-// GetConfigObject ...
+// getConfigObject ...
 func getConfigObject(config interface{}) (JIRAConfig, error) {
 	var c JIRAConfig
 
