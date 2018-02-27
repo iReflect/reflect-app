@@ -1,10 +1,10 @@
 package services
 
 import (
-	"github.com/jinzhu/gorm"
-
 	"encoding/json"
 	"errors"
+	"github.com/jinzhu/gorm"
+
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
@@ -97,15 +97,15 @@ func (service RetrospectiveService) Create(userID uint,
 		return err
 	}
 
-	var retrospective retroModels.Retrospective
+	var retro retroModels.Retrospective
 	var taskProviders []byte
 	var encryptedTaskProviders []byte
 
-	retrospective.TeamID = retrospectiveData.TeamID
-	retrospective.CreatedByID = userID
-	retrospective.Title = retrospectiveData.Title
-	retrospective.ProjectName = retrospectiveData.ProjectName
-	retrospective.HrsPerStoryPoint = retrospectiveData.HrsPerStoryPoint
+	retro.TeamID = retrospectiveData.TeamID
+	retro.CreatedByID = userID
+	retro.Title = retrospectiveData.Title
+	retro.ProjectName = retrospectiveData.ProjectName
+	retro.HrsPerStoryPoint = retrospectiveData.HrsPerStoryPoint
 
 	if err = tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
 		return err
@@ -118,8 +118,8 @@ func (service RetrospectiveService) Create(userID uint,
 	if encryptedTaskProviders, err = tasktracker.EncryptTaskProviders(taskProviders); err != nil {
 		return err
 	}
-	retrospective.TaskProviderConfig = encryptedTaskProviders
+	retro.TaskProviderConfig = encryptedTaskProviders
 
-	err = db.Create(&retrospective).Error
+	err = db.Create(&retro).Error
 	return err
 }

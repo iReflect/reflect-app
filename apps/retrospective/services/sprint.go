@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -14,10 +15,10 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
-	"time"
 )
 
 // SprintService ...
@@ -497,4 +498,89 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 		(float64(sprintMember.ExpectationPercent) / 100.00) * (float64(sprintMember.AllocationPercent) / 100.00))
 
 	return &memberData, nil
+}
+
+// CreateNewSprint creates a new sprint for the retro
+func (service SprintService) CreateNewSprint(retroID string, sprintData retrospectiveSerializers.CreateSprintSerializer) (err error) {
+
+	db := service.DB
+	var sprint retroModels.Sprint
+	var retro retroModels.Retrospective
+	var sprintMember retroModels.SprintMember
+
+	if err := db.Model(&retro).
+		Where("id = ?", retroID).
+		Find(&retro).Error; err != nil {
+		return err
+	}
+
+	var teamMemberIDs []uint
+
+	err = db.Model(&retroModels.Sprint{}).
+		Joins("JOIN sprint_members ON sprint_members.sprint_id = sprints.id").
+		Where("sprints.status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
+		Where("sprints.retrospective_id = ?", retro.ID).
+		Order("sprints.end_date DESC, sprints.created_at DESC").
+		Pluck("sprint_members.member_id", &teamMemberIDs).
+		Error
+	if err != nil || len(teamMemberIDs) < 1 {
+		err = db.Model(&userModels.UserTeam{}).
+			Where("team_id = ?", retro.TeamID).
+			Where("leaved_at IS NULL OR leaved_at > NOW()").
+			Pluck("DISTINCT user_id", &teamMemberIDs).
+			Error
+		if err != nil {
+			return err
+		}
+	}
+
+	sprint.Title = sprintData.Title
+	sprint.SprintID = sprintData.SprintID
+	sprint.RetrospectiveID = retro.ID
+	sprint.StartDate = sprintData.StartDate
+	sprint.EndDate = sprintData.EndDate
+	sprint.CreatedByID = sprintData.CreatedByID
+	sprint.Status = retroModels.DraftSprint
+
+	if sprint.SprintID != "" && sprint.StartDate == nil && sprint.EndDate == nil {
+		connections, err := tasktracker.GetConnections(retro.TaskProviderConfig)
+		if err != nil {
+			return err
+		}
+		for _, connection := range connections {
+			providerSprint := connection.GetSprint(sprintData.SprintID)
+			if providerSprint != nil {
+				sprint.StartDate = providerSprint.FromDate
+				sprint.EndDate = providerSprint.ToDate
+				break
+			}
+		}
+	}
+
+	tx := db.Begin() // transaction begin
+
+	if err = tx.Create(&sprint).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, userID := range teamMemberIDs {
+		sprintMember = retroModels.SprintMember{
+			SprintID:           uint(sprint.ID),
+			MemberID:           userID,
+			Vacations:          0,
+			Rating:             retrospective.OkayRating,
+			// TODO: Instead of setting it to default to 100%,
+			// we can use the previous active sprint's data for the allocation and expectation values
+			AllocationPercent:  100,
+			ExpectationPercent: 100,
+		}
+		if err = tx.Create(&sprintMember).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID))})
+	return tx.Commit().Error
 }

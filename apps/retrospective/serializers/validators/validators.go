@@ -11,7 +11,7 @@ type RetrospectiveValidators struct {
 	DB *gorm.DB
 }
 
-// Register registers all the validators for the feedback serializers
+// Register registers all the validators for the retrospective serializers
 func (validator RetrospectiveValidators) Register() {
 	if err := binding.Validator.RegisterValidation("is_valid_team",
 		IsValidTeam(validator.DB)); err != nil {
@@ -20,6 +20,10 @@ func (validator RetrospectiveValidators) Register() {
 
 	if err := binding.Validator.RegisterValidation("is_valid_task_provider_config",
 		IsValidTaskProviderConfigList); err != nil {
+		logrus.Error(err.Error())
+	}
+	if err := binding.Validator.RegisterValidation("is_valid_sprint",
+		IsValidSprint); err != nil {
 		logrus.Error(err.Error())
 	}
 }
