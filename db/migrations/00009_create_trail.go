@@ -23,7 +23,7 @@ func Up00009(tx *sql.Tx) error {
 
 	gormdb.Model(&models.Trail{}).AddForeignKey("action_by_id", "users(id)", "RESTRICT", "RESTRICT")
 
-	gormdb.Model(&models.Trail{}).AddUniqueIndex("unique_trails_action_item_action_item_id", "action_item", "action_item_id")
+	gormdb.Model(&models.Trail{}).AddIndex("index_trails_action_item_action_item_id", "action_item", "action_item_id")
 
 	return nil
 }
@@ -36,7 +36,7 @@ func Down00009(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&models.Trail{}).RemoveIndex("unique_trails_action_item_action_item_id")
+	gormdb.Model(&models.Trail{}).RemoveIndex("index_trails_action_item_action_item_id")
 
 	gormdb.Model(&models.Trail{}).RemoveForeignKey("action_by_id", "users(id)")
 

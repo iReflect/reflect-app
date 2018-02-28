@@ -18,6 +18,7 @@ import (
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 	_ "github.com/iReflect/reflect-app/apps/tasktracker/providers" // Register all the task-tracker providers
 	taskTrackerServices "github.com/iReflect/reflect-app/apps/tasktracker/services"
+	_ "github.com/iReflect/reflect-app/apps/timetracker/providers" // Register all the time-tracker providers
 	"github.com/iReflect/reflect-app/apps/user/middleware/oauth"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/config"

@@ -14,6 +14,7 @@ import (
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"github.com/iReflect/reflect-app/apps/timetracker"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
@@ -274,6 +275,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	err = db.Model(&retroModels.SprintMember{}).
 		Where("id = ?", sprintMemberID).
 		Preload("Sprint").
+		Preload("Member").
 		Preload("Sprint.Retrospective").
 		Find(&sprintMember).Error
 
@@ -291,9 +293,20 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		}
 	}
 
-	// ToDo: Get tickets from TimeTracker
-	timeLogs := []timeTrackerSerializers.TimeLog{}
-	ticketIDs := []string{"IR-15", "IR-19"}
+	if sprint.StartDate == nil || sprint.EndDate == nil {
+		return nil
+	}
+
+	timeLogs, err := timetracker.GetProjectTimeLogs(sprintMember.Member.TimeProviderConfig, sprint.Retrospective.ProjectName, *sprint.StartDate, *sprint.EndDate)
+
+	if err != nil {
+		return err
+	}
+
+	ticketIDs := []string{}
+	for _, timeLog := range timeLogs {
+		ticketIDs = append(ticketIDs, timeLog.TaskID)
+	}
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprintMember.Sprint.Retrospective.TaskProviderConfig)
 	if err != nil {

@@ -11,11 +11,13 @@ import (
 type Retrospective struct {
 	ID                 uint
 	Title              string
+	ProjectName        string
 	Team               userSerializer.Team
 	TeamID             uint
 	UpdatedAt          time.Time
 	CreatedBy          userSerializer.User
 	CreatedByID        uint
+	CreatedAt          time.Time
 	TaskProviderConfig fields.JSONB
 	HrsPerStoryPoint   float64
 }

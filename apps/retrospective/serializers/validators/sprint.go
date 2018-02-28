@@ -6,6 +6,7 @@ import (
 	"reflect"
 )
 
+// IsValidSprint ...
 func IsValidSprint(
 	v *validator.Validate,
 	topStruct reflect.Value,

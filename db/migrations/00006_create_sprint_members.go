@@ -25,7 +25,7 @@ func Up00006(tx *sql.Tx) error {
 	gormdb.Model(&models.SprintMember{}).AddForeignKey("sprint_id", "sprints(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.SprintMember{}).AddForeignKey("member_id", "users(id)", "RESTRICT", "RESTRICT")
 
-	gormdb.Model(&models.SprintMember{}).AddUniqueIndex("unique_sprint_members_sprint_id_member_id", "sprint_id", "member_id")
+	gormdb.Model(&models.SprintMember{}).AddIndex("index_sprint_members_sprint_id_member_id", "sprint_id", "member_id")
 
 	return nil
 }
@@ -38,7 +38,7 @@ func Down00006(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&models.SprintMember{}).RemoveIndex("unique_sprint_members_sprint_id_member_id")
+	gormdb.Model(&models.SprintMember{}).RemoveIndex("index_sprint_members_sprint_id_member_id")
 
 	gormdb.Model(&models.SprintMember{}).RemoveForeignKey("sprint_id", "sprints(id)")
 	gormdb.Model(&models.SprintMember{}).RemoveForeignKey("member_id", "users(id)")
