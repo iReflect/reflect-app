@@ -168,7 +168,6 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 	return member, err
 }
 
-
 // UpdateTaskMember ...
 func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprintID string, smtID string, taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, error) {
 	db := service.DB

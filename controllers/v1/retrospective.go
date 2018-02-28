@@ -98,5 +98,5 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 	// ToDo: Pass retrospective ID
 	ctrl.TrailService.Add("Created Retrospective", "Retrospective", "", userID.(uint))
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusCreated, gin.H{})
 }

@@ -130,6 +130,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
 		Where("user_teams.user_id=?", memberID).
 		Where("sprints.id=?", sprintID).
+		Preload("Retrospective").
 		Find(&sprint).
 		Error
 	if err != nil {
@@ -401,7 +402,7 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint)
 		Where("status in (?) OR (status = (?) AND created_by_id = (?))", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}, retroModels.DraftSprint, userID).
 		Preload("CreatedBy").
 		Order("end_date desc").
-		Scan(&sprints.Sprints).Error
+		Find(&sprints.Sprints).Error
 
 	if err != nil {
 		return nil, err
@@ -484,7 +485,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("SUM(smt.points_earned)").
+		Select("COALESCE(SUM(smt.points_earned), 0)").
 		Group("sprint_members.id").
 		Row().
 		Scan(&memberData.ActualVelocity); err != nil {
@@ -566,10 +567,10 @@ func (service SprintService) CreateNewSprint(retroID string, sprintData retrospe
 
 	for _, userID := range teamMemberIDs {
 		sprintMember = retroModels.SprintMember{
-			SprintID:           uint(sprint.ID),
-			MemberID:           userID,
-			Vacations:          0,
-			Rating:             retrospective.OkayRating,
+			SprintID:  uint(sprint.ID),
+			MemberID:  userID,
+			Vacations: 0,
+			Rating:    retrospective.OkayRating,
 			// TODO: Instead of setting it to default to 100%,
 			// we can use the previous active sprint's data for the allocation and expectation values
 			AllocationPercent:  100,
