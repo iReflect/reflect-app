@@ -29,12 +29,6 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/freeze/", ctrl.FreezeSprint)
 	r.POST("/:sprintID/process/", ctrl.Process)
 
-	r.POST("/:sprintID/members/", ctrl.AddMember)
-	r.GET("/:sprintID/members/", ctrl.GetSprintMemberList)
-
-	r.PUT("/:sprintID/members/:memberID/", ctrl.UpdateSprintMember)
-	r.DELETE("/:sprintID/members/:memberID/", ctrl.RemoveMember)
-
 	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
 }
 
@@ -133,23 +127,6 @@ func (ctrl SprintController) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, sprint)
 }
 
-// GetSprintMemberList returns the sprint member list
-func (ctrl SprintController) GetSprintMemberList(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	sprintID := c.Param("sprintID")
-	retroID := c.Param("retroID")
-	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
-		return
-	}
-	response, err := ctrl.SprintService.GetSprintMemberList(sprintID)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint member list", "error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, response)
-}
-
 // Process Sprint
 func (ctrl SprintController) Process(c *gin.Context) {
 	userID, _ := c.Get("userID")
@@ -162,57 +139,6 @@ func (ctrl SprintController) Process(c *gin.Context) {
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": sprintID})
 
 	ctrl.TrailService.Add("Triggered Sprint Refresh", "Sprint", sprintID, userID.(uint))
-
-	c.JSON(http.StatusNoContent, nil)
-}
-
-// AddMember to a Sprint
-func (ctrl SprintController) AddMember(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	sprintID := c.Param("sprintID")
-	retroID := c.Param("retroID")
-
-	addMemberData := retroSerializers.AddMemberSerializer{}
-	if err := c.BindJSON(&addMemberData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
-		return
-	}
-
-	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
-		return
-	}
-
-	response, err := ctrl.SprintService.AddSprintMember(sprintID, addMemberData.MemberID)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to add member", "error": err.Error()})
-		return
-	}
-
-	ctrl.TrailService.Add("Added Sprint Member "+strconv.Itoa(int(response.ID)), "Sprint", sprintID, userID.(uint))
-
-	c.JSON(http.StatusOK, response)
-}
-
-// RemoveMember from a Sprint
-func (ctrl SprintController) RemoveMember(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	sprintID := c.Param("sprintID")
-	retroID := c.Param("retroID")
-	memberID := c.Param("memberID")
-
-	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
-		return
-	}
-
-	err := ctrl.SprintService.RemoveSprintMember(sprintID, memberID)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to remove member", "error": err.Error()})
-		return
-	}
-
-	ctrl.TrailService.Add("Removed Sprint Member "+memberID, "Sprint", sprintID, userID.(uint))
 
 	c.JSON(http.StatusNoContent, nil)
 }
@@ -234,27 +160,6 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// UpdateSprintMember updates the sprint member summary
-func (ctrl SprintController) UpdateSprintMember(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	sprintID := c.Param("sprintID")
-	retroID := c.Param("retroID")
-	sprintMemberID := c.Param("memberID")
-
-	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
-		return
-	}
-	var memberData retroSerializers.SprintMemberSummary
-	err := c.BindJSON(&memberData)
-	response, err := ctrl.SprintService.UpdateSprintMember(sprintID, sprintMemberID, memberData)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to update the member summary", "error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, response)
-}
 
 // CreateNewSprint creates a new draft sprint for the retro
 func (ctrl SprintController) CreateNewSprint(c *gin.Context) {
@@ -270,10 +175,13 @@ func (ctrl SprintController) CreateNewSprint(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
 		return
 	}
-	err = ctrl.SprintService.CreateNewSprint(retroID, sprintData)
+	sprint, err := ctrl.SprintService.Create(retroID, sprintData)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to create the sprint", "error": err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Created Sprint", "Sprint", strconv.Itoa(int(sprint.ID)), userID.(uint))
+
 	c.JSON(http.StatusCreated, gin.H{})
 }

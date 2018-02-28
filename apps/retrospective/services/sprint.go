@@ -514,10 +514,10 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	return &memberData, nil
 }
 
-// CreateNewSprint creates a new sprint for the retro
-func (service SprintService) CreateNewSprint(retroID string, sprintData retrospectiveSerializers.CreateSprintSerializer) (err error) {
-
+// Create creates a new sprint for the retro
+func (service SprintService) Create(retroID string, sprintData retrospectiveSerializers.CreateSprintSerializer) (*retroModels.Sprint, error) {
 	db := service.DB
+	var err error
 	var sprint retroModels.Sprint
 	var retro retroModels.Retrospective
 	var sprintMember retroModels.SprintMember
@@ -525,7 +525,7 @@ func (service SprintService) CreateNewSprint(retroID string, sprintData retrospe
 	if err := db.Model(&retro).
 		Where("id = ?", retroID).
 		Find(&retro).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	var teamMemberIDs []uint
@@ -544,7 +544,7 @@ func (service SprintService) CreateNewSprint(retroID string, sprintData retrospe
 			Pluck("DISTINCT user_id", &teamMemberIDs).
 			Error
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -559,7 +559,7 @@ func (service SprintService) CreateNewSprint(retroID string, sprintData retrospe
 	if sprint.SprintID != "" && sprint.StartDate == nil && sprint.EndDate == nil {
 		connections, err := tasktracker.GetConnections(retro.TaskProviderConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, connection := range connections {
 			providerSprint := connection.GetSprint(sprintData.SprintID)
@@ -575,7 +575,7 @@ func (service SprintService) CreateNewSprint(retroID string, sprintData retrospe
 
 	if err = tx.Create(&sprint).Error; err != nil {
 		tx.Rollback()
-		return err
+		return nil, err
 	}
 
 	for _, userID := range teamMemberIDs {
@@ -591,10 +591,10 @@ func (service SprintService) CreateNewSprint(retroID string, sprintData retrospe
 		}
 		if err = tx.Create(&sprintMember).Error; err != nil {
 			tx.Rollback()
-			return err
+			return nil, err
 		}
 	}
 
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID))})
-	return tx.Commit().Error
+	return &sprint, tx.Commit().Error
 }

@@ -85,8 +85,9 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retrospect
 
 // Create the Retrospective with the given values (provided the user is a member of the retrospective's team.
 func (service RetrospectiveService) Create(userID uint,
-	retrospectiveData *retrospectiveSerializers.RetrospectiveCreateSerializer) (err error) {
+	retrospectiveData *retrospectiveSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, error) {
 	db := service.DB
+	var err error
 
 	// Check if the user has the permission to create the retro
 	if err = db.Model(&userModels.UserTeam{}).
@@ -94,7 +95,7 @@ func (service RetrospectiveService) Create(userID uint,
 			retrospectiveData.TeamID, userID).
 		Find(&userModels.UserTeam{}).Error; err != nil {
 		err = errors.New("user doesn't have the permission to create the retro")
-		return err
+		return nil, err
 	}
 
 	var retro retroModels.Retrospective
@@ -107,19 +108,19 @@ func (service RetrospectiveService) Create(userID uint,
 	retro.ProjectName = retrospectiveData.ProjectName
 	retro.HrsPerStoryPoint = retrospectiveData.HrsPerStoryPoint
 
-	if err = tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
-		return err
+	if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
+		return nil, err
 	}
 
 	if taskProviders, err = json.Marshal(retrospectiveData.TaskProviderConfig); err != nil {
-		return err
+		return nil, err
 	}
 
 	if encryptedTaskProviders, err = tasktracker.EncryptTaskProviders(taskProviders); err != nil {
-		return err
+		return nil, err
 	}
 	retro.TaskProviderConfig = encryptedTaskProviders
 
 	err = db.Create(&retro).Error
-	return err
+	return &retro, err
 }

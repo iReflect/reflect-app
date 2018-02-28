@@ -111,6 +111,10 @@ func (a *App) SetRoutes() {
 	sprintController := apiControllers.SprintController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}
 	sprintController.Routes(sprintRoute)
 
+	sprintMemberRoute := sprintRoute.Group(":sprintID/members")
+	sprintMemberController := apiControllers.SprintMemberController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}
+	sprintMemberController.Routes(sprintMemberRoute)
+
 	taskService := retrospectiveServices.TaskService{DB: a.DB}
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
 	tasksController := apiControllers.TaskController{TaskService: taskService, PermissionService: permissionService, TrailService: trailService}

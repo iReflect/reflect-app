@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"strings"
 )
 
 // RetrospectiveController ...
@@ -88,15 +89,14 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
 		return
 	}
-	err = ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
+	retro, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest,
 			gin.H{"message": "Retrospective can't be created", "error": err.Error()})
 		return
 	}
 
-	// ToDo: Pass retrospective ID
-	ctrl.TrailService.Add("Created Retrospective", "Retrospective", "", userID.(uint))
+	ctrl.TrailService.Add("Created Retrospective", "Retrospective", strconv.Itoa(int(retro.ID)), userID.(uint))
 
 	c.JSON(http.StatusCreated, gin.H{})
 }

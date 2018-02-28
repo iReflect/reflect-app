@@ -115,6 +115,8 @@ func (ctrl TaskController) AddMember(c *gin.Context) {
 		return
 	}
 
+	ctrl.TrailService.Add("Added Task Member", "Sprint Member Task", taskID, userID.(uint))
+
 	c.JSON(http.StatusOK, members)
 }
 
@@ -144,7 +146,7 @@ func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Task Member", "Sprint Task Member", strconv.Itoa(int(taskMember.ID)), userID.(uint))
+	ctrl.TrailService.Add("Updated Task Member", "Sprint Member Task", strconv.Itoa(int(taskMember.ID)), userID.(uint))
 
 	c.JSON(http.StatusOK, taskMember)
 }
