@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
-	"strings"
 )
 
 // RetrospectiveController ...
