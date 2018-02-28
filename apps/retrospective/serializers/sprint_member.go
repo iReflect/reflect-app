@@ -1,10 +1,10 @@
 package serializers
 
-import userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
-
 // SprintMemberSummary ...
 type SprintMemberSummary struct {
-	userSerializers.User
+	ID                 uint
+	FirstName          string
+	LastName           string
 	AllocationPercent  float64
 	ExpectationPercent float64
 	Vacations          float64
