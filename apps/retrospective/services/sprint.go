@@ -154,7 +154,8 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	if err != nil {
 		return nil, err
 	}
-	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": sprintMember.ID})
+
+	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": strconv.Itoa(int(sprintMember.ID))})
 
 	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
 	if err = db.Model(&retroModels.SprintMember{}).
@@ -384,7 +385,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	var task retroModels.Task
 	err = db.Model(&retroModels.SprintMemberTask{}).
 		Where("sprint_member_id = ?", sprintMemberID).
-		Joins("tasks ON tasks.id=sprint_member_tasks.task_id").
+		Joins("JOIN tasks ON tasks.id=sprint_member_tasks.task_id").
 		Where("tasks.task_id = ?", timeLog.TaskID).
 		FirstOrInit(&sprintMemberTask).Error
 	if err != nil {
