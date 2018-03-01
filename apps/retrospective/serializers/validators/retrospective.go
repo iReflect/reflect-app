@@ -89,7 +89,7 @@ func IsValidRating(
 	param string,
 ) bool {
 	rating := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskMemberUpdate).Rating
-	if rating >= 0 && int(rating) < len(retrospective.RatingValues) {
+	if rating != nil && *rating >= 0 && int(*rating) < len(retrospective.RatingValues) {
 		return true
 	}
 	return false

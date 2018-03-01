@@ -558,17 +558,33 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 	sprint.Status = retroModels.DraftSprint
 
 	if sprint.SprintID != "" && sprint.StartDate == nil && sprint.EndDate == nil {
-		connections, err := tasktracker.GetConnections(retro.TaskProviderConfig)
+
+		taskProviderConfig, err := tasktracker.DecryptTaskProviders(retro.TaskProviderConfig)
 		if err != nil {
 			return nil, err
 		}
+
+		connections, err := tasktracker.GetConnections(taskProviderConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		var providerSprint *taskTrackerSerializers.Sprint
+
 		for _, connection := range connections {
-			providerSprint := connection.GetSprint(sprintData.SprintID)
+			providerSprint = connection.GetSprint(sprintData.SprintID)
 			if providerSprint != nil {
+				if providerSprint.FromDate == nil || providerSprint.ToDate == nil {
+					return nil, errors.New("sprint doesn't have any start and/or end date")
+				}
 				sprint.StartDate = providerSprint.FromDate
 				sprint.EndDate = providerSprint.ToDate
 				break
 			}
+		}
+
+		if providerSprint == nil {
+			return nil, errors.New("no sprint found in the task tracker")
 		}
 	}
 

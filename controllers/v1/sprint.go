@@ -182,5 +182,5 @@ func (ctrl SprintController) CreateNewSprint(c *gin.Context) {
 
 	ctrl.TrailService.Add("Created Sprint", "Sprint", strconv.Itoa(int(sprint.ID)), userID.(uint))
 
-	c.JSON(http.StatusCreated, gin.H{})
+	c.JSON(http.StatusCreated, sprint)
 }

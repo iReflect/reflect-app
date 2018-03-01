@@ -20,11 +20,13 @@ func IsValidSprint(
 	startDate := currentStruct.Interface().(*retroSerializers.CreateSprintSerializer).StartDate
 	endDate := currentStruct.Interface().(*retroSerializers.CreateSprintSerializer).EndDate
 
-	if sprintID == "" && (startDate == nil || endDate == nil) {
-		return false
+	if startDate != nil && endDate != nil {
+		return startDate.Before(*endDate)
 	}
-	if startDate != nil && endDate != nil && endDate.Before(*startDate) {
-		return false
+
+	if sprintID != "" && (startDate == nil && endDate == nil) {
+		return true
 	}
-	return true
+
+	return false
 }

@@ -44,8 +44,8 @@ type AddTaskMemberSerializer struct {
 
 // SprintTaskMemberUpdate serializer to update
 type SprintTaskMemberUpdate struct {
-	ID           uint    `json:"ID" binding:"required"`
-	SprintPoints float64 `json:"SprintPoints" binding:"required"`
-	Rating       int8    `json:"Rating" binding:"required,is_valid_rating"`
-	Comment      string  `json:"Comment" binding:"required"`
+	ID           uint     `json:"ID" binding:"required"`
+	SprintPoints *float64 `json:"SprintPoints"`
+	Rating       *int8    `json:"Rating" binding:"is_valid_rating"`
+	Comment      *string  `json:"Comment"`
 }

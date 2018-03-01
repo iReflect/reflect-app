@@ -169,13 +169,12 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 }
 
 // UpdateTaskMember ...
-func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprintID string, smtID string, taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, error) {
+func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprintID string, taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, error) {
 	db := service.DB
 
 	sprintMemberTask := retroModels.SprintMemberTask{}
 	err := db.Model(&retroModels.SprintMemberTask{}).
 		Where("task_id = ?", taskID).
-		Where("sprint_member_id = ?", smtID).
 		Where("id = ?", taskMemberData.ID).
 		Preload("SprintMember").
 		Find(&sprintMemberTask).Error
@@ -184,10 +183,15 @@ func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprin
 		return nil, err
 	}
 
-	sprintMemberTask.PointsEarned = taskMemberData.SprintPoints
-	sprintMemberTask.Rating = retrospective.Rating(taskMemberData.Rating)
-	sprintMemberTask.Comment = taskMemberData.Comment
-
+	if taskMemberData.SprintPoints != nil {
+		sprintMemberTask.PointsEarned = *taskMemberData.SprintPoints
+	}
+	if taskMemberData.Rating != nil {
+		sprintMemberTask.Rating = retrospective.Rating(*taskMemberData.Rating)
+	}
+	if taskMemberData.Comment != nil {
+		sprintMemberTask.Comment = *taskMemberData.Comment
+	}
 	if err = db.Save(&sprintMemberTask).Error; err != nil {
 		return nil, err
 	}
