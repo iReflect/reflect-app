@@ -75,6 +75,28 @@ For help - make migrate
 dep ensure -add github.com/foo/bar
 ```
 
+# Time Tracker configuration
+First, Generate a Refresh token using.
+https://developers.google.com/oauthplayground/ with Timesheet App's client_id, client_secret and following scopes
+
+```
+https://www.googleapis.com/auth/spreadsheets
+```
+
+Video instructions at https://www.youtube.com/watch?v=PJWrjAuIWWo
+
+
+Use the Refresh token to create a JSON credentials file at config/timetracker_credentials.json using following format
+
+```json
+{
+    "type":"authorized_user",
+    "client_id":"xxxxxxxxxxxxxxxxxx.apps.googleusercontent.com",
+    "client_secret":"xxxxxxxxx",
+    "refresh_token": "xxxxxxxxx"
+}
+```
+
 # References:
 - https://github.com/golang/dep
 - https://github.com/gin-gonic/gin

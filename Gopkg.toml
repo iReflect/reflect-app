@@ -74,3 +74,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/blaskovicz/go-cryptkeeper"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
