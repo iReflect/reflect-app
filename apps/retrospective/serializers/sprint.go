@@ -18,6 +18,8 @@ type Sprint struct {
 	CurrentlySyncing bool
 	CreatedBy        userSerializer.User
 	CreatedByID      uint
+	SprintLearnings  string
+	SprintHighlights string
 }
 
 // SprintsSerializer ...
@@ -37,4 +39,10 @@ type CreateSprintSerializer struct {
 	StartDate   *time.Time `json:"startDate"`
 	EndDate     *time.Time `json:"endDate"`
 	CreatedByID uint
+}
+
+// UpdateSprintSerializer is used in sprint create API
+type UpdateSprintSerializer struct {
+	SprintLearnings  *string
+	SprintHighlights *string
 }

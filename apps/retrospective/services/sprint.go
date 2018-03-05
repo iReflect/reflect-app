@@ -97,7 +97,7 @@ func (service SprintService) FreezeSprint(sprintID string) error {
 }
 
 // Get return details of the given sprint
-func (service SprintService) Get(sprintID string, userID uint) (*retrospectiveSerializers.Sprint, error) {
+func (service SprintService) Get(sprintID string) (*retrospectiveSerializers.Sprint, error) {
 	db := service.DB
 	var sprint retrospectiveSerializers.Sprint
 	if err := db.Model(&retroModels.Sprint{}).
@@ -598,4 +598,29 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID))})
 	return &sprint, tx.Commit().Error
+}
+
+// UpdateSprint updates the given sprint
+func (service SprintService) UpdateSprint(sprintID string, sprintData retrospectiveSerializers.UpdateSprintSerializer) (*retrospectiveSerializers.Sprint, error) {
+	db := service.DB
+	var sprint retroModels.Sprint
+
+	if err := db.Where("id = ?", sprintID).
+		Find(&sprint).Error; err != nil {
+		return nil, err
+	}
+
+	if sprintData.SprintHighlights != nil {
+		sprint.SprintHighlights = *sprintData.SprintHighlights
+	}
+
+	if sprintData.SprintLearnings != nil {
+		sprint.SprintLearnings = *sprintData.SprintLearnings
+	}
+
+	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
+		return nil, errors.New("sprint couldn't be updated")
+	}
+
+	return service.Get(sprintID)
 }

@@ -52,7 +52,9 @@ type Sprint struct {
 	LastSyncedAt     *time.Time
 	CurrentlySyncing bool `gorm:"default:true;not null"`
 	CreatedBy        userModels.User
-	CreatedByID      uint `gorm:"not null"`
+	CreatedByID      uint   `gorm:"not null"`
+	SprintLearnings  string `gorm:"type:text"`
+	SprintHighlights string `gorm:"type:text"`
 }
 
 // BeforeSave ...

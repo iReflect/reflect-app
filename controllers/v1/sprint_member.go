@@ -24,7 +24,6 @@ func (ctrl SprintMemberController) Routes(r *gin.RouterGroup) {
 	r.DELETE("/:memberID/", ctrl.RemoveMember)
 }
 
-
 // AddMember to a Sprint
 func (ctrl SprintMemberController) AddMember(c *gin.Context) {
 	userID, _ := c.Get("userID")
@@ -52,7 +51,6 @@ func (ctrl SprintMemberController) AddMember(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-
 
 // GetSprintMemberList returns the sprint member list
 func (ctrl SprintMemberController) GetSprintMemberList(c *gin.Context) {
