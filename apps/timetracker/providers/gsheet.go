@@ -23,8 +23,7 @@ type GsheetConnection struct {
 
 // GsheetConfig ...
 type GsheetConfig struct {
-	URL     string `json:"URL"`
-	SheetID string `json:"SheetID"`
+	Email string `json:"email"`
 }
 
 // TimeResult ...
@@ -95,7 +94,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 	timeTrackerConfig := config.GetConfig().TimeTracker
 	appExecutor := google.AppScriptExecutor{ScriptID: timeTrackerConfig.ScriptID, CredentialsFile: timeTrackerConfig.GoogleCredentials}
 
-	reponseBytes, err := appExecutor.Run(timeTrackerConfig.FnGetTimeLog, m.config.SheetID, project, startTime.Format("2006-01-02"), endTime.Format("2006-01-02"))
+	reponseBytes, err := appExecutor.Run(timeTrackerConfig.FnGetTimeLog, m.config.Email, project, startTime.Format("2006-01-02"), endTime.Format("2006-01-02"))
 	if err != nil {
 		log.Println("App Executor Failed: ", err)
 		return timeLogs

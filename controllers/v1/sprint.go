@@ -160,7 +160,6 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-
 // CreateNewSprint creates a new draft sprint for the retro
 func (ctrl SprintController) CreateNewSprint(c *gin.Context) {
 	userID, _ := c.Get("userID")

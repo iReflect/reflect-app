@@ -7,7 +7,8 @@
 
 ## System Setup
 Install GO - https://golang.org/doc/install  
-Install dep - https://github.com/golang/dep
+Install dep - https://github.com/golang/dep   
+Install Redis - https://redis.io/topics/quickstart
 
 ## Prepare DB
 Create a database (postgresql) as below to use the default configuration,
