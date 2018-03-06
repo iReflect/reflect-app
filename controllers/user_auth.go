@@ -14,24 +14,24 @@ type UserAuthController struct {
 //Add Routes
 func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.GET("/login/", ctrl.Login)
-	r.GET("/auth/", ctrl.Auth)
+	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
 }
 
 // Login ...
 func (ctrl UserAuthController) Login(c *gin.Context) {
-	state := ctrl.AuthService.Login(c)
-	c.JSON(http.StatusOK, state) // TODO Replace with oauth request
+	oauthRequest := ctrl.AuthService.Login(c)
+	c.JSON(http.StatusOK, oauthRequest)
 }
 
 // Auth ...
 func (ctrl UserAuthController) Auth(c *gin.Context) {
-	user, err := ctrl.AuthService.Authorize(c)
+	user, status, err := ctrl.AuthService.Authorize(c)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.AbortWithStatusJSON(status, gin.H{"error": err})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	c.JSON(status, user)
 }
 
 // Logout ...

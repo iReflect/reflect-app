@@ -10,9 +10,24 @@ import (
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/plus/v1"
 	"net/http"
-	"net/url"
+	"os"
 )
+
+var googleOAuthConf *oauth2.Config
+
+func init() {
+	var err error
+	googleOAuthConf, err = getGoogleOAuthConf()
+	if err != nil {
+		os.Exit(1)
+	}
+
+}
 
 //AuthenticationService ...
 type AuthenticationService struct {
@@ -29,49 +44,72 @@ func (service AuthenticationService) Login(c *gin.Context) map[string]string {
 	}
 	session.Save()
 	return map[string]string{
-		"State": state.(string),
+		"LoginURL": googleOAuthConf.AuthCodeURL(state.(string)),
 	}
 }
 
 // Authorize ...
 func (service AuthenticationService) Authorize(c *gin.Context) (
-	authenticatedUser *userSerializers.UserAuthSerializer,
+	userResponse *userSerializers.UserAuthSerializer,
+	status int,
 	err error) {
 	db := service.DB
+
+	oAuthContext := context.TODO()
 
 	session := sessions.Default(c)
 	retrievedState := session.Get("state")
 	actualState := c.Query("state")
 
+	resetSession(session)
+
 	if retrievedState != actualState {
-		logrus.Info(fmt.Sprintf("State Expected:  %s, Actual: %s", retrievedState, actualState))
-		return nil, errors.New("invalid state")
+		logrus.Error(fmt.Sprintf("State Expected:  %s, Actual: %s", retrievedState, actualState))
+		return getNotFoundErrorResponse()
 	}
 
-	// TODO replace with oauth logic
-	email, _ := url.QueryUnescape(c.Query("code"))
+	tok, err := googleOAuthConf.Exchange(oAuthContext, c.Query("code"))
+	if err != nil {
+		logrus.Error("Error occurred while exchanging code with token, Error:", err)
+		return getNotFoundErrorResponse()
+	}
+
+	client := googleOAuthConf.Client(oAuthContext, tok)
+
+	plusService, err := plus.New(client)
+	if err != nil {
+		logrus.Error("Error occurred while creating google plus service, Error:", err)
+		return getInternalErrorResponse()
+	}
+
+	googleUser, err := plusService.People.Get("me").Do()
+	if err != nil {
+		logrus.Error("Error occurred while getting information from google, Error:", err)
+		return getInternalErrorResponse()
+	}
+	userEmail := getAccountEmail(googleUser)
 	user := userModels.User{}
-
-	if err := db.Where("email = ?", email).First(&user).Error; err != nil {
-		logrus.Info(fmt.Sprintf("User with email %s not found", email), err)
-		session.Set("user", nil)
-		session.Set("token", nil)
-		session.Save()
-		return nil, err
+	if err := db.Where("email = ?", userEmail).First(&user).Error; err != nil {
+		if err.Error() == "record not found" {
+			logrus.Info(fmt.Sprintf("User with email %s not found", userEmail))
+			return getNotFoundErrorResponse()
+		}
+		logrus.Error("Error occurred while getting user from DB, Error:", err)
+		return getInternalErrorResponse()
 	}
 
-	authenticatedUser = new(userSerializers.UserAuthSerializer)
+	userResponse = new(userSerializers.UserAuthSerializer)
 
-	db.Model(&user).Scan(&authenticatedUser)
+	db.Model(&user).Scan(&userResponse)
 
-	authenticatedUser.Token = utils.RandToken()
-	session.Set("user", authenticatedUser.ID)
-	session.Set("token", authenticatedUser.Token)
-
+	userResponse.Token = utils.RandToken()
+	session.Set("user", userResponse.ID)
+	session.Set("token", userResponse.Token)
 	session.Save()
-	logrus.Info(fmt.Sprintf("Logged in user %s", authenticatedUser.Email))
 
-	return authenticatedUser, nil
+	logrus.Info(fmt.Sprintf("Logged in user %s", userResponse.Email))
+
+	return userResponse, http.StatusOK, nil
 }
 
 // AuthenticateSession ...
@@ -83,7 +121,7 @@ func (service AuthenticationService) AuthenticateSession(c *gin.Context) bool {
 	if userID != nil {
 		authenticatedUser := userModels.User{}
 		if err := db.First(&authenticatedUser, userID).Error; err != nil {
-			logrus.Info(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
+			logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
 			return false
 		}
 		if authenticatedUser.Active {
@@ -104,14 +142,67 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 		session := sessions.Default(c)
 		currentUser, _ := c.Get("user")
 		user := currentUser.(userModels.User)
-		session.Set("user", nil)
-		session.Set("token", nil)
-		session.Set("state", nil)
+		resetSession(session)
 		logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
 
-		session.Clear()
-		session.Save()
 		return http.StatusOK
 	}
 	return http.StatusUnauthorized
+}
+
+// getAccountEmail ...
+func getAccountEmail(person *plus.Person) string {
+	personEmails := person.Emails
+
+	for _, personEmail := range personEmails {
+		if personEmail.Type == "account" {
+			return personEmail.Value
+		}
+	}
+	logrus.Error("No account email found")
+	return ""
+}
+
+// resetSession ...
+func resetSession(session sessions.Session) {
+	session.Set("user", nil)
+	session.Set("token", nil)
+	session.Set("state", nil)
+	session.Clear()
+	session.Save()
+}
+
+// getUnauthorizedErrorResponse ...
+func getInternalErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
+	status int,
+	err error) {
+	return nil, http.StatusInternalServerError, errors.New("internal server error")
+}
+
+// getNotFoundErrorResponse ...
+func getNotFoundErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
+	status int,
+	err error) {
+	return nil, http.StatusNotFound, errors.New("user not found")
+}
+
+// getGoogleOAuthConf ...
+func getGoogleOAuthConf() (*oauth2.Config, error) {
+	credentials, err := google.FindDefaultCredentials(context.TODO())
+
+	if err != nil {
+		logrus.Error("error loading google creds, Error:", err)
+		return nil, err
+	}
+
+	oauthConfig, err := google.ConfigFromJSON(credentials.JSON, plus.PlusMeScope,
+		plus.UserinfoEmailScope, plus.UserinfoProfileScope)
+	oauthConfig.Endpoint = google.Endpoint
+
+	if err != nil {
+		logrus.Error("error loading google creds, Error", err)
+		return nil, err
+	}
+
+	return oauthConfig, nil
 }

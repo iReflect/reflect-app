@@ -2,7 +2,6 @@
 
 [![CircleCI](https://circleci.com/gh/iReflect/reflect-app.svg?style=svg)](https://circleci.com/gh/iReflect/reflect-app)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/21adfd09348b4de5b1aaec650a2d7462)](https://www.codacy.com/app/iReflect/reflect-app?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=iReflect/reflect-app&amp;utm_campaign=Badge_Grade)
-[![codecov](https://codecov.io/gh/iReflect/reflect-app/branch/master/graph/badge.svg)](https://codecov.io/gh/iReflect/reflect-app)
 
 
 ## System Setup
@@ -87,7 +86,7 @@ https://www.googleapis.com/auth/spreadsheets
 Video instructions at https://www.youtube.com/watch?v=PJWrjAuIWWo
 
 
-Use the Refresh token to create a JSON credentials file at config/timetracker_credentials.json using following format
+Use the Refresh token to create a JSON credentials file at `config/timetracker_credentials.json` using following format
 
 ```json
 {
@@ -98,16 +97,28 @@ Use the Refresh token to create a JSON credentials file at config/timetracker_cr
 }
 ```
 
+# Google OAuth Login Configuration
+Generate a client_id/client_secret for the iReflect's Authentication app.
+Note, select Web Application as the application type and provide origin and redirect url of the hosted webapp
+
+Use the generated client_id/client_secret to create a JSON credentials file at `config/application_default_credentials.json` using following format  
+```
+{
+  "web": {
+    "client_id": "xxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com",
+    "client_secret": "xxxxxxxxxxxxx",
+    "redirect_uris": [
+      "http://localhost:4200/auth"
+    ]
+  }
+}
+```    
+
 # References:
 - https://github.com/golang/dep
 - https://github.com/gin-gonic/gin
 - https://github.com/jinzhu/gorm
 - https://github.com/pressly/goose
-
-[0]: Links:
-[1]: https://github.com/pressly/goose
-
-
 
 # TODO:
 - API Auth

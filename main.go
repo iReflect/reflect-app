@@ -37,8 +37,8 @@ func main() {
 		}
 	}()
 
-	workers := &workers.Workers{}
-	workers.Initialize(configuration)
+	asyncWorkers := &workers.Workers{}
+	asyncWorkers.Initialize(configuration)
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
@@ -46,7 +46,7 @@ func main() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
-	workers.Shutdown()
+	asyncWorkers.Shutdown()
 
 	log.Println("Shutdown Server ...")
 
