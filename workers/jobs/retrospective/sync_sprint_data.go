@@ -31,6 +31,11 @@ func SyncSprintData(job *work.Job) error {
 		return err
 	}
 
+	assignPoints := job.ArgBool("assignPoints")
+	if assignPoints {
+		sprintService.AssignPoints(sprintID)
+	}
+
 	log.Println("Completed job: ", job.Name)
 	return nil
 }

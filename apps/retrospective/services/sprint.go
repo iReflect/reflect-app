@@ -89,6 +89,8 @@ func (service SprintService) FreezeSprint(sprintID string) error {
 		return err
 	}
 
+	// ToDo: Check SM count > 0
+
 	sprint.Status = retroModels.CompletedSprint
 	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
 		return errors.New("sprint couldn't be frozen")
@@ -596,7 +598,7 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 		}
 	}
 
-	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID))})
+	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID)), "assignPoints": true})
 	return &sprint, tx.Commit().Error
 }
 
@@ -623,4 +625,48 @@ func (service SprintService) UpdateSprint(sprintID string, sprintData retrospect
 	}
 
 	return service.Get(sprintID)
+}
+
+// AssignPoints ...
+func (service SprintService) AssignPoints(sprintID string) (err error) {
+	db := service.DB
+	var sprint retroModels.Sprint
+	err = db.Model(&retroModels.Sprint{}).
+		Scopes(retroModels.NotDeletedSprint).
+		Where("id = ?", sprintID).
+		Preload("SprintMembers").
+		Preload("Retrospective").
+		Find(&sprint).Error
+
+	if err != nil {
+		return err
+	}
+
+	sprint.CurrentlySyncing = true
+	err = db.Save(&sprint).Error
+	if err != nil {
+		return err
+	}
+
+	dbs := db.Model(retroModels.SprintMemberTask{}).
+		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
+		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
+		Select("sprint_member_tasks.*," +
+			"row_number() over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id order by sprint_member_tasks.time_spent_minutes desc) as time_spent_rank, " +
+			"sm.sprint_id, " +
+			"(tasks.estimate - (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as remaining_points").
+		QueryExpr()
+
+	db.Raw("UPDATE sprint_member_tasks " +
+		"SET points_assigned = s1.remaining_points, points_earned = s1.remaining_points " +
+		"FROM (?) AS s1 " +
+		"WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;", dbs, sprintID)
+
+	sprint.CurrentlySyncing = false
+	err = db.Save(&sprint).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
