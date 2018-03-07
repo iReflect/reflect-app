@@ -150,12 +150,14 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 		return nil, err
 	}
 
+	assignedStoryPoints := service.AssignStoryPoints(taskID, retroID, sprintID, memberID)
+
 	sprintMemberTask := retroModels.SprintMemberTask{}
 	sprintMemberTask.SprintMemberID = sprintMember.ID
 	sprintMemberTask.TaskID = uint(intTaskID)
 	sprintMemberTask.TimeSpentMinutes = 0
-	sprintMemberTask.PointsEarned = 0
-	sprintMemberTask.PointsAssigned = 0
+	sprintMemberTask.PointsEarned = assignedStoryPoints
+	sprintMemberTask.PointsAssigned = assignedStoryPoints
 	sprintMemberTask.Rating = retrospective.OkayRating
 	sprintMemberTask.Comment = ""
 
@@ -192,4 +194,9 @@ func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprin
 		return nil, err
 	}
 	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID)
+}
+
+// AssignStoryPoints ...
+func (service TaskService) AssignStoryPoints(taskID string, retroID string, sprintID string, memberID uint) (float64) {
+	return 0
 }
