@@ -7,21 +7,21 @@ import (
 )
 
 func init() {
-	goose.AddMigration(Up00010, Down00010)
+	goose.AddMigration(Up00011, Down00011)
 }
 
-// Up00010 ...
-func Up00010(tx *sql.Tx) error {
+// Up00011 ...
+func Up00011(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
 	}
 
-	//sprint (only the fields used in this migration and not full model)
 	type sprint struct {
-		SprintLearnings  string `gorm:"type:text"`
-		SprintHighlights string `gorm:"type:text"`
+		GoodHighlights string `gorm:"type:text"`
+		OkayHighlights string  `gorm:"type:text"`
+		BadHighlights  string `gorm:"type:text"`
 	}
 
 	// Automigrate sprint Model
@@ -30,23 +30,24 @@ func Up00010(tx *sql.Tx) error {
 	return nil
 }
 
-// Down00010 ...
-func Down00010(tx *sql.Tx) error {
+// Down00011 ...
+func Down00011(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
 	}
 
-	//sprint (only the fields used in this migration and not full model)
 	type sprint struct {
-		SprintLearnings  string `gorm:"type:text"`
-		SprintHighlights string `gorm:"type:text"`
+		GoodHighlights string `gorm:"type:text"`
+		OkayHighlights string  `gorm:"type:text"`
+		BadHighlights  string `gorm:"type:text"`
 	}
 
 	// Drop added columns
-	gormdb.Model(&sprint{}).DropColumn("sprint_learnings")
-	gormdb.Model(&sprint{}).DropColumn("sprint_highlights")
+	gormdb.Model(&sprint{}).DropColumn("good_highlights")
+	gormdb.Model(&sprint{}).DropColumn("bad_highlights")
+	gormdb.Model(&sprint{}).DropColumn("ugly_highlights")
 
 	return nil
 }

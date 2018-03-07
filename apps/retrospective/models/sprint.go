@@ -53,8 +53,9 @@ type Sprint struct {
 	CurrentlySyncing bool `gorm:"default:true;not null"`
 	CreatedBy        userModels.User
 	CreatedByID      uint   `gorm:"not null"`
-	SprintLearnings  string `gorm:"type:text"`
-	SprintHighlights string `gorm:"type:text"`
+	GoodHighlights   string `gorm:"type:text"`
+	OkayHighlights   string `gorm:"type:text"`
+	BadHighlights    string `gorm:"type:text"`
 }
 
 // BeforeSave ...
