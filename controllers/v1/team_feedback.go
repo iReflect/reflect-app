@@ -25,7 +25,7 @@ func (ctrl TeamFeedbackController) Get(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	feedbackResponse, err := ctrl.FeedbackService.TeamGet(id, userID.(uint))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 

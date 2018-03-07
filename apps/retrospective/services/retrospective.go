@@ -9,6 +9,7 @@ import (
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // RetrospectiveService ...
@@ -17,12 +18,10 @@ type RetrospectiveService struct {
 }
 
 // List all the Retrospectives of all the teams, given user is a member of.
-func (service RetrospectiveService) List(userID uint, perPage int, page int) (
-	retrospectiveList *retrospectiveSerializers.RetrospectiveListSerializer,
-	err error) {
+func (service RetrospectiveService) List(userID uint, perPage int, page int) (*retrospectiveSerializers.RetrospectiveListSerializer, error) {
 	db := service.DB
 
-	retrospectiveList = &retrospectiveSerializers.RetrospectiveListSerializer{}
+	retrospectiveList := new(retrospectiveSerializers.RetrospectiveListSerializer)
 	retrospectiveList.Retrospectives = []retrospectiveSerializers.Retrospective{}
 
 	var offset int
@@ -47,23 +46,23 @@ func (service RetrospectiveService) List(userID uint, perPage int, page int) (
 	}
 
 	if err := baseQuery.Find(&retrospectiveList.Retrospectives).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.RetrospectiveNotFound)
 	}
 	return retrospectiveList, nil
 }
 
 // Get the details of the given RetroSpective.
-func (service RetrospectiveService) Get(retrospectiveID string) (retrospective *retrospectiveSerializers.Retrospective, err error) {
+func (service RetrospectiveService) Get(retrospectiveID string) (*retrospectiveSerializers.Retrospective, error) {
 	db := service.DB
 
-	retrospective = new(retrospectiveSerializers.Retrospective)
+	retrospective := new(retrospectiveSerializers.Retrospective)
 
-	if err = db.Model(&retroModels.Retrospective{}).
+	if err := db.Model(&retroModels.Retrospective{}).
 		Preload("Team").
 		Preload("CreatedBy").
 		Where("retrospectives.id = ?", retrospectiveID).
 		First(&retrospective).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.RetrospectiveNotFound)
 	}
 	return retrospective, nil
 }
@@ -78,14 +77,13 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retrospect
 		Order("end_date desc").
 		Preload("CreatedBy").
 		First(&sprint).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.SprintNotFound)
 	}
 	return &sprint, nil
 }
 
 // Create the Retrospective with the given values (provided the user is a member of the retrospective's team.
-func (service RetrospectiveService) Create(userID uint,
-	retrospectiveData *retrospectiveSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, error) {
+func (service RetrospectiveService) Create(userID uint, retrospectiveData *retrospectiveSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, error) {
 	db := service.DB
 	var err error
 
@@ -94,8 +92,7 @@ func (service RetrospectiveService) Create(userID uint,
 		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
 			retrospectiveData.TeamID, userID).
 		Find(&userModels.UserTeam{}).Error; err != nil {
-		err = errors.New("user doesn't have the permission to create the retro")
-		return nil, err
+		return nil, errors.New(constants.RetroCreatePermissionDenied)
 	}
 
 	var retro retroModels.Retrospective
@@ -109,18 +106,21 @@ func (service RetrospectiveService) Create(userID uint,
 	retro.StoryPointPerWeek = retrospectiveData.StoryPointPerWeek
 
 	if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
-		return nil, err
+		return nil, errors.New(constants.InvalidProviderConfigError)
 	}
 
 	if taskProviders, err = json.Marshal(retrospectiveData.TaskProviderConfig); err != nil {
-		return nil, err
+		return nil, errors.New(constants.InvalidProviderConfigError)
 	}
 
 	if encryptedTaskProviders, err = tasktracker.EncryptTaskProviders(taskProviders); err != nil {
-		return nil, err
+		return nil, errors.New(constants.InvalidProviderConfigError)
 	}
 	retro.TaskProviderConfig = encryptedTaskProviders
 
 	err = db.Create(&retro).Error
-	return &retro, err
+	if err != nil {
+		return nil, errors.New(constants.RetrospectiveCreateError)
+	}
+	return &retro, nil
 }

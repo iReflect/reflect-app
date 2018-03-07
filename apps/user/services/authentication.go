@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
@@ -143,7 +144,7 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 		resetSession(session)
 		logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
 
-		return http.StatusOK
+		return http.StatusNoContent
 	}
 	return http.StatusUnauthorized
 }
@@ -174,14 +175,14 @@ func resetSession(session sessions.Session) {
 func getInternalErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
 	status int,
 	err error) {
-	return nil, http.StatusInternalServerError, errors.New("internal server error")
+	return nil, http.StatusInternalServerError, errors.New(constants.InternalServerError)
 }
 
 // getNotFoundErrorResponse ...
 func getNotFoundErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
 	status int,
 	err error) {
-	return nil, http.StatusNotFound, errors.New("user not found")
+	return nil, http.StatusNotFound, errors.New(constants.UserNotFound)
 }
 
 // getGoogleOAuthConf ...

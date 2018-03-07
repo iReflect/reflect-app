@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -162,7 +163,7 @@ func GetSprintTaskList(config []byte, sprintIDs string) (tasks []serializers.Tas
 func GetConnections(config []byte) (connections []Connection, err error) {
 	var configList []interface{}
 	if err = json.Unmarshal(config, &configList); err != nil {
-		return nil, err
+		return nil, errors.New(constants.TaskProviderConfigParseError)
 	}
 
 	var data map[string]interface{}

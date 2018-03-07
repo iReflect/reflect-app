@@ -7,6 +7,7 @@ import (
 	"github.com/gocraft/work"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/workers"
 	"strconv"
 )
@@ -44,7 +45,7 @@ func (ctrl SprintController) GetSprints(c *gin.Context) {
 
 	sprints, err := ctrl.SprintService.GetSprintsList(retroID, userID.(uint))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprints", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, sprints)
@@ -61,7 +62,7 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 	}
 
 	if err := ctrl.SprintService.DeleteSprint(sprintID); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be deleted", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -107,7 +108,7 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 	}
 
 	if err := ctrl.SprintService.ActivateSprint(sprintID); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be activated", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -127,7 +128,7 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 	}
 
 	if err := ctrl.SprintService.FreezeSprint(sprintID); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be frozen", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -148,7 +149,7 @@ func (ctrl SprintController) Get(c *gin.Context) {
 
 	sprint, err := ctrl.SprintService.Get(sprintID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, sprint)
@@ -181,7 +182,7 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 	}
 	response, err := ctrl.SprintService.GetSprintMembersSummary(sprintID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint member summary", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -199,12 +200,12 @@ func (ctrl SprintController) CreateNewSprint(c *gin.Context) {
 	sprintData := retroSerializers.CreateSprintSerializer{CreatedByID: userID.(uint)}
 	err := c.BindJSON(&sprintData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.InvalidRequestData})
 		return
 	}
 	sprint, err := ctrl.SprintService.Create(retroID, sprintData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to create the sprint", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
