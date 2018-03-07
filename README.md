@@ -104,6 +104,7 @@ Note, select Web Application as the application type and provide origin and redi
 Use the generated client_id/client_secret to create a JSON credentials file at `config/application_default_credentials.json` using following format  
 ```
 {
+  "type": "authorized_user",
   "web": {
     "client_id": "xxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com",
     "client_secret": "xxxxxxxxxxxxx",
