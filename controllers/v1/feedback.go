@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	feedbaclServices "github.com/iReflect/reflect-app/apps/feedback/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 //FeedbackController ...
@@ -27,7 +28,7 @@ func (ctrl FeedbackController) Get(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	feedbackResponse, err := ctrl.FeedbackService.Get(id, userID.(uint))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedback not found", "error": err})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -40,12 +41,12 @@ func (ctrl FeedbackController) Put(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{FeedbackID: id}
 	if err := c.BindJSON(&feedBackResponseData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.InvalidRequestData})
 		return
 	}
 	code, err := ctrl.FeedbackService.Put(id, userID.(uint), feedBackResponseData)
 	if err != nil {
-		c.AbortWithStatusJSON(code, gin.H{"message": "Error while saving the form!!", "error": err.Error()})
+		c.AbortWithStatusJSON(code, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(code, nil)
@@ -63,7 +64,7 @@ func (ctrl FeedbackController) List(c *gin.Context) {
 	response, err := ctrl.FeedbackService.List(userID.(uint), statuses, parsedPerPage)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Feedbacks not found", "error": err})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, response)

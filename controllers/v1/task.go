@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 	"strconv"
 )
 
@@ -39,7 +40,7 @@ func (ctrl TaskController) List(c *gin.Context) {
 	tasks, err := ctrl.TaskService.List(retroID, sprintID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get tasks", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -61,7 +62,7 @@ func (ctrl TaskController) Get(c *gin.Context) {
 	task, err := ctrl.TaskService.Get(id, retroID, sprintID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get task", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -83,7 +84,7 @@ func (ctrl TaskController) GetMembers(c *gin.Context) {
 	members, err := ctrl.TaskService.GetMembers(id, retroID, sprintID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get members", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -104,14 +105,14 @@ func (ctrl TaskController) AddMember(c *gin.Context) {
 
 	addTaskMemberData := retroSerializers.AddTaskMemberSerializer{}
 	if err := c.BindJSON(&addTaskMemberData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.InvalidRequestData})
 		return
 	}
 
 	members, err := ctrl.TaskService.AddMember(taskID, retroID, sprintID, addTaskMemberData.MemberID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Couldn't add member", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -134,14 +135,14 @@ func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
 
 	taskMemberData := retroSerializers.SprintTaskMemberUpdate{}
 	if err := c.BindJSON(&taskMemberData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.InvalidRequestData})
 		return
 	}
 
 	taskMember, err := ctrl.TaskService.UpdateTaskMember(taskID, retroID, sprintID, &taskMemberData)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not update member", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 

@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"encoding/json"
+	"errors"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // TimeProvider ...
@@ -50,7 +52,7 @@ func GetProjectTimeLogs(config []byte, project string, startTime time.Time, endT
 func GetConnections(config []byte) (connections []Connection, err error) {
 	var configList []interface{}
 	if err = json.Unmarshal(config, &configList); err != nil {
-		return nil, err
+		return nil, errors.New(constants.TimeProviderConfigParseError)
 	}
 
 	var data map[string]interface{}

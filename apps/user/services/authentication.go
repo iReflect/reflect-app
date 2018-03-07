@@ -16,6 +16,7 @@ import (
 	"google.golang.org/api/plus/v1"
 	"net/http"
 	"os"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 var googleOAuthConf *oauth2.Config
@@ -143,7 +144,7 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 		resetSession(session)
 		logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
 
-		return http.StatusOK
+		return http.StatusNoContent
 	}
 	return http.StatusUnauthorized
 }
@@ -174,14 +175,14 @@ func resetSession(session sessions.Session) {
 func getInternalErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
 	status int,
 	err error) {
-	return nil, http.StatusInternalServerError, errors.New("internal server error")
+	return nil, http.StatusInternalServerError, errors.New(constants.InternalServerError)
 }
 
 // getNotFoundErrorResponse ...
 func getNotFoundErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
 	status int,
 	err error) {
-	return nil, http.StatusNotFound, errors.New("user not found")
+	return nil, http.StatusNotFound, errors.New(constants.UserNotFound)
 }
 
 // getGoogleOAuthConf ...
