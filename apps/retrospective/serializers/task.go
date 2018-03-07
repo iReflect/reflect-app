@@ -22,6 +22,7 @@ type TasksSerializer struct {
 // TaskMember ...
 type TaskMember struct {
 	ID           uint
+	TaskID       uint
 	FirstName    string
 	LastName     string
 	TotalTime    uint
