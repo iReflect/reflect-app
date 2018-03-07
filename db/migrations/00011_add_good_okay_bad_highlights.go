@@ -46,8 +46,8 @@ func Down00011(tx *sql.Tx) error {
 
 	// Drop added columns
 	gormdb.Model(&sprint{}).DropColumn("good_highlights")
+	gormdb.Model(&sprint{}).DropColumn("okay_highlights")
 	gormdb.Model(&sprint{}).DropColumn("bad_highlights")
-	gormdb.Model(&sprint{}).DropColumn("ugly_highlights")
 
 	return nil
 }
