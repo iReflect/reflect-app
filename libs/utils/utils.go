@@ -5,12 +5,19 @@ import (
 	"encoding/base64"
 	"os"
 	"time"
+	"github.com/getsentry/raven-go"
+	"github.com/sirupsen/logrus"
 )
 
 func RandToken() string {
 	b := make([]byte, 32)
 	rand.Read(b)
 	return base64.URLEncoding.EncodeToString(b)
+}
+
+func LogToSentry(err error, tags map[string]string) {
+	logrus.Error(err.Error())
+	raven.CaptureError(err, tags)
 }
 
 func UIntInSlice(element uint, slice []uint) bool {

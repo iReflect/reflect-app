@@ -115,6 +115,12 @@ Use the generated client_id/client_secret to create a JSON credentials file at `
 }
 ```    
 
+# Sentry Logging
+Specify an environment variable `SENTRY_DSN` to enable sentry logging for errors
+```
+SENTRY_DSN = https://<key>:<secret>@sentry.io/<project>
+```
+
 # References:
 - https://github.com/golang/dep
 - https://github.com/gin-gonic/gin

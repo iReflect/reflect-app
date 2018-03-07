@@ -674,7 +674,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		QueryExpr()
 
 	db.Raw("UPDATE sprint_member_tasks " +
-		"SET points_assigned = s1.remaining_points, points_earned = s1.remaining_points " +
+		"SET points_assigned = s1.remaining_points, points_earned = s1.remaining_points "+
 		"FROM (?) AS s1 " +
 		"WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;", dbs, sprintID)
 
