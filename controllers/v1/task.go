@@ -125,7 +125,6 @@ func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
 	taskID := c.Param("taskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
-	smtID := c.Param("smtID")
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, taskID, userID.(uint)) {
@@ -139,7 +138,7 @@ func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
 		return
 	}
 
-	taskMember, err := ctrl.TaskService.UpdateTaskMember(taskID, retroID, sprintID, smtID, &taskMemberData)
+	taskMember, err := ctrl.TaskService.UpdateTaskMember(taskID, retroID, sprintID, &taskMemberData)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not update member", "error": err.Error()})

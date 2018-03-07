@@ -154,7 +154,7 @@ func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
 	for _, boardID := range boardIDs {
 		sprint, _, err := c.client.Board.GetAllSprints(boardID)
 
-		if err != nil {
+		if err == nil {
 			sprints = append(sprints, sprint...)
 		}
 	}
