@@ -24,6 +24,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.CreateNewSprint)
 	r.DELETE("/:sprintID/", ctrl.Delete)
 	r.GET("/:sprintID/", ctrl.Get)
+	r.PUT("/:sprintID/", ctrl.UpdateSprint)
 
 	r.POST("/:sprintID/activate/", ctrl.ActivateSprint)
 	r.POST("/:sprintID/freeze/", ctrl.FreezeSprint)
@@ -67,6 +68,32 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 	ctrl.TrailService.Add("Deleted Sprint", "Sprint", sprintID, userID.(uint))
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// UpdateSprint ...
+func (ctrl SprintController) UpdateSprint(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	var sprintData retroSerializers.UpdateSprintSerializer
+	if err := c.BindJSON(&sprintData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	response, err := ctrl.SprintService.UpdateSprint(sprintID, sprintData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Sprint couldn't be updated", "error": err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Updated Sprint", "Sprint", sprintID, userID.(uint))
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ActivateSprint activates the given sprint
@@ -119,7 +146,7 @@ func (ctrl SprintController) Get(c *gin.Context) {
 		return
 	}
 
-	sprint, err := ctrl.SprintService.Get(sprintID, userID.(uint))
+	sprint, err := ctrl.SprintService.Get(sprintID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint data", "error": err.Error()})
 		return
