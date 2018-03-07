@@ -391,14 +391,14 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("tasks.task_id = ?", timeLog.TaskID).
 		FirstOrInit(&sprintMemberTask).Error
 	if err != nil {
-		return err
+		return nil
 	}
 
 	err = db.Model(&retroModels.Task{}).
 		Where("task_id = ?", timeLog.TaskID).
 		First(&task).Error
 	if err != nil {
-		return err
+		return nil // Returning nil if task not found. This happens in cases of incorrect taskIDs and "P". ToDo: Fix
 	}
 
 	sprintMemberTask.SprintMemberID = sprintMemberID
@@ -628,12 +628,16 @@ func (service SprintService) UpdateSprint(sprintID string, sprintData retrospect
 		return nil, err
 	}
 
-	if sprintData.SprintHighlights != nil {
-		sprint.SprintHighlights = *sprintData.SprintHighlights
+	if sprintData.GoodHighlights != nil {
+		sprint.GoodHighlights = *sprintData.GoodHighlights
 	}
 
-	if sprintData.SprintLearnings != nil {
-		sprint.SprintLearnings = *sprintData.SprintLearnings
+	if sprintData.OkayHighlights != nil {
+		sprint.OkayHighlights = *sprintData.OkayHighlights
+	}
+
+	if sprintData.BadHighlights != nil {
+		sprint.BadHighlights = *sprintData.BadHighlights
 	}
 
 	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {

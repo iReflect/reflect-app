@@ -43,6 +43,7 @@ type CreateSprintSerializer struct {
 
 // UpdateSprintSerializer is used in sprint create API
 type UpdateSprintSerializer struct {
-	SprintLearnings  *string
-	SprintHighlights *string
+	GoodHighlights *string
+	OkayHighlights *string
+	BadHighlights  *string
 }
