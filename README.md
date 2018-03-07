@@ -7,7 +7,8 @@
 
 ## System Setup
 Install GO - https://golang.org/doc/install  
-Install dep - https://github.com/golang/dep
+Install dep - https://github.com/golang/dep   
+Install Redis - https://redis.io/topics/quickstart
 
 ## Prepare DB
 Create a database (postgresql) as below to use the default configuration,
@@ -73,6 +74,28 @@ For help - make migrate
 # Adding Dependencies
 ```
 dep ensure -add github.com/foo/bar
+```
+
+# Time Tracker configuration
+First, Generate a Refresh token using.
+https://developers.google.com/oauthplayground/ with Timesheet App's client_id, client_secret and following scopes
+
+```
+https://www.googleapis.com/auth/spreadsheets
+```
+
+Video instructions at https://www.youtube.com/watch?v=PJWrjAuIWWo
+
+
+Use the Refresh token to create a JSON credentials file at config/timetracker_credentials.json using following format
+
+```json
+{
+    "type":"authorized_user",
+    "client_id":"xxxxxxxxxxxxxxxxxx.apps.googleusercontent.com",
+    "client_secret":"xxxxxxxxx",
+    "refresh_token": "xxxxxxxxx"
+}
 ```
 
 # References:

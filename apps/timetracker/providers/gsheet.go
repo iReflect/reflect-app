@@ -1,13 +1,15 @@
 package providers
 
 import (
+	"log"
 	"time"
 
 	"encoding/json"
 	"errors"
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
-	"github.com/iReflect/reflect-app/libs/sheets"
+	"github.com/iReflect/reflect-app/config"
+	"github.com/iReflect/reflect-app/libs/google"
 )
 
 // GSheetTimeProvider ...
@@ -21,8 +23,14 @@ type GsheetConnection struct {
 
 // GsheetConfig ...
 type GsheetConfig struct {
-	URL     string `json:"URL"`
-	SheetID string `json:"SheetID"`
+	Email string `json:"email"`
+}
+
+// TimeResult ...
+type TimeResult struct {
+	Project string  `json:"Project"`
+	TaskID  string  `json:"TaskID"`
+	Hours   float64 `json:"Hours"`
 }
 
 // TimeProviderGSheet ...
@@ -80,15 +88,38 @@ func getConfigObject(config interface{}) (GsheetConfig, error) {
 
 // GetProjectTimeLogs ...
 func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog {
-	trackerData := sheets.GetTimeData(project, m.config.SheetID, startTime.String(), endTime.String())
+
 	var timeLogs []serializers.TimeLog
 
-	for _, logData := range trackerData {
+	timeTrackerConfig := config.GetConfig().TimeTracker
+	appExecutor := google.AppScriptExecutor{ScriptID: timeTrackerConfig.ScriptID, CredentialsFile: timeTrackerConfig.GoogleCredentials}
+
+	reponseBytes, err := appExecutor.Run(timeTrackerConfig.FnGetTimeLog, m.config.Email, project, startTime.Format("2006-01-02"), endTime.Format("2006-01-02"))
+	if err != nil {
+		log.Println("App Executor Failed: ", err)
+		return timeLogs
+	}
+
+	type Response struct {
+		Type   string       `json:"type"`
+		Result []TimeResult `json:"result"`
+	}
+
+	var trackerData Response
+
+	if err := json.Unmarshal(reponseBytes, &trackerData); err != nil {
+		log.Println("Respoonse decoding error: ", err)
+		return timeLogs
+	}
+
+	log.Println("Result : ", trackerData.Result)
+
+	for _, logData := range trackerData.Result {
 		timeLogs = append(timeLogs, serializers.TimeLog{
-			Project: logData["Project"].(string),
-			TaskID:  logData["TaskID"].(string),
+			Project: logData.Project,
+			TaskID:  logData.TaskID,
 			Logger:  "GSheets",
-			Minutes: uint(logData["Hours"].(float64) * 60),
+			Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
 		})
 	}
 
