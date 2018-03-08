@@ -120,16 +120,14 @@ func (service AuthenticationService) AuthenticateSession(c *gin.Context) bool {
 	userID := session.Get("user")
 	if userID != nil {
 		authenticatedUser := userModels.User{}
-		if err := db.First(&authenticatedUser, userID).Error; err != nil {
+		if err := db.Where("active = true").First(&authenticatedUser, userID).Error; err != nil {
 			logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
 			return false
 		}
-		if authenticatedUser.Active {
-			logrus.Info(fmt.Sprintf("Authenticated user %s", authenticatedUser.Email))
-			c.Set("user", authenticatedUser)
-			c.Set("userID", authenticatedUser.ID)
-			return true
-		}
+		logrus.Info(fmt.Sprintf("Authenticated user %s", authenticatedUser.Email))
+		c.Set("user", authenticatedUser)
+		c.Set("userID", authenticatedUser.ID)
+		return true
 	}
 
 	return false
@@ -197,12 +195,12 @@ func getGoogleOAuthConf() (*oauth2.Config, error) {
 
 	oauthConfig, err := google.ConfigFromJSON(credentials.JSON, plus.PlusMeScope,
 		plus.UserinfoEmailScope, plus.UserinfoProfileScope)
-	oauthConfig.Endpoint = google.Endpoint
 
 	if err != nil {
 		logrus.Error("error loading google creds, Error", err)
 		return nil, err
 	}
+	oauthConfig.Endpoint = google.Endpoint
 
 	return oauthConfig, nil
 }

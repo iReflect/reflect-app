@@ -7,21 +7,21 @@ import (
 )
 
 type Config struct {
-	DB          *dbConfig
-	Auth        *authConfig
-	Redis       *redisConfig
-	TimeTracker *timeTrackerConfig
+	DB           *dbConfig
+	Server       *serverConfig
+	Redis        *redisConfig
+	TimeTracker  *timeTrackerConfig
 }
 
 var config Config
 
 func init() {
 	dbConf := new(dbConfig)
-	authConf := new(authConfig)
+	serverConf := new(serverConfig)
 	redisConf := new(redisConfig)
 	timeTrackerConf := new(timeTrackerConfig)
 	env.Parse(dbConf)
-	env.Parse(authConf)
+	env.Parse(serverConf)
 	env.Parse(redisConf)
 	env.Parse(timeTrackerConf)
 
@@ -33,17 +33,17 @@ func init() {
 	log.Println("DB::")
 	log.Println(dbConf)
 	log.Println("Auth::")
-	log.Println(authConf)
+	log.Println(serverConf)
 	log.Println("Redis::")
 	log.Println(redisConf)
 	log.Println("TimeTracker::")
 	log.Println(timeTrackerConf)
 
 	config = Config{
-		DB:          dbConf,
-		Auth:        authConf,
-		Redis:       redisConf,
-		TimeTracker: timeTrackerConf,
+		DB:           dbConf,
+		Server:       serverConf,
+		Redis:        redisConf,
+		TimeTracker:  timeTrackerConf,
 	}
 }
 
@@ -54,8 +54,11 @@ type dbConfig struct {
 	LogEnabled    bool   `env:"DB_LOG_ENABLED"  envDefault:"true"`
 }
 
-type authConfig struct {
-	Secret string `env:"AUTH_SECRET"  envDefault:"secret"`
+type serverConfig struct {
+	SessionSecret      string   `env:"SESSION_SECRET"  envDefault:"secret"`
+	SessionAge         int      `env:"SESSION_AGE"  envDefault:"14400"`
+	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:4200,http://localhost:3000"`
+	LoginURL           string   `env:"LOGIN_URL" envDefault:"http://localhost:4200/login"`
 }
 
 type redisConfig struct {

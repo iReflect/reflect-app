@@ -51,12 +51,12 @@ func (a *App) Initialize(config *config.Config) {
 	// Recovery middleware recovers from any panics and writes a 500 if there was one.
 	r.Use(gin.Recovery())
 
-	store := sessions.NewCookieStore([]byte(config.Auth.Secret))
-	store.Options(sessions.Options{HttpOnly: false, MaxAge: 4 * 60 * 60, Path: "/"})
+	store := sessions.NewCookieStore([]byte(config.Server.SessionSecret))
+	store.Options(sessions.Options{HttpOnly: false, MaxAge: config.Server.SessionAge, Path: "/"})
 	r.Use(sessions.Sessions("session", store))
 
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"http://localhost:4200", "http://localhost:3000"}
+	corsConfig.AllowOrigins = config.Server.CORSAllowedOrigins
 	corsConfig.AllowCredentials = true
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "HEAD", "DELETE", "OPTIONS"}
 	r.Use(cors.New(corsConfig))
@@ -71,8 +71,7 @@ func (a *App) SetRoutes() {
 	authenticationService := userServices.AuthenticationService{DB: a.DB}
 
 	v1 := r.Group("/api/v1")
-
-	v1.Use(oauth.CookieAuthenticationMiddleWare(authenticationService))
+	v1.Use(oauth.CookieAuthenticationMiddleware(authenticationService))
 
 	feedbackValidator := feedbackValidators.FeedbackValidators{DB: a.DB}
 	feedbackValidator.Register()
@@ -130,7 +129,11 @@ func (a *App) SetAdminRoutes() {
 	admin := &Admin{DB: a.DB}
 	adminRouter := admin.Router()
 
-	r.Any("/admin/*w", gin.WrapH(adminRouter))
+	authenticationService := userServices.AuthenticationService{DB: a.DB}
+
+	adminRouterGroup := r.Group("/admin")
+	adminRouterGroup.Use(oauth.AdminCookieAuthenticationMiddleware(authenticationService))
+	adminRouterGroup.Any("/*w", gin.WrapH(adminRouter))
 }
 
 // Run the app on it's router
