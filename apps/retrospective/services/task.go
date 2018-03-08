@@ -128,7 +128,7 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprintID).
-		Where("member_id = ?", memberID).
+		Where("id = ?", memberID).
 		Find(&sprintMember).Error
 
 	if err != nil {
@@ -164,7 +164,7 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 		return nil, err
 	}
 
-	member, err = service.GetMember(sprintMemberTask, memberID)
+	member, err = service.GetMember(sprintMemberTask, sprintMember.MemberID)
 	return member, err
 }
 
