@@ -10,6 +10,8 @@ import (
 	"errors"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"fmt"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // JIRATaskProvider ...
@@ -136,10 +138,14 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 func (c *JIRAConnection) GetTaskList(ticketIDs []string) []serializers.Task {
 	var ticket *jira.Issue
 	var tickets []jira.Issue
+	var err error;
 	for _, ticketID := range ticketIDs {
-		ticket, _, _ = c.client.Issue.Get(ticketID, nil)
+		fmt.Println("Getting ticket from JIRA", ticketID)
+		ticket, _, err = c.client.Issue.Get(ticketID, nil)
 		if ticket != nil {
 			tickets = append(tickets, *ticket)
+		} else {
+			utils.LogToSentry(err)
 		}
 	}
 
@@ -156,6 +162,8 @@ func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
 
 		if err == nil {
 			sprints = append(sprints, sprint...)
+		} else {
+			utils.LogToSentry(err)
 		}
 	}
 

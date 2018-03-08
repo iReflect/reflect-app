@@ -20,6 +20,7 @@ import (
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
+	"fmt"
 )
 
 // SprintService ...
@@ -338,7 +339,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	}
 
 	for _, timeLog := range timeLogs {
-		err = service.addOrUpdateSMT(timeLog, sprintMember.ID)
+		err = service.addOrUpdateSMT(timeLog, sprintMember.ID, sprint.RetrospectiveID)
 		if err != nil {
 			return err
 		}
@@ -381,7 +382,7 @@ func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task,
 	return db.Save(&task).Error
 }
 
-func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog, sprintMemberID uint) (err error) {
+func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog, sprintMemberID uint, retroID uint) (err error) {
 	db := service.DB
 	var sprintMemberTask retroModels.SprintMemberTask
 	var task retroModels.Task
@@ -389,6 +390,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("sprint_member_id = ?", sprintMemberID).
 		Joins("JOIN tasks ON tasks.id=sprint_member_tasks.task_id").
 		Where("tasks.task_id = ?", timeLog.TaskID).
+		Where("tasks.retrospective_id = ?", retroID).
 		FirstOrInit(&sprintMemberTask).Error
 	if err != nil {
 		return nil
@@ -396,6 +398,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 
 	err = db.Model(&retroModels.Task{}).
 		Where("task_id = ?", timeLog.TaskID).
+		Where("tasks.retrospective_id = ?", retroID).
 		First(&task).Error
 	if err != nil {
 		return nil // Returning nil if task not found. This happens in cases of incorrect taskIDs and "P". ToDo: Fix
@@ -649,6 +652,7 @@ func (service SprintService) UpdateSprint(sprintID string, sprintData retrospect
 
 // AssignPoints ...
 func (service SprintService) AssignPoints(sprintID string) (err error) {
+	fmt.Println("Assigning Points")
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
@@ -659,32 +663,39 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		Find(&sprint).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	sprint.CurrentlySyncing = true
 	err = db.Save(&sprint).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	dbs := db.Model(retroModels.SprintMemberTask{}).
 		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
 		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
+		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select("sprint_member_tasks.*," +
 			"row_number() over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id order by sprint_member_tasks.time_spent_minutes desc) as time_spent_rank, " +
 			"sm.sprint_id, " +
 			"(tasks.estimate - (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as remaining_points").
 		QueryExpr()
 
-	db.Raw("UPDATE sprint_member_tasks "+
+	err = db.Exec("UPDATE sprint_member_tasks "+
 		"SET points_assigned = s1.remaining_points, points_earned = s1.remaining_points "+
 		"FROM (?) AS s1 "+
-		"WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;", dbs, sprintID)
+		"WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;", dbs, sprintID).Error
 
+	if err != nil {
+		utils.LogToSentry(err)
+	}
 	sprint.CurrentlySyncing = false
 	err = db.Save(&sprint).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 

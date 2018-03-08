@@ -15,9 +15,10 @@ func RandToken() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func LogToSentry(err error, tags map[string]string) {
+func LogToSentry(err error) {
 	logrus.Error(err.Error())
-	raven.CaptureError(err, tags)
+	// ToDo: Add extra info like release, etc
+	raven.CaptureError(err, nil)
 }
 
 func UIntInSlice(element uint, slice []uint) bool {
