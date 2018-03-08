@@ -14,6 +14,7 @@ type UserAuthController struct {
 //Add Routes
 func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.GET("/login/", ctrl.Login)
+	// TODO make auth get and receive request directly from google
 	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
 }
