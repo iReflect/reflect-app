@@ -20,7 +20,7 @@ func Up00011(tx *sql.Tx) error {
 
 	type sprint struct {
 		GoodHighlights string `gorm:"type:text"`
-		OkayHighlights string  `gorm:"type:text"`
+		OkayHighlights string `gorm:"type:text"`
 		BadHighlights  string `gorm:"type:text"`
 	}
 
@@ -40,7 +40,7 @@ func Down00011(tx *sql.Tx) error {
 
 	type sprint struct {
 		GoodHighlights string `gorm:"type:text"`
-		OkayHighlights string  `gorm:"type:text"`
+		OkayHighlights string `gorm:"type:text"`
 		BadHighlights  string `gorm:"type:text"`
 	}
 

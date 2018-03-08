@@ -3,10 +3,10 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"os"
-	"time"
 	"github.com/getsentry/raven-go"
 	"github.com/sirupsen/logrus"
+	"os"
+	"time"
 )
 
 func RandToken() string {

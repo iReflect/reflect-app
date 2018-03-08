@@ -18,8 +18,9 @@ type Sprint struct {
 	CurrentlySyncing bool
 	CreatedBy        userSerializer.User
 	CreatedByID      uint
-	SprintLearnings  string
-	SprintHighlights string
+	GoodHighlights   string
+	OkayHighlights   string
+	BadHighlights    string
 }
 
 // SprintsSerializer ...
