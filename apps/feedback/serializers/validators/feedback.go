@@ -24,7 +24,7 @@ func IsValidSubmittedAt(
 	param string,
 ) bool {
 	feedbackStatus := currentStruct.Interface().(*feedbackSerializers.FeedbackResponseSerializer).Status
-	if feedbackStatus == feedbackModels.SubmittedFeedback {
+	if *feedbackStatus == feedbackModels.SubmittedFeedback {
 		// Check if the submitted at is in correct format
 		_, err := time.Parse(time.RFC3339, field.String())
 		if err != nil {
@@ -55,7 +55,7 @@ func IsAllQuestionPresent(db *gorm.DB) validator.Func {
 		for _, categoryData := range feedbackResponseData.Data {
 			for _, skillData := range categoryData {
 				for questionResponseID, questionResponseData := range skillData {
-					if feedbackResponseData.Status == feedbackModels.SubmittedFeedback && questionResponseData.Response == "" {
+					if *feedbackResponseData.Status == feedbackModels.SubmittedFeedback && questionResponseData.Response == "" {
 						return false
 					}
 					actualResponseIDs = append(actualResponseIDs, questionResponseID)

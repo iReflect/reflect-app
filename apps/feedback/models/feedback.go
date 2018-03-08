@@ -21,7 +21,7 @@ var FeedbackStatusValues = [...]string{
 
 type FeedbackStatus int8
 
-func (status FeedbackStatus) String() string {
+func (status FeedbackStatus) GetString() string {
 	return FeedbackStatusValues[status]
 }
 
@@ -82,7 +82,7 @@ func getFeedbackStatusFieldMeta() admin.Meta {
 		},
 		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
 			feedback := value.(*Feedback)
-			return feedback.Status.String()
+			return feedback.Status.GetString()
 		},
 	}
 }
