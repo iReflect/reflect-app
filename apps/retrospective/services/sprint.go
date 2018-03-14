@@ -700,6 +700,9 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	dbs := db.Model(retroModels.SprintMemberTask{}).
 		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
 		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
+		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select("sprint_member_tasks.*," +
 			"row_number() over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id order by sprint_member_tasks.time_spent_minutes desc) as time_spent_rank, " +
