@@ -475,7 +475,8 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
 		Select("DISTINCT sprint_members.*, users.*, " +
-			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity").
+			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity, " +
+			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) as total_time_spent_minutes").
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		return nil, err
@@ -529,10 +530,11 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("COALESCE(SUM(smt.points_earned), 0)").
+		Select("COALESCE(SUM(smt.points_earned), 0) as actual_velocity, " +
+			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_minutes").
 		Group("sprint_members.id").
 		Row().
-		Scan(&memberData.ActualVelocity); err != nil {
+		Scan(&memberData.ActualVelocity, &memberData.TotalTimeSpentMinutes); err != nil {
 		return nil, err
 	}
 
