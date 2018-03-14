@@ -16,5 +16,5 @@ type User struct {
 	Teams              []Team
 	Profiles           []UserProfile
 	TimeProviderConfig fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
-	IsAdmin        bool         `gorm:"default:false; not null"`
+	IsAdmin            bool         `gorm:"default:false; not null"`
 }

@@ -184,6 +184,7 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get sprint member summary", "error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, response)
 }
 

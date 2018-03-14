@@ -8,12 +8,6 @@
   version = "v0.19.0"
 
 [[projects]]
-  name = "github.com/andygrunwald/go-jira"
-  packages = ["."]
-  revision = "acbc88d59582a4885dbd82fd775caa7c15245171"
-  version = "v1.0.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/blaskovicz/go-cryptkeeper"
   packages = ["."]
@@ -120,6 +114,12 @@
   packages = ["."]
   revision = "ca9ada44574153444b00d3fd9c8559e4cc95f896"
   version = "v1.1"
+
+[[projects]]
+  name = "github.com/iReflect/go-jira"
+  packages = ["."]
+  revision = "f9c91e2a6be53464f27662c88c89938be4fbe1c6"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -300,6 +300,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5a5cc03ed71d6973a0501c2d9063dc63226369c55f6d5b73e21bf9d930ad0321"
+  inputs-digest = "1a120a90635bf2f82901ac35ea843a4d3fa29dff8057cbff924d6885e95e42bd"
   solver-name = "gps-cdcl"
   solver-version = 1
