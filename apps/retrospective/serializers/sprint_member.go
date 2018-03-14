@@ -19,6 +19,7 @@ type SprintMemberSummary struct {
 	ExpectedVelocity   float64
 }
 
+// SetExpectedVelocity ...
 func (member *SprintMemberSummary) SetExpectedVelocity(sprint models.Sprint, retrospective models.Retrospective) {
 	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate,
 		*sprint.EndDate, true)
