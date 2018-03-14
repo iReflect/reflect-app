@@ -41,6 +41,7 @@ func Down00014(tx *sql.Tx) error {
 	}
 
 	gormdb.AutoMigrate(&retrospective{})
+	gormdb.Exec("UPDATE retrospectives SET hrs_per_story_point = (40/COALESCE(story_point_per_week,10))")
 	gormdb.Model(&retrospective{}).DropColumn("story_point_per_week")
 
 	return nil
