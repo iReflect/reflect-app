@@ -19,7 +19,7 @@ func Up00014(tx *sql.Tx) error {
 	}
 	type retrospective struct {
 		gorm.Model
-		StoryPointPerWeek float64 `gorm:"not null"`
+		StoryPointPerWeek float64 `gorm:"not null; default:0"`
 	}
 
 	gormdb.AutoMigrate(&retrospective{})
@@ -37,7 +37,7 @@ func Down00014(tx *sql.Tx) error {
 	}
 	type retrospective struct {
 		gorm.Model
-		HrsPerStoryPoint float64 `gorm:"not null"`
+		HrsPerStoryPoint float64 `gorm:"not null; default:0"`
 	}
 
 	gormdb.AutoMigrate(&retrospective{})
