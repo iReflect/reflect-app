@@ -19,17 +19,17 @@ type Retrospective struct {
 	CreatedByID        uint
 	CreatedAt          time.Time
 	TaskProviderConfig fields.JSONB
-	HrsPerStoryPoint   float64
+	StoryPointPerWeek   float64
 }
 
 // RetrospectiveCreateSerializer ...
 type RetrospectiveCreateSerializer struct {
-	Title              string                   `json:"title" binding:"required"`
-	ProjectName        string                   `json:"projectName" binding:"required"`
-	TaskProviderConfig []map[string]interface{} `json:"taskProvider" binding:"required,is_valid_task_provider_config"`
-	TeamID             uint                     `json:"team" binding:"required,is_valid_team"`
-	HrsPerStoryPoint   float64                  `json:"hoursPerStoryPoint" binding:"required"`
-	CreatedByID        uint
+	Title               string                   `json:"title" binding:"required"`
+	ProjectName         string                   `json:"projectName" binding:"required"`
+	TaskProviderConfig  []map[string]interface{} `json:"taskProvider" binding:"required,is_valid_task_provider_config"`
+	TeamID              uint                     `json:"team" binding:"required,is_valid_team"`
+	StoryPointPerWeek float64                  `json:"storyPointPerWeek" binding:"required"`
+	CreatedByID         uint
 }
 
 // RetrospectiveListSerializer ...

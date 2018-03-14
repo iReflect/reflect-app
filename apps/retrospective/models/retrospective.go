@@ -19,7 +19,7 @@ type Retrospective struct {
 	Team               userModels.Team
 	TeamID             uint `gorm:"not null"`
 	Sprints            []Sprint
-	HrsPerStoryPoint   float64 `gorm:"not null"`
+	StoryPointPerWeek   float64 `gorm:"not null"`
 	CreatedBy          userModels.User
 	CreatedByID        uint `gorm:"not null"`
 }

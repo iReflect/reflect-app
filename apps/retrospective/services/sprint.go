@@ -2,12 +2,12 @@ package services
 
 import (
 	"errors"
-	"math"
 	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
 
+	"fmt"
 	"github.com/gocraft/work"
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
@@ -20,7 +20,6 @@ import (
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
-	"fmt"
 )
 
 // SprintService ...
@@ -126,7 +125,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		Error
 
 	if err == nil {
-		return nil, errors.New("Member already a part of the sprint")
+		return nil, errors.New("member already a part of the sprint")
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
@@ -138,7 +137,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		Find(&sprint).
 		Error
 	if err != nil {
-		return nil, errors.New("Member is not a part of the retrospective team")
+		return nil, errors.New("member is not a part of the retrospective team")
 	}
 
 	intSprintID, err := strconv.Atoi(sprintID)
@@ -160,7 +159,6 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 
 	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": strconv.Itoa(int(sprintMember.ID))})
 
-	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
 		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
@@ -171,9 +169,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	}
 
 	sprintMemberSummary.ActualVelocity = 0
-	memberWorkingDays := float64(sprintWorkingDays) - sprintMemberSummary.Vacations
-	sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
-		(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
+	sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
 
 	return sprintMemberSummary, nil
 }
@@ -191,7 +187,7 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 		Error
 
 	if err != nil {
-		return errors.New("Member not a part of the sprint")
+		return errors.New("member not a part of the sprint")
 	}
 
 	tx := db.Begin()
@@ -307,7 +303,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		return err
 	}
 
-	ticketIDs := []string{}
+	var ticketIDs []string
 	for _, timeLog := range timeLogs {
 		ticketIDs = append(ticketIDs, timeLog.TaskID)
 	}
@@ -401,7 +397,8 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("tasks.retrospective_id = ?", retroID).
 		First(&task).Error
 	if err != nil {
-		return nil // Returning nil if task not found. This happens in cases of incorrect taskIDs and "P". ToDo: Fix
+		// Returning nil if task not found. This happens in cases of incorrect taskIDs and "P". ToDo: Fix
+		return nil
 	}
 
 	sprintMemberTask.SprintMemberID = sprintMemberID
@@ -441,7 +438,6 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		Error; err != nil {
 		return nil, err
 	}
-	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
 		Joins("JOIN users ON users.id = sprint_members.member_id").
@@ -453,10 +449,7 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		return nil, err
 	}
 	for _, sprintMemberSummary := range sprintMemberSummaryList.Members {
-		memberWorkingDays := float64(sprintWorkingDays) - sprintMemberSummary.Vacations
-		sprintMemberSummary.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprint.Retrospective.HrsPerStoryPoint) *
-			(sprintMemberSummary.ExpectationPercent / 100.00) * (sprintMemberSummary.AllocationPercent / 100.00))
-
+		sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
 	}
 	return sprintMemberSummaryList, nil
 }
@@ -511,11 +504,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 		return nil, err
 	}
 
-	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprintMember.Sprint.StartDate, *sprintMember.Sprint.EndDate, true)
-	memberWorkingDays := float64(sprintWorkingDays - int(sprintMember.Vacations))
-
-	memberData.ExpectedVelocity = math.Floor((memberWorkingDays * 8.00 / sprintMember.Sprint.Retrospective.HrsPerStoryPoint) *
-		(float64(sprintMember.ExpectationPercent) / 100.00) * (float64(sprintMember.AllocationPercent) / 100.00))
+	memberData.SetExpectedVelocity(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
 
 	return &memberData, nil
 }
