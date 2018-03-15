@@ -220,22 +220,26 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		Find(&sprint).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	sprint.CurrentlySyncing = true
 	err = db.Save(&sprint).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	tickets, err := tasktracker.GetSprintTaskList(taskProviderConfig, sprint.SprintID)
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
@@ -249,6 +253,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	for _, sprintMember := range sprint.SprintMembers {
 		err = service.SyncSprintMemberData(strconv.Itoa(int(sprintMember.ID)), false)
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -262,6 +267,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	sprint.CurrentlySyncing = false
 	err = db.Save(&sprint).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
@@ -280,6 +286,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		Find(&sprintMember).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
@@ -289,6 +296,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		sprint.CurrentlySyncing = true
 		err = db.Save(&sprint).Error
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -300,12 +308,21 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	timeLogs, err := timetracker.GetProjectTimeLogs(sprintMember.Member.TimeProviderConfig, sprint.Retrospective.ProjectName, *sprint.StartDate, *sprint.EndDate)
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	var ticketIDs []string
 	for _, timeLog := range timeLogs {
 		ticketIDs = append(ticketIDs, timeLog.TaskID)
+	}
+
+	for _, ticketID := range ticketIDs {
+		err = service.insertTask(ticketID, sprintMember.Sprint.Retrospective.ID)
+		if err != nil {
+			utils.LogToSentry(err)
+			return err
+		}
 	}
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprintMember.Sprint.Retrospective.TaskProviderConfig)
@@ -315,12 +332,14 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 
 	tickets, err := tasktracker.GetTaskList(taskProviderConfig, ticketIDs)
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	for _, ticket := range tickets {
 		err = service.addOrUpdateTask(ticket, sprintMember.Sprint.Retrospective.ID)
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -331,12 +350,14 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		UpdateColumn("time_spent_minutes", 0).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	for _, timeLog := range timeLogs {
 		err = service.addOrUpdateSMT(timeLog, sprintMember.ID, sprint.RetrospectiveID)
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -348,6 +369,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		sprint.CurrentlySyncing = false
 		err = db.Save(&sprint).Error
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -355,27 +377,40 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	return nil
 }
 
+func (service SprintService) insertTask(ticketID string, retroID uint) (err error) {
+	db := service.DB
+	var task retroModels.Task
+	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticketID}).
+		Attrs(retroModels.Task{Summary: "", Type: "", Priority: "", Assignee: "", Status: ""}).
+		FirstOrCreate(&task).Error
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}
+	return nil
+}
+
 func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task, retroID uint) (err error) {
 	// ToDo: Handle moved issues! ie ticket id changes
 	db := service.DB
 	var task retroModels.Task
-	err = db.Model(&retroModels.Task{}).
-		Where("retrospective_id = ?", retroID).
-		Where("task_id = ?", ticket.ID).
-		FirstOrInit(&task).Error
+	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticket.ID}).
+		Assign(retroModels.Task{
+			Summary: ticket.Summary,
+			Type: ticket.Type,
+			Priority: ticket.Priority,
+			Estimate: ticket.Estimate,
+			Assignee: ticket.Assignee,
+			Status: ticket.Status,
+		}).
+		FirstOrCreate(&task).Error
+
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
-	task.Summary = ticket.Summary
-	task.TaskID = ticket.ID
-	task.RetrospectiveID = retroID
-	task.Type = ticket.Type
-	task.Priority = ticket.Priority
-	task.Estimate = ticket.Estimate
-	task.Assignee = ticket.Assignee
-	task.Status = ticket.Status
 
-	return db.Save(&task).Error
+	return nil
 }
 
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog, sprintMemberID uint, retroID uint) (err error) {
@@ -397,7 +432,6 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("tasks.retrospective_id = ?", retroID).
 		First(&task).Error
 	if err != nil {
-		// Returning nil if task not found. This happens in cases of incorrect taskIDs and "P". ToDo: Fix
 		return nil
 	}
 
