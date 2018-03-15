@@ -302,7 +302,8 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	}
 
 	if sprint.StartDate == nil || sprint.EndDate == nil {
-		return nil
+		utils.LogToSentry(err)
+		return errors.New("sprint has no start/end date")
 	}
 
 	timeLogs, err := timetracker.GetProjectTimeLogs(sprintMember.Member.TimeProviderConfig, sprint.Retrospective.ProjectName, *sprint.StartDate, *sprint.EndDate)
@@ -315,10 +316,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	var ticketIDs []string
 	for _, timeLog := range timeLogs {
 		ticketIDs = append(ticketIDs, timeLog.TaskID)
-	}
-
-	for _, ticketID := range ticketIDs {
-		err = service.insertTask(ticketID, sprintMember.Sprint.Retrospective.ID)
+		err = service.insertTask(timeLog.TaskID, sprintMember.Sprint.Retrospective.ID)
 		if err != nil {
 			utils.LogToSentry(err)
 			return err
