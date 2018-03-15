@@ -16,6 +16,7 @@ type SprintMemberSummary struct {
 	Rating             uint
 	Comment            string
 	ActualVelocity     float64
+	TotalTimeSpentMinutes     float64
 	ExpectedVelocity   float64
 }
 
