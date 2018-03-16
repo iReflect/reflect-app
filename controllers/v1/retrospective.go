@@ -38,7 +38,7 @@ func (ctrl RetrospectiveController) List(c *gin.Context) {
 	response, err := ctrl.RetrospectiveService.List(userID.(uint), perPage, page)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Retrospectives not found", "error": err})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -55,7 +55,7 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 	response, err := ctrl.RetrospectiveService.Get(retroID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Retrospective not found", "error": err})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, response)
@@ -72,7 +72,7 @@ func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
 
 	sprint, err := ctrl.RetrospectiveService.GetLatestSprint(retroID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Failed to get latest sprint data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, sprint)
@@ -85,13 +85,12 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 	var err error
 	retrospectiveData := retrospectiveSerializers.RetrospectiveCreateSerializer{CreatedByID: userID.(uint)}
 	if err = c.BindJSON(&retrospectiveData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
 	retro, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest,
-			gin.H{"message": "Retrospective can't be created", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

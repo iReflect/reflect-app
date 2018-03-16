@@ -6,6 +6,7 @@ import (
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -15,9 +16,9 @@ type TeamService struct {
 }
 
 // UserTeamList ...
-func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, err error) {
+func (service TeamService) UserTeamList(userID uint, onlyActive bool) (*userSerializers.TeamsSerializer, error) {
 	db := service.DB
-	teams = new(userSerializers.TeamsSerializer)
+	teams := new(userSerializers.TeamsSerializer)
 
 	filterQuery := db.Model(&userModels.Team{}).
 		Joins("JOIN user_teams ON teams.id = user_teams.team_id").
@@ -28,22 +29,22 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 		filterQuery = filterQuery.Where("(leaved_at IS NULL OR leaved_at > NOW())")
 	}
 
-	err = filterQuery.Scan(&teams.Teams).Error
+	err := filterQuery.Scan(&teams.Teams).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.New(constants.NoUserTeamFound)
 	}
 	return teams, nil
 }
 
 // MemberList ...
-func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (members *userSerializers.MembersSerializer, err error) {
+func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (*userSerializers.MembersSerializer, error) {
 	db := service.DB
-	members = new(userSerializers.MembersSerializer)
+	members := new(userSerializers.MembersSerializer)
 	activeMemberIDs := service.getTeamMemberIDs(teamID, true)
 	var memberIDs []uint
 
 	if !utils.UIntInSlice(userID, activeMemberIDs) {
-		return nil, errors.New("Must be a member of this team")
+		return nil, errors.New(constants.UserNotATeamMember)
 	}
 
 	if onlyActive {
@@ -52,9 +53,9 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 		memberIDs = service.getTeamMemberIDs(teamID, false)
 	}
 
-	err = db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Scan(&members.Members).Error
+	err := db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Scan(&members.Members).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.New(constants.NoTeamMemberFound)
 	}
 
 	return members, nil

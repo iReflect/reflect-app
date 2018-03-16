@@ -10,6 +10,7 @@ import (
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 //FeedbackService ...
@@ -18,44 +19,41 @@ type FeedbackService struct {
 }
 
 // Get feedback by id
-func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *feedbackSerializers.FeedbackDetailSerializer,
-	err error) {
+func (service FeedbackService) Get(feedbackID string, userID uint) (*feedbackSerializers.FeedbackDetailSerializer, error) {
 	db := service.DB
-	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
+	feedback := new(feedbackSerializers.FeedbackDetailSerializer)
 
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
+	if err := db.Model(&feedbackModels.Feedback{}).
+		Where("id = ?", feedbackID).
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
 		Select("id, title, duration_start,duration_end, submitted_at, expire_at, status, feedback_form_id").
 		Scan(&feedback).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.FeedbackNotFound)
 	}
 
 	return service.getFeedbackDetail(feedback)
 }
 
 // TeamGet feedback by id
-func (service FeedbackService) TeamGet(feedbackID string, userID uint) (
-	feedback *feedbackSerializers.FeedbackDetailSerializer,
-	err error) {
+func (service FeedbackService) TeamGet(feedbackID string, userID uint) (*feedbackSerializers.FeedbackDetailSerializer, error) {
 	db := service.DB
-	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
+	feedback := new(feedbackSerializers.FeedbackDetailSerializer)
 	feedbackIds := service.getTeamFeedbackIDs(userID)
 
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
+	if err := db.Model(&feedbackModels.Feedback{}).
+		Where("id = ?", feedbackID).
 		Where("id in (?)", feedbackIds).
 		Select("id, title, duration_start,duration_end, submitted_at, expire_at, status, feedback_form_id").
 		Scan(&feedback).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.FeedbackNotFound)
 	}
 
 	return service.getFeedbackDetail(feedback)
 }
 
 // List users Feedback
-func (service FeedbackService) List(userID uint, statuses []string, perPage int) (
-	feedbacks *feedbackSerializers.FeedbackListSerializer,
-	err error) {
+func (service FeedbackService) List(userID uint, statuses []string, perPage int) (*feedbackSerializers.FeedbackListSerializer, error) {
 	db := service.DB
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
 		Where("by_user_profile_id in (?)",
@@ -65,9 +63,7 @@ func (service FeedbackService) List(userID uint, statuses []string, perPage int)
 }
 
 // TeamList users Feedback
-func (service FeedbackService) TeamList(userID uint, statuses []string, perPage int) (
-	feedbacks *feedbackSerializers.FeedbackListSerializer,
-	err error) {
+func (service FeedbackService) TeamList(userID uint, statuses []string, perPage int) (*feedbackSerializers.FeedbackListSerializer, error) {
 	db := service.DB
 	feedbackIds := service.getTeamFeedbackIDs(userID)
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
@@ -76,15 +72,13 @@ func (service FeedbackService) TeamList(userID uint, statuses []string, perPage 
 	return service.getFeedbackList(baseQuery, statuses, perPage)
 }
 
-func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []string, perPage int) (
-	feedbacks *feedbackSerializers.FeedbackListSerializer,
-	err error) {
+func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []string, perPage int) (*feedbackSerializers.FeedbackListSerializer, error) {
 	listQuery := baseQuery
 	if len(statuses) > 0 {
 		listQuery = listQuery.Where("status in (?)", statuses)
 	}
 
-	feedbacks = new(feedbackSerializers.FeedbackListSerializer)
+	feedbacks := new(feedbackSerializers.FeedbackListSerializer)
 	if err := listQuery.
 		Preload("Team").
 		Preload("ByUserProfile").
@@ -96,7 +90,7 @@ func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []st
 		Preload("FeedbackForm").
 		Limit(perPage).
 		Find(&feedbacks.Feedbacks).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.FeedbackNotFound)
 	}
 	baseQuery.Where("status = ?", feedbackModels.NewFeedback).Count(&feedbacks.NewFeedbackCount)
 	baseQuery.Where("status = ?", feedbackModels.InProgressFeedback).Count(&feedbacks.DraftFeedbackCount)
@@ -104,9 +98,7 @@ func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []st
 	return feedbacks, nil
 }
 
-func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.FeedbackDetailSerializer) (
-	*feedbackSerializers.FeedbackDetailSerializer,
-	error) {
+func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.FeedbackDetailSerializer) (*feedbackSerializers.FeedbackDetailSerializer, error) {
 	db := service.DB
 	feedBackFormContents := []feedbackModels.FeedbackFormContent{}
 
@@ -117,7 +109,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 		Group("id, category_id").
 		Where("feedback_form_id in (?)", feedback.FeedbackFormID).
 		Find(&feedBackFormContents).Error; err != nil {
-		return nil, err
+		return nil, errors.New(constants.InvalidFeedbackTemplate)
 	}
 
 	categories := make(map[uint]feedbackSerializers.CategoryDetailSerializer)
@@ -183,16 +175,16 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 
 // Put feedback data
 func (service FeedbackService) Put(feedbackID string, userID uint,
-	feedBackResponseData feedbackSerializers.FeedbackResponseSerializer) (code int, err error) {
+	feedBackResponseData feedbackSerializers.FeedbackResponseSerializer) (int, error) {
 	db := service.DB
 	feedback := feedbackModels.Feedback{}
 	// Find a feedback with the given ID which hasn't been submitted before
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ? AND status != ? AND expire_at >= ?", feedbackID, feedbackModels.SubmittedFeedback, time.Now()).
+	if err := db.Model(&feedbackModels.Feedback{}).
+		Where("id = ? AND status != ? AND expire_at >= ?", feedbackID, feedbackModels.SubmittedFeedback, time.Now()).
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
 		First(&feedback).Error; err != nil {
-		code = http.StatusNotFound
-		return code, err
+		return http.StatusNotFound, errors.New(constants.FeedbackNotFound)
 	}
 	tx := db.Begin() // transaction begin
 	for _, categoryData := range feedBackResponseData.Data {
@@ -204,18 +196,14 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 					Find(&questionResponse).Error; err != nil {
 					// Roll back the transaction if any question response is not found
 					tx.Rollback()
-					code = http.StatusBadRequest
-					err := errors.New("question not found")
-					return code, err
+					return http.StatusBadRequest, errors.New(constants.QuestionNotFound)
 				}
 				questionResponse.Response = questionResponseData.Response
 				questionResponse.Comment = questionResponseData.Comment
 				if err := tx.Save(&questionResponse).Error; err != nil {
 					// Roll back the transaction if any question response fails to update
 					tx.Rollback()
-					code = http.StatusBadRequest
-					err := errors.New("Failed to update the question response")
-					return code, err
+					return http.StatusBadRequest, errors.New(constants.QuestionResponseUpdateError)
 				}
 			}
 		}
@@ -228,8 +216,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 		}).Error; err != nil {
 			// Roll back the transaction if feedback status update fails to execute
 			tx.Rollback()
-			code = http.StatusBadRequest
-			return code, err
+			return http.StatusBadRequest, errors.New(constants.FeedbackUpdateError)
 		}
 	}
 	tx.Commit() // transaction committed/end

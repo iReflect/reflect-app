@@ -24,7 +24,7 @@ func (ctrl TeamController) GetTeams(c *gin.Context) {
 	teams, err := ctrl.TeamService.UserTeamList(userID.(uint), true)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get teams", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -40,7 +40,7 @@ func (ctrl TeamController) GetMembers(c *gin.Context) {
 	members, err := ctrl.TeamService.MemberList(id, userID.(uint), all != "true")
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get members", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
