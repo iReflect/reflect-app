@@ -130,6 +130,10 @@ func ValidateCredentials(credentials map[string]interface{}) (err error) {
 
 // GetTaskList ...
 func GetTaskList(config []byte, taskIDs []string) (tasks []serializers.Task, err error) {
+	if len(taskIDs) == 0 {
+		return tasks, nil
+	}
+
 	connections, err := GetConnections(config)
 	if err != nil {
 		return nil, err

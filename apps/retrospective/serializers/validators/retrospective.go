@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/go-playground/validator.v8"
 	"reflect"
@@ -90,6 +91,23 @@ func IsValidRating(
 ) bool {
 	rating := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskMemberUpdate).Rating
 	if rating != nil && *rating >= 0 && int(*rating) < len(retrospective.RatingValues) {
+		return true
+	}
+	return false
+}
+
+// IsValidTaskRole ...
+func IsValidTaskRole(
+	v *validator.Validate,
+	topStruct reflect.Value,
+	currentStruct reflect.Value,
+	field reflect.Value,
+	fieldType reflect.Type,
+	fieldKind reflect.Kind,
+	param string,
+) bool {
+	role := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskMemberUpdate).Role
+	if role != nil && *role >= 0 && int(*role) < len(models.MemberTaskRoleValues) {
 		return true
 	}
 	return false

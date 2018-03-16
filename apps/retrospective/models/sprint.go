@@ -53,9 +53,6 @@ type Sprint struct {
 	CurrentlySyncing bool `gorm:"default:true;not null"`
 	CreatedBy        userModels.User
 	CreatedByID      uint   `gorm:"not null"`
-	GoodHighlights   string `gorm:"type:text"`
-	OkayHighlights   string `gorm:"type:text"`
-	BadHighlights    string `gorm:"type:text"`
 }
 
 // BeforeSave ...
@@ -76,7 +73,6 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 		if retroID == 0 {
 			retroID = sprint.Retrospective.ID
 		}
-		db.LogMode(true)
 		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
 
 		// More than one entries with status active for given retro should not be allowed

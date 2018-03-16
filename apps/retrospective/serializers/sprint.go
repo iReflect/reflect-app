@@ -18,9 +18,6 @@ type Sprint struct {
 	CurrentlySyncing bool
 	CreatedBy        userSerializer.User
 	CreatedByID      uint
-	GoodHighlights   string
-	OkayHighlights   string
-	BadHighlights    string
 }
 
 // SprintsSerializer ...
@@ -44,7 +41,4 @@ type CreateSprintSerializer struct {
 
 // UpdateSprintSerializer is used in sprint create API
 type UpdateSprintSerializer struct {
-	GoodHighlights *string
-	OkayHighlights *string
-	BadHighlights  *string
 }

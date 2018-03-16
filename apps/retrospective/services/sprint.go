@@ -148,7 +148,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	sprintMember.SprintID = uint(intSprintID)
 	sprintMember.MemberID = memberID
 	sprintMember.Vacations = 0
-	sprintMember.Rating = retrospective.OkayRating
+	sprintMember.Rating = retrospective.DecentRating
 	sprintMember.AllocationPercent = 100
 	sprintMember.ExpectationPercent = 100
 
@@ -168,8 +168,8 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		return nil, err
 	}
 
-	sprintMemberSummary.ActualVelocity = 0
-	sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
+	sprintMemberSummary.ActualStoryPoint = 0
+	sprintMemberSummary.SetExpectedStoryPoint(sprint, sprint.Retrospective)
 
 	return sprintMemberSummary, nil
 }
@@ -475,14 +475,15 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
 		Select("DISTINCT sprint_members.*, users.*, " +
-			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) as total_time_spent_minutes").
+			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_story_point, " +
+			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) " +
+			"as total_time_spent_in_min").
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		return nil, err
 	}
 	for _, sprintMemberSummary := range sprintMemberSummaryList.Members {
-		sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
+		sprintMemberSummary.SetExpectedStoryPoint(sprint, sprint.Retrospective)
 	}
 	return sprintMemberSummaryList, nil
 }
@@ -530,15 +531,15 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("COALESCE(SUM(smt.points_earned), 0) as actual_velocity, " +
-			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_minutes").
+		Select("COALESCE(SUM(smt.points_earned), 0) as actual_story_point, " +
+			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_in_min").
 		Group("sprint_members.id").
 		Row().
-		Scan(&memberData.ActualVelocity, &memberData.TotalTimeSpentMinutes); err != nil {
+		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
 		return nil, err
 	}
 
-	memberData.SetExpectedVelocity(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
+	memberData.SetExpectedStoryPoint(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
 
 	return &memberData, nil
 }
@@ -628,7 +629,7 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 			SprintID:  uint(sprint.ID),
 			MemberID:  userID,
 			Vacations: 0,
-			Rating:    retrospective.OkayRating,
+			Rating:    retrospective.DecentRating,
 			// TODO: Instead of setting it to default to 100%,
 			// we can use the previous active sprint's data for the allocation and expectation values
 			AllocationPercent:  100,
@@ -652,18 +653,6 @@ func (service SprintService) UpdateSprint(sprintID string, sprintData retrospect
 	if err := db.Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		return nil, err
-	}
-
-	if sprintData.GoodHighlights != nil {
-		sprint.GoodHighlights = *sprintData.GoodHighlights
-	}
-
-	if sprintData.OkayHighlights != nil {
-		sprint.OkayHighlights = *sprintData.OkayHighlights
-	}
-
-	if sprintData.BadHighlights != nil {
-		sprint.BadHighlights = *sprintData.BadHighlights
 	}
 
 	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
@@ -700,6 +689,9 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	dbs := db.Model(retroModels.SprintMemberTask{}).
 		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
 		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
+		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select("sprint_member_tasks.*," +
 			"row_number() over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id order by sprint_member_tasks.time_spent_minutes desc) as time_spent_rank, " +

@@ -31,4 +31,9 @@ func (validator RetrospectiveValidators) Register() {
 		IsValidRating); err != nil {
 		logrus.Error(err.Error())
 	}
+
+	if err := binding.Validator.RegisterValidation("is_valid_task_role",
+		IsValidTaskRole); err != nil {
+		logrus.Error(err.Error())
+	}
 }
