@@ -39,7 +39,7 @@ const (
 type SprintMemberTask struct {
 	gorm.Model
 	SprintMember     SprintMember
-	SprintMemberID   uint                 `gorm:"not null"`
+	SprintMemberID   uint `gorm:"not null"`
 	Task             Task
 	TaskID           uint                 `gorm:"not null"`
 	TimeSpentMinutes uint                 `gorm:"not null"`
@@ -73,7 +73,6 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 
 	return
 }
-
 
 // RegisterSprintMemberTaskToAdmin ...
 func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {

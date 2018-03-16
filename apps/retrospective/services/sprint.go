@@ -394,12 +394,12 @@ func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task,
 	var task retroModels.Task
 	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticket.ID}).
 		Assign(retroModels.Task{
-			Summary: ticket.Summary,
-			Type: ticket.Type,
+			Summary:  ticket.Summary,
+			Type:     ticket.Type,
 			Priority: ticket.Priority,
 			Estimate: ticket.Estimate,
 			Assignee: ticket.Assignee,
-			Status: ticket.Status,
+			Status:   ticket.Status,
 		}).
 		FirstOrCreate(&task).Error
 
@@ -531,7 +531,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("COALESCE(SUM(smt.points_earned), 0) as actual_story_point, " +
+		Select("COALESCE(SUM(smt.points_earned), 0) as actual_story_point, "+
 			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_in_min").
 		Group("sprint_members.id").
 		Row().
