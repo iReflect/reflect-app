@@ -10,8 +10,8 @@ import (
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
-	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	userServices "github.com/iReflect/reflect-app/apps/user/services"
 )
 
 // RetrospectiveService ...

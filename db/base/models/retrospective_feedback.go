@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// SprintExtra represent Goals, Highlights and Notes of a sprint
-type SprintExtra struct {
+// RetrospectiveFeedback represent Goals, Highlights and Notes of a sprint
+type RetrospectiveFeedback struct {
 	gorm.Model
 	SubType         string `gorm:"type:varchar(30); not null"`
 	Type            int8   `gorm:"default:0; not null"`

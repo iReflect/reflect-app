@@ -1,9 +1,9 @@
 package migrations
-	
+
 import (
 	"database/sql"
-	"github.com/pressly/goose"
 	"github.com/jinzhu/gorm"
+	"github.com/pressly/goose"
 )
 
 //Define only the fields used in this migration and not full model.

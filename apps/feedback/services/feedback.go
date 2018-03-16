@@ -108,7 +108,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 	*feedbackSerializers.FeedbackDetailSerializer,
 	error) {
 	db := service.DB
-	feedBackFormContents := []feedbackModels.FeedbackFormContent{}
+	var feedBackFormContents []feedbackModels.FeedbackFormContent
 
 	if err := db.Model(&feedbackModels.FeedbackFormContent{}).
 		Preload("Skill").
@@ -123,7 +123,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 	categories := make(map[uint]feedbackSerializers.CategoryDetailSerializer)
 
 	for _, feedBackFormContent := range feedBackFormContents {
-		questionResponses := []feedbackSerializers.QuestionResponseDetailSerializer{}
+		var questionResponses []feedbackSerializers.QuestionResponseDetailSerializer
 		for _, question := range feedBackFormContent.Skill.Questions {
 			questionResponse := feedbackModels.QuestionResponse{}
 			db.Model(questionResponse).
@@ -216,7 +216,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 					// Roll back the transaction if any question response fails to update
 					tx.Rollback()
 					code = http.StatusBadRequest
-					err := errors.New("Failed to update the question response")
+					err := errors.New("failed to update the question response")
 					return code, err
 				}
 			}
