@@ -4,16 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/jinzhu/gorm"
+	"strconv"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	userServices "github.com/iReflect/reflect-app/apps/user/services"
+	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 )
 
 // RetrospectiveService ...
 type RetrospectiveService struct {
-	DB *gorm.DB
+	DB          *gorm.DB
+	TeamService userServices.TeamService
 }
 
 // List all the Retrospectives of all the teams, given user is a member of.
@@ -53,19 +57,38 @@ func (service RetrospectiveService) List(userID uint, perPage int, page int) (
 }
 
 // Get the details of the given RetroSpective.
-func (service RetrospectiveService) Get(retrospectiveID string) (retrospective *retrospectiveSerializers.Retrospective, err error) {
+func (service RetrospectiveService) Get(retrospectiveID string, isEagerLoading bool) (retrospective *retrospectiveSerializers.Retrospective, err error) {
 	db := service.DB
 
 	retrospective = new(retrospectiveSerializers.Retrospective)
 
-	if err = db.Model(&retroModels.Retrospective{}).
-		Preload("Team").
-		Preload("CreatedBy").
+	baseQuery := db.Model(&retroModels.Retrospective{})
+	if isEagerLoading {
+		baseQuery = baseQuery.
+			Preload("Team").
+			Preload("CreatedBy")
+	}
+
+	if err = baseQuery.
 		Where("retrospectives.id = ?", retrospectiveID).
 		First(&retrospective).Error; err != nil {
 		return nil, err
 	}
 	return retrospective, nil
+}
+
+// GetTeamMembers ...
+func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint) (members *userSerializers.MembersSerializer, err error) {
+	retro, err := service.Get(retrospectiveID, false)
+	if err != nil {
+		return nil, err
+	}
+
+	members, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true)
+	if err != nil {
+		return nil, err
+	}
+	return members, nil
 }
 
 // GetLatestSprint returns the latest sprint for the retro
