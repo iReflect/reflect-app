@@ -119,7 +119,7 @@
   branch = "master"
   name = "github.com/iReflect/go-jira"
   packages = ["."]
-  revision = "a9270f2d43b2f0e105d3a4ee6b4d9a67146af716"
+  revision = "e4572fccba1e2cb55ea1a5b1c7f50e3544f2366e"
 
 [[projects]]
   branch = "master"
