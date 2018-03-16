@@ -655,18 +655,6 @@ func (service SprintService) UpdateSprint(sprintID string, sprintData retrospect
 		return nil, err
 	}
 
-	if sprintData.GoodHighlights != nil {
-		sprint.GoodHighlights = *sprintData.GoodHighlights
-	}
-
-	if sprintData.OkayHighlights != nil {
-		sprint.OkayHighlights = *sprintData.OkayHighlights
-	}
-
-	if sprintData.BadHighlights != nil {
-		sprint.BadHighlights = *sprintData.BadHighlights
-	}
-
 	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
 		return nil, errors.New("sprint couldn't be updated")
 	}

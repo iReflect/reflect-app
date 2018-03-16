@@ -67,32 +67,32 @@ func (question *Question) ValidateQuestionResponse(questionResponse string) bool
 		return false
 	}
 
-	if question.Type == MultiChoiceType {
-		questionOptions := question.GetOptions()
-		validValues := map[float64]float64{}
-		questionOptionsList, exists := questionOptions["values"].([]interface{})
-		if !exists {
+	questionOptions := question.GetOptions()
+	validQuestionResponses := map[float64]float64{}
+	questionOptionsList, exists := questionOptions["values"].([]interface{})
+	if !exists {
+		return false
+	}
+
+	for _, val := range questionOptionsList {
+		var responseID float64
+		if responseID, exists = val.(map[string]interface{})["id"].(float64); !exists {
 			return false
 		}
-		for _, val := range questionOptionsList {
-			var responseID float64
-			if responseID, exists = val.(map[string]interface{})["id"].(float64); !exists {
-				return false
-			}
-			validValues[responseID] = responseID
-		}
-		for _, response := range questionResponseList {
-			if response != "" {
-				value, _ := strconv.ParseFloat(response, 64)
-				_, isValid := validValues[value]
-				if !isValid {
-					return isValid
-				}
-			}
-		}
-		return true
+		validQuestionResponses[responseID] = responseID
 	}
-	return false
+
+	// Check if the response(s) are not from the available options
+	for _, response := range questionResponseList {
+		if response != "" {
+			value, _ := strconv.ParseFloat(response, 64)
+			_, isValid := validQuestionResponses[value]
+			if !isValid {
+				return isValid
+			}
+		}
+	}
+	return true
 }
 
 func (question *Question) BeforeSave(db *gorm.DB) (err error) {
