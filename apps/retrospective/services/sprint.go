@@ -168,8 +168,8 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		return nil, err
 	}
 
-	sprintMemberSummary.ActualVelocity = 0
-	sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
+	sprintMemberSummary.ActualStoryPoint = 0
+	sprintMemberSummary.SetExpectedStoryPoint(sprint, sprint.Retrospective)
 
 	return sprintMemberSummary, nil
 }
@@ -475,14 +475,15 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
 		Select("DISTINCT sprint_members.*, users.*, " +
-			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) as total_time_spent_minutes").
+			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_story_point, " +
+			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) " +
+			"as total_time_spent_in_min").
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		return nil, err
 	}
 	for _, sprintMemberSummary := range sprintMemberSummaryList.Members {
-		sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
+		sprintMemberSummary.SetExpectedStoryPoint(sprint, sprint.Retrospective)
 	}
 	return sprintMemberSummaryList, nil
 }
@@ -530,15 +531,15 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("COALESCE(SUM(smt.points_earned), 0) as actual_velocity, " +
-			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_minutes").
+		Select("COALESCE(SUM(smt.points_earned), 0) as actual_story_point, " +
+			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_in_min").
 		Group("sprint_members.id").
 		Row().
-		Scan(&memberData.ActualVelocity, &memberData.TotalTimeSpentMinutes); err != nil {
+		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
 		return nil, err
 	}
 
-	memberData.SetExpectedVelocity(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
+	memberData.SetExpectedStoryPoint(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
 
 	return &memberData, nil
 }

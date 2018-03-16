@@ -44,7 +44,7 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 // Get ...
 func (service TaskService) Get(id string, retroID string, sprintID string) (task *retroSerializers.Task, err error) {
 	db := service.DB
-	tasks := []retroSerializers.Task{}
+	var tasks []retroSerializers.Task
 
 	dbs := db.Model(retroModels.Task{}).
 		Where("retrospective_id = ?", retroID).
@@ -191,6 +191,9 @@ func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprin
 	}
 	if taskMemberData.Comment != nil {
 		sprintMemberTask.Comment = *taskMemberData.Comment
+	}
+	if taskMemberData.Role != nil {
+		sprintMemberTask.Role = retroModels.MemberTaskRole(*taskMemberData.Role)
 	}
 	if err = db.Save(&sprintMemberTask).Error; err != nil {
 		return nil, err
