@@ -28,8 +28,9 @@ type TaskMember struct {
 	SprintTime   uint
 	TotalPoints  float64
 	SprintPoints float64
-	Rating       uint
+	Rating       *int8
 	Comment      string
+	Role         *int8
 }
 
 // TaskMembersSerializer ...
@@ -48,4 +49,5 @@ type SprintTaskMemberUpdate struct {
 	SprintPoints *float64 `json:"SprintPoints"`
 	Rating       *int8    `json:"Rating" binding:"is_valid_rating"`
 	Comment      *string  `json:"Comment"`
+	Role         *int8    `json:"Role" binding:"is_valid_task_role"`
 }

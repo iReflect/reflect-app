@@ -21,10 +21,7 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 	db := service.DB
 	taskList = new(retroSerializers.TasksSerializer)
 
-	dbs := db.Model(retroModels.Task{}).
-		Where("retrospective_id = ?", retroID).
-		Joins("JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id").
-		Joins("JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id").
+	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
 		Select("tasks.*, " +
 			"sm.sprint_id, " +
 			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id) as total_time, " +
@@ -44,13 +41,10 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 // Get ...
 func (service TaskService) Get(id string, retroID string, sprintID string) (task *retroSerializers.Task, err error) {
 	db := service.DB
-	tasks := []retroSerializers.Task{}
+	var tasks []retroSerializers.Task
 
-	dbs := db.Model(retroModels.Task{}).
-		Where("retrospective_id = ?", retroID).
+	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
 		Where("tasks.id = ?", id).
-		Joins("JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id").
-		Joins("JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id").
 		Select("tasks.*, " +
 			"sm.sprint_id, " +
 			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id) as total_time, " +
@@ -72,10 +66,7 @@ func (service TaskService) GetMembers(id string, retroID string, sprintID string
 	db := service.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
-	dbs := db.Model(retroModels.SprintMemberTask{}).
-		Where("task_id = ?", id).
-		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
-		Joins("JOIN users ON sm.member_id = users.id").
+	dbs := service.smtForActiveAndCurrentSprint(id, sprintID).
 		Select("sprint_member_tasks.*," +
 			"users.*," +
 			"sm.sprint_id, " +
@@ -96,14 +87,12 @@ func (service TaskService) GetMembers(id string, retroID string, sprintID string
 }
 
 // GetMember returns the task member summary of a task for a particular sprint member
-func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTask, memberID uint) (member *retroSerializers.TaskMember, err error) {
+func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTask, memberID uint, sprintID string) (member *retroSerializers.TaskMember, err error) {
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
-	tempDB := db.Model(retroModels.SprintMemberTask{}).
-		Where("task_id = ?", sprintMemberTask.TaskID).
-		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id AND sm.member_id = ?", memberID).
-		Joins("JOIN users ON sm.member_id = users.id").
+	tempDB := service.tasksForActiveAndCurrentSprint(string(sprintMemberTask.TaskID), sprintID).
+		Where("sm.member_id = ? = ?", memberID).
 		Select("sprint_member_tasks.*," +
 			"users.*," +
 			"sm.sprint_id, " +
@@ -164,7 +153,7 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 		return nil, err
 	}
 
-	member, err = service.GetMember(sprintMemberTask, sprintMember.MemberID)
+	member, err = service.GetMember(sprintMemberTask, sprintMember.MemberID, sprintID)
 	return member, err
 }
 
@@ -192,8 +181,37 @@ func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprin
 	if taskMemberData.Comment != nil {
 		sprintMemberTask.Comment = *taskMemberData.Comment
 	}
+	if taskMemberData.Role != nil {
+		sprintMemberTask.Role = retroModels.MemberTaskRole(*taskMemberData.Role)
+	}
 	if err = db.Save(&sprintMemberTask).Error; err != nil {
 		return nil, err
 	}
-	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID)
+	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID, sprintID)
+}
+
+// tasksForActiveAndCurrentSprint ...
+func (service TaskService) tasksForActiveAndCurrentSprint(retroID string, sprintID string) *gorm.DB {
+	db := service.DB
+
+	return db.Model(retroModels.Task{}).
+		Where("tasks.retrospective_id = ?", retroID).
+		Joins("JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id").
+		Joins("JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id").
+		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Scopes(retroModels.NotDeletedSprint)
+}
+
+// smtForActiveAndCurrentSprint ...
+func (service TaskService) smtForActiveAndCurrentSprint(taskID string, sprintID string) *gorm.DB {
+	db := service.DB
+
+	return db.Model(retroModels.SprintMemberTask{}).
+		Where("task_id = ?", taskID).
+		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
+		Joins("JOIN users ON sm.member_id = users.id").
+		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Scopes(retroModels.NotDeletedSprint)
 }

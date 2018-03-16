@@ -7,10 +7,10 @@ import (
 )
 
 type Config struct {
-	DB           *dbConfig
-	Server       *serverConfig
-	Redis        *redisConfig
-	TimeTracker  *timeTrackerConfig
+	DB          *dbConfig
+	Server      *serverConfig
+	Redis       *redisConfig
+	TimeTracker *timeTrackerConfig
 }
 
 var config Config
@@ -40,10 +40,10 @@ func init() {
 	log.Println(timeTrackerConf)
 
 	config = Config{
-		DB:           dbConf,
-		Server:       serverConf,
-		Redis:        redisConf,
-		TimeTracker:  timeTrackerConf,
+		DB:          dbConf,
+		Server:      serverConf,
+		Redis:       redisConf,
+		TimeTracker: timeTrackerConf,
 	}
 }
 

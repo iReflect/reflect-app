@@ -4,14 +4,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/andygrunwald/go-jira"
+	"github.com/iReflect/go-jira"
 
 	"encoding/json"
 	"errors"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
-	"fmt"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"io/ioutil"
 )
 
 // JIRATaskProvider ...
@@ -136,20 +136,13 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 
 // GetTaskList ...
 func (c *JIRAConnection) GetTaskList(ticketIDs []string) []serializers.Task {
-	var ticket *jira.Issue
-	var tickets []jira.Issue
-	var err error;
-	for _, ticketID := range ticketIDs {
-		fmt.Println("Getting ticket from JIRA", ticketID)
-		ticket, _, err = c.client.Issue.Get(ticketID, nil)
-		if ticket != nil {
-			tickets = append(tickets, *ticket)
-		} else {
-			utils.LogToSentry(err)
-		}
+	tickets, err := c.getTicketsFromJQL("issueKey in ("+strings.Join(ticketIDs, ",")+")", true)
+
+	if err != nil {
+		utils.LogToSentry(err)
 	}
 
-	return c.serializeTickets(tickets)
+	return tickets
 }
 
 // GetSprint ...
@@ -188,7 +181,7 @@ func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
 		return nil
 	}
 
-	tickets, _ := c.getTicketsFromJQL("Sprint  in (" + sprint + ")")
+	tickets, _ := c.getTicketsFromJQL("Sprint  in ("+sprint+")", false)
 	return tickets
 }
 
@@ -196,17 +189,19 @@ func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
 func (c *JIRAConnection) ValidateConfig() error {
 	searchOptions := jira.SearchOptions{MaxResults: 1}
 
-	// Todo Verify
 	_, _, err := c.client.Issue.Search(c.config.JQL, &searchOptions)
 	return err
 }
 
-func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized []serializers.Task, err error) {
-	searchOptions := jira.SearchOptions{MaxResults: 50000}
+func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool) (ticketsSerialized []serializers.Task, err error) {
+	// Need to pass in validateQuery=warn like this until jira-go supports this natively
+	searchOptions := jira.SearchOptions{MaxResults: 50000, ValidateQuery: "warn"}
 
 	var jql string
 
 	switch {
+	case skipBaseJQL:
+		jql = extraJQL
 	case extraJQL != "" && c.config.JQL != "":
 		jql = extraJQL + " AND " + c.config.JQL
 	case extraJQL != "":
@@ -216,9 +211,10 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string) (ticketsSerialized [
 	}
 
 	// ToDo: Use pagination
-	tickets, _, err := c.client.Issue.Search(jql, &searchOptions)
+	tickets, res, err := c.client.Issue.Search(jql, &searchOptions)
 	if err != nil {
-		return nil, err
+		jiraErr, _ := ioutil.ReadAll(res.Response.Body)
+		utils.LogToSentry(errors.New(string(jiraErr)))
 	}
 
 	return c.serializeTickets(tickets), nil
