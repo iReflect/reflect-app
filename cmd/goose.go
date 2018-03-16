@@ -37,7 +37,7 @@ func main() {
 		return
 	}
 
-	config := config.GetConfig()
+	configurations := config.GetConfig()
 
 	if len(args) > 1 && args[0] == "create" {
 
@@ -50,7 +50,7 @@ func main() {
 			migrationTemplate = customGoSQLMigrationTemplate
 		}
 
-		if err := goose.CreateWithTemplate(nil, config.DB.MigrationsDir, migrationTemplate, args[1], migrationType); err != nil {
+		if err := goose.CreateWithTemplate(nil, configurations.DB.MigrationsDir, migrationTemplate, args[1], migrationType); err != nil {
 			log.Fatalf("goose run: %v", err)
 		}
 		return
@@ -58,17 +58,17 @@ func main() {
 
 	command := args[0]
 
-	db, err := sql.Open(config.DB.Driver, config.DB.DSN)
+	db, err := sql.Open(configurations.DB.Driver, configurations.DB.DSN)
 	if err != nil {
-		log.Fatalf("-dsn=%q: %v\n", config.DB.DSN, err)
+		log.Fatalf("-dsn=%q: %v\n", configurations.DB.DSN, err)
 	}
 
-	arguments := []string{}
+	var arguments []string
 	if len(args) > 3 {
 		arguments = append(arguments, args[3:]...)
 	}
 
-	if err := goose.Run(command, db, config.DB.MigrationsDir, arguments...); err != nil {
+	if err := goose.Run(command, db, configurations.DB.MigrationsDir, arguments...); err != nil {
 		log.Fatalf("goose run: %v", err)
 	}
 }
@@ -112,17 +112,17 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// Define only the fields used in this migration and not full model.
-// type Category struct {
+//Define only the fields used in this migration and not full model.
+//type Category struct {
 //	gorm.Model
 //	Weight int
-// }
+//}
 
 func init() {
 	goose.AddMigration(Up{{.}}, Down{{.}})
 }
 
-// Up{{.}}
+// Up{{.}} ...
 func Up{{.}}(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
@@ -136,7 +136,7 @@ func Up{{.}}(tx *sql.Tx) error {
 	return nil
 }
 
-// Down{{.}}
+// Down{{.}} ...
 func Down{{.}}(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))

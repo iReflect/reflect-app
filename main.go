@@ -12,6 +12,8 @@ import (
 	"github.com/iReflect/reflect-app/servers"
 
 	_ "github.com/iReflect/reflect-app/db/migrations" //Init for all migrations
+	"github.com/iReflect/reflect-app/workers"
+	_ "github.com/iReflect/reflect-app/workers/jobs/retrospective" // Init for jobs
 )
 
 func main() {
@@ -35,11 +37,17 @@ func main() {
 		}
 	}()
 
+	asyncWorkers := &workers.Workers{}
+	asyncWorkers.Initialize(configuration)
+
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
+
+	asyncWorkers.Shutdown()
+
 	log.Println("Shutdown Server ...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -23,7 +23,6 @@ func Up00001(tx *sql.Tx) error {
 
 	gormdb.Model(&models.UserTeam{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.UserTeam{}).AddForeignKey("team_id", "teams(id)", "RESTRICT", "RESTRICT")
-	gormdb.Model(&models.UserTeam{}).AddUniqueIndex("unique_user_team", "user_id", "team_id")
 
 	gormdb.Model(&models.UserProfile{}).AddForeignKey("role_id", "roles(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&models.UserProfile{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
@@ -42,7 +41,6 @@ func Down00001(tx *sql.Tx) error {
 	gormdb.Model(&models.UserProfile{}).RemoveForeignKey("user_id", "users(id)")
 	gormdb.Model(&models.UserProfile{}).RemoveForeignKey("role_id", "roles(id)")
 
-	gormdb.Model(&models.UserTeam{}).RemoveIndex("unique_user_team")
 	gormdb.Model(&models.UserTeam{}).RemoveForeignKey("team_id", "teams(id)")
 	gormdb.Model(&models.UserTeam{}).RemoveForeignKey("user_id", "users(id)")
 

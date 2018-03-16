@@ -2,6 +2,7 @@ package server
 
 import (
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
+	retrospectiveModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -39,6 +40,15 @@ func (a *Admin) Router() *http.ServeMux {
 	Admin.AddResource(&feedbackModels.QuestionResponse{}, &admin.Config{Menu: []string{"Feedback Management"}})
 
 	Admin.AddResource(&feedbackModels.Schedule{}, &admin.Config{Menu: []string{"Schedule Management"}})
+
+	retrospectiveModels.RegisterRetrospectiveToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	retrospectiveModels.RegisterTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	retrospectiveModels.RegisterSprintToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	Admin.AddResource(&retrospectiveModels.SprintMember{}, &admin.Config{Menu: []string{"Retrospective Management"}})
+	retrospectiveModels.RegisterSprintMemberTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	Admin.AddResource(&retrospectiveModels.Trail{}, &admin.Config{Menu: []string{"Retrospective Audit Trail Management"}})
+	//Todo: Fix SMT Creation
+
 	Admin.MountTo("/admin/", adminRouter)
 
 	return adminRouter

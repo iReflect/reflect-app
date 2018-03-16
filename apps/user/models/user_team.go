@@ -1,6 +1,8 @@
 package models
 
 import (
+	"errors"
+	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
@@ -29,15 +31,44 @@ const (
 
 // UserTeam represent team associations of a users
 type UserTeam struct {
-	User      User
-	UserID    uint `gorm:"primary_key"`
-	Team      Team
-	TeamID    uint     `gorm:"primary_key"`
-	Active    bool     `gorm:"default:false; not null"`
-	Role      TeamRole `gorm:"default:0; not null"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
+	gorm.Model
+	User     User
+	UserID   uint `gorm:"not null"`
+	Team     Team
+	TeamID   uint      `gorm:"not null"`
+	Role     TeamRole  `gorm:"default:0; not null"`
+	JoinedAt time.Time `gorm:"not null"`
+	LeavedAt *time.Time
+}
+
+// BeforeSave ...
+func (userTeam *UserTeam) BeforeSave(db *gorm.DB) (err error) {
+
+	var userTeams []UserTeam
+	var userTeamsCount uint
+	userTeamsCount = 0
+	baseQuery := db.Where("id <> ? AND user_id = ? AND team_id = ?",
+		userTeam.ID,
+		userTeam.User.ID,
+		userTeam.Team.ID)
+
+	// Provided joined_at-leaved_at duration should not overlap with any other entry for the given user-team pair
+	// TODO Add check
+
+	// More than one entries with null leaved_at for given user-team pair should not be allowed
+	baseQuery.Where("leaved_at IS NULL").Find(&userTeams).Count(&userTeamsCount)
+	if userTeam.LeavedAt == nil && userTeamsCount != 0 {
+		err = errors.New("user pre-exist for the team")
+		return err
+	}
+
+	// Leaved at if provided should be after joined at
+	if userTeam.LeavedAt != nil && userTeam.LeavedAt.Before(userTeam.JoinedAt) {
+		err = errors.New("leaved at can not be before joined at")
+		return err
+	}
+
+	return
 }
 
 func RegisterUserTeamToAdmin(Admin *admin.Admin, config admin.Config) {

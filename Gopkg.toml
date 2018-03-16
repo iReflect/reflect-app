@@ -62,3 +62,23 @@
 [[constraint]]
   name = "github.com/deckarep/golang-set"
   version = "1.7.0"
+
+[[constraint]]
+  name = "github.com/gocraft/work"
+  version = "0.5.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/blaskovicz/go-cryptkeeper"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/getsentry/raven-go"
+
+[[constraint]]
+  name = "github.com/iReflect/go-jira"
+  version = "1.1.0"

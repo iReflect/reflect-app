@@ -6,16 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//FeedbackController ...
+//UserController ...
 type UserController struct {
 }
 
-// Routes for Feedback
+// Routes for User
 func (ctrl UserController) Routes(r *gin.RouterGroup) {
 	r.GET("/current/", ctrl.Current)
 }
 
-// Get feedback
+// Current Get current user
 func (ctrl UserController) Current(c *gin.Context) {
 	user, ok := c.Get("user")
 	if !ok {

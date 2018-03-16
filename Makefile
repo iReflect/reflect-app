@@ -1,4 +1,5 @@
-PACKAGE  = github.com/iReflect/reflect-app
+NAME     = reflect-app
+PACKAGE  = github.com/iReflect/$(NAME)
 DATE    ?= $(shell date +%FT%T%z)
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
 			cat $(CURDIR)/.version 2> /dev/null || echo v0)
@@ -7,6 +8,8 @@ BIN      = $(GOPATH)/bin
 BASE     = $(GOPATH)/src/$(PACKAGE)
 PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "^$(PACKAGE)/vendor/"))
 TESTPKGS = $(shell env GOPATH=$(GOPATH) $(GO) list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
+BUILD_NAME = $(NAME)-$(VERSION)
+BUILD_DIR = $(BIN)/$(BUILD_NAME)
 
 export GOPATH
 
@@ -20,11 +23,19 @@ Q = $(if $(filter 1,$V),,@)
 M = $(shell printf "\033[34;1m▶\033[0m")
 
 .PHONY: all
-all: fmt vendor | $(BASE) ; $(info $(M) building executable…) @ ## Build program binary
-	$Q cd $(BASE) && $(GO) build \
+all: clean | $(BASE) ; $(info $(M) building executable…) @ ## Build program binary
+	mkdir -p $(BUILD_DIR)
+	
+	$Q cd $(BASE) && GOOS=linux GOARCH=amd64 $(GO) build \
 		-tags release \
 		-ldflags '-X $(PACKAGE)/cmd.Version=$(VERSION) -X $(PACKAGE)/cmd.BuildDate=$(DATE)' \
-		-o bin/$(PACKAGE) main.go
+		-o $(BUILD_DIR)/$(NAME) main.go
+
+	$Q cd $(BUILD_DIR) && mkdir -p app/views/qor
+	cd $(BUILD_DIR) && cp -r $(BASE)/vendor/github.com/qor/admin/views/* app/views/qor/
+	$Q  cd $(BUILD_DIR) && mkdir -p db
+	cd $(BUILD_DIR) && cp -r $(BASE)/db/migrations db/
+	cd $(BIN) && zip -r -q $(BUILD_NAME).zip $(BUILD_NAME)
 
 $(BASE): ; $(info $(M) setting GOPATH…)
 	@mkdir -p $(dir $@)
