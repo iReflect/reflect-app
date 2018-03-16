@@ -168,7 +168,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		return nil, err
 	}
 
-	sprintMemberSummary.ActualVelocity = 0
+	sprintMemberSummary.ActualStoryPoint = 0
 	sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
 
 	return sprintMemberSummary, nil
@@ -220,22 +220,26 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		Find(&sprint).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	sprint.CurrentlySyncing = true
 	err = db.Save(&sprint).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	tickets, err := tasktracker.GetSprintTaskList(taskProviderConfig, sprint.SprintID)
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
@@ -249,6 +253,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	for _, sprintMember := range sprint.SprintMembers {
 		err = service.SyncSprintMemberData(strconv.Itoa(int(sprintMember.ID)), false)
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -262,6 +267,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	sprint.CurrentlySyncing = false
 	err = db.Save(&sprint).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
@@ -280,6 +286,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		Find(&sprintMember).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
@@ -289,23 +296,31 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		sprint.CurrentlySyncing = true
 		err = db.Save(&sprint).Error
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
 
 	if sprint.StartDate == nil || sprint.EndDate == nil {
-		return nil
+		utils.LogToSentry(err)
+		return errors.New("sprint has no start/end date")
 	}
 
 	timeLogs, err := timetracker.GetProjectTimeLogs(sprintMember.Member.TimeProviderConfig, sprint.Retrospective.ProjectName, *sprint.StartDate, *sprint.EndDate)
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	var ticketIDs []string
 	for _, timeLog := range timeLogs {
 		ticketIDs = append(ticketIDs, timeLog.TaskID)
+		err = service.insertTask(timeLog.TaskID, sprintMember.Sprint.Retrospective.ID)
+		if err != nil {
+			utils.LogToSentry(err)
+			return err
+		}
 	}
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprintMember.Sprint.Retrospective.TaskProviderConfig)
@@ -315,12 +330,14 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 
 	tickets, err := tasktracker.GetTaskList(taskProviderConfig, ticketIDs)
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	for _, ticket := range tickets {
 		err = service.addOrUpdateTask(ticket, sprintMember.Sprint.Retrospective.ID)
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -331,12 +348,14 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		UpdateColumn("time_spent_minutes", 0).Error
 
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
 
 	for _, timeLog := range timeLogs {
 		err = service.addOrUpdateSMT(timeLog, sprintMember.ID, sprint.RetrospectiveID)
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -348,6 +367,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		sprint.CurrentlySyncing = false
 		err = db.Save(&sprint).Error
 		if err != nil {
+			utils.LogToSentry(err)
 			return err
 		}
 	}
@@ -355,27 +375,40 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 	return nil
 }
 
+func (service SprintService) insertTask(ticketID string, retroID uint) (err error) {
+	db := service.DB
+	var task retroModels.Task
+	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticketID}).
+		Attrs(retroModels.Task{Summary: "", Type: "", Priority: "", Assignee: "", Status: ""}).
+		FirstOrCreate(&task).Error
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}
+	return nil
+}
+
 func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task, retroID uint) (err error) {
 	// ToDo: Handle moved issues! ie ticket id changes
 	db := service.DB
 	var task retroModels.Task
-	err = db.Model(&retroModels.Task{}).
-		Where("retrospective_id = ?", retroID).
-		Where("task_id = ?", ticket.ID).
-		FirstOrInit(&task).Error
+	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticket.ID}).
+		Assign(retroModels.Task{
+			Summary: ticket.Summary,
+			Type: ticket.Type,
+			Priority: ticket.Priority,
+			Estimate: ticket.Estimate,
+			Assignee: ticket.Assignee,
+			Status: ticket.Status,
+		}).
+		FirstOrCreate(&task).Error
+
 	if err != nil {
+		utils.LogToSentry(err)
 		return err
 	}
-	task.Summary = ticket.Summary
-	task.TaskID = ticket.ID
-	task.RetrospectiveID = retroID
-	task.Type = ticket.Type
-	task.Priority = ticket.Priority
-	task.Estimate = ticket.Estimate
-	task.Assignee = ticket.Assignee
-	task.Status = ticket.Status
 
-	return db.Save(&task).Error
+	return nil
 }
 
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog, sprintMemberID uint, retroID uint) (err error) {
@@ -397,7 +430,6 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("tasks.retrospective_id = ?", retroID).
 		First(&task).Error
 	if err != nil {
-		// Returning nil if task not found. This happens in cases of incorrect taskIDs and "P". ToDo: Fix
 		return nil
 	}
 
@@ -443,7 +475,8 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (sprintMem
 		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
 		Select("DISTINCT sprint_members.*, users.*, " +
-			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity").
+			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_velocity, " +
+			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) as total_time_spent_minutes").
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		return nil, err
@@ -497,10 +530,11 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("COALESCE(SUM(smt.points_earned), 0)").
+		Select("COALESCE(SUM(smt.points_earned), 0) as actual_velocity, " +
+			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_minutes").
 		Group("sprint_members.id").
 		Row().
-		Scan(&memberData.ActualVelocity); err != nil {
+		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
 		return nil, err
 	}
 
