@@ -116,10 +116,10 @@
   version = "v1.1"
 
 [[projects]]
+  branch = "master"
   name = "github.com/iReflect/go-jira"
   packages = ["."]
-  revision = "f9c91e2a6be53464f27662c88c89938be4fbe1c6"
-  version = "v1.1.0"
+  revision = "a9270f2d43b2f0e105d3a4ee6b4d9a67146af716"
 
 [[projects]]
   branch = "master"
@@ -300,6 +300,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1a120a90635bf2f82901ac35ea843a4d3fa29dff8057cbff924d6885e95e42bd"
+  inputs-digest = "5bf322a863253122b2420d1c46c74f40deeaf4ea154eca118bf9288909b776d1"
   solver-name = "gps-cdcl"
   solver-version = 1
