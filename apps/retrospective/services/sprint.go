@@ -168,7 +168,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		return nil, err
 	}
 
-	sprintMemberSummary.ActualVelocity = 0
+	sprintMemberSummary.ActualStoryPoint = 0
 	sprintMemberSummary.SetExpectedVelocity(sprint, sprint.Retrospective)
 
 	return sprintMemberSummary, nil
@@ -534,7 +534,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_minutes").
 		Group("sprint_members.id").
 		Row().
-		Scan(&memberData.ActualVelocity, &memberData.TotalTimeSpentMinutes); err != nil {
+		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
 		return nil, err
 	}
 
