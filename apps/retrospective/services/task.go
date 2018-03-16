@@ -145,7 +145,7 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 	sprintMemberTask.TimeSpentMinutes = 0
 	sprintMemberTask.PointsEarned = 0
 	sprintMemberTask.PointsAssigned = 0
-	sprintMemberTask.Rating = retrospective.OkayRating
+	sprintMemberTask.Rating = retrospective.DecentRating
 	sprintMemberTask.Comment = ""
 
 	err = db.Create(&sprintMemberTask).Error
