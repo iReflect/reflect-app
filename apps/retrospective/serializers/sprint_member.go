@@ -20,8 +20,8 @@ type SprintMemberSummary struct {
 	ExpectedStoryPoint  float64
 }
 
-// SetExpectedVelocity ...
-func (member *SprintMemberSummary) SetExpectedVelocity(sprint models.Sprint, retrospective models.Retrospective) {
+// SetExpectedStoryPoint ...
+func (member *SprintMemberSummary) SetExpectedStoryPoint(sprint models.Sprint, retrospective models.Retrospective) {
 	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate,
 		*sprint.EndDate, true)
 	memberWorkingDays := float64(sprintWorkingDays) - member.Vacations
