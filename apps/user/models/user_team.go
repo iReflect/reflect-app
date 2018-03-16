@@ -44,10 +44,9 @@ type UserTeam struct {
 // BeforeSave ...
 func (userTeam *UserTeam) BeforeSave(db *gorm.DB) (err error) {
 
-	userTeams := []UserTeam{}
+	var userTeams []UserTeam
 	var userTeamsCount uint
 	userTeamsCount = 0
-	db.LogMode(true)
 	baseQuery := db.Where("id <> ? AND user_id = ? AND team_id = ?",
 		userTeam.ID,
 		userTeam.User.ID,
