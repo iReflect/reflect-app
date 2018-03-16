@@ -76,7 +76,6 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 		if retroID == 0 {
 			retroID = sprint.Retrospective.ID
 		}
-		db.LogMode(true)
 		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
 
 		// More than one entries with status active for given retro should not be allowed
