@@ -148,7 +148,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 	sprintMember.SprintID = uint(intSprintID)
 	sprintMember.MemberID = memberID
 	sprintMember.Vacations = 0
-	sprintMember.Rating = retrospective.OkayRating
+	sprintMember.Rating = retrospective.DecentRating
 	sprintMember.AllocationPercent = 100
 	sprintMember.ExpectationPercent = 100
 
@@ -629,7 +629,7 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 			SprintID:  uint(sprint.ID),
 			MemberID:  userID,
 			Vacations: 0,
-			Rating:    retrospective.OkayRating,
+			Rating:    retrospective.DecentRating,
 			// TODO: Instead of setting it to default to 100%,
 			// we can use the previous active sprint's data for the allocation and expectation values
 			AllocationPercent:  100,
