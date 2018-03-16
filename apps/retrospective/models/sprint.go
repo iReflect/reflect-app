@@ -41,18 +41,18 @@ const (
 // Sprint represents a sprint of a retrospective
 type Sprint struct {
 	gorm.Model
-	Title            string `gorm:"type:varchar(255); not null"`
-	SprintID         string `gorm:"type:varchar(30); not null"`
-	Retrospective    Retrospective
-	RetrospectiveID  uint         `gorm:"not null"`
-	Status           SprintStatus `gorm:"default:0; not null"`
-	StartDate        *time.Time
-	EndDate          *time.Time
-	SprintMembers    []SprintMember
-	LastSyncedAt     *time.Time
-	CurrentlySyncing bool `gorm:"default:true;not null"`
-	CreatedBy        userModels.User
-	CreatedByID      uint `gorm:"not null"`
+	Title           string `gorm:"type:varchar(255); not null"`
+	SprintID        string `gorm:"type:varchar(30); not null"`
+	Retrospective   Retrospective
+	RetrospectiveID uint         `gorm:"not null"`
+	Status          SprintStatus `gorm:"default:0; not null"`
+	StartDate       *time.Time
+	EndDate         *time.Time
+	SprintMembers   []SprintMember
+	LastSyncedAt    *time.Time
+	SyncStatus      []SprintSyncStatus
+	CreatedBy       userModels.User
+	CreatedByID     uint `gorm:"not null"`
 }
 
 // BeforeSave ...
@@ -84,7 +84,7 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 
 		// Active sprint must begin exactly 1 day after last completed sprint
 		lastSprint := Sprint{}
-		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").Find(&lastSprint).Error; err == nil {
+		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").First(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
 			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
 				err = errors.New("sprint must begin the day after the last completed sprint ended")
