@@ -20,7 +20,8 @@ type RetrospectiveController struct {
 func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:retroID/", ctrl.Get)
-	r.GET(":retroID/latest-sprint/", ctrl.GetLatestSprint)
+	r.GET("/:retroID/team-members/", ctrl.GetTeamMembers)
+	r.GET("/:retroID/latest-sprint/", ctrl.GetLatestSprint)
 	r.POST("/", ctrl.Create)
 }
 
@@ -52,13 +53,31 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	response, err := ctrl.RetrospectiveService.Get(retroID)
+	response, err := ctrl.RetrospectiveService.Get(retroID, true)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Retrospective not found", "error": err})
 		return
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+// GetTeamMembers ...
+func (ctrl RetrospectiveController) GetTeamMembers(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	retroID := c.Param("retroID")
+
+	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	members, err := ctrl.RetrospectiveService.GetTeamMembers(retroID, userID.(uint))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Could not get team members", "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, members)
 }
 
 // GetLatestSprint returns the latest active/frozen sprint's data
