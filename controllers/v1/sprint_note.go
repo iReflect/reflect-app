@@ -73,12 +73,31 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//noteID := c.Param("noteID")
+	noteID := c.Param("highlightID")
+	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
+
+	if err := c.BindJSON(&feedbackData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Update(
+		userID.(uint),
+		sprintID,
+		retroID,
+		noteID,
+		&feedbackData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to update note",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }

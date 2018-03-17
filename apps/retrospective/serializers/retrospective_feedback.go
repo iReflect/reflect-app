@@ -21,6 +21,14 @@ type RetrospectiveFeedbackSerializer struct {
 	CreatedBy       serializers.User
 }
 
+// RetrospectiveFeedbackUpdateSerializer ...
+type RetrospectiveFeedbackUpdateSerializer struct {
+	Text       *string    `json:"Text"`
+	Scope      *int8      `json:"Scope"`
+	AssigneeID *uint      `json:"AssigneeID"`
+	ExpectedAt *time.Time `json:"ExpectedAt"`
+}
+
 // RetrospectiveFeedbackCreateSerializer ...
 type RetrospectiveFeedbackCreateSerializer struct {
 	SubType string `json:"subType" binding:"required"`
