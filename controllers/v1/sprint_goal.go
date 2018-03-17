@@ -109,14 +109,27 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//goalID := c.Param("goalID")
+	goalID := c.Param("goalID")
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Resolve(
+		userID.(uint),
+		sprintID,
+		retroID,
+		goalID,
+		true)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to resolved goal",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // UnResolve a goal associated to a sprint
@@ -124,12 +137,25 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//goalID := c.Param("goalID")
+	goalID := c.Param("goalID")
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Resolve(
+		userID.(uint),
+		sprintID,
+		retroID,
+		goalID,
+		false)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to un-resolve goal",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }

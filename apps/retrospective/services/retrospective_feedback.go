@@ -74,14 +74,6 @@ func (service RetrospectiveFeedbackService) Update(userID uint, sprintID string,
 	err error) {
 	db := service.DB
 
-	sprint := models.Sprint{}
-
-	if err := db.Model(&models.Sprint{}).
-		Where("id = ?", sprintID).
-		Find(&sprint).Error; err != nil {
-		return nil, err
-	}
-
 	retroFeedback := models.RetrospectiveFeedback{}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
@@ -118,6 +110,57 @@ func (service RetrospectiveFeedbackService) Update(userID uint, sprintID string,
 			return nil, err
 		}
 		retroFeedback.AssigneeID = feedbackData.AssigneeID
+	}
+
+	err = db.Save(&retroFeedback).Error
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Model(&retroFeedback).Preload("CreatedBy").Preload("Assignee").
+		Scan(feedback).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return feedback, nil
+}
+
+// Resolve ...
+func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string, retroID string,
+	feedbackID string,
+	markResolved bool) (
+	feedback *retrospectiveSerializers.RetrospectiveFeedbackSerializer,
+	err error) {
+	db := service.DB
+
+	retroFeedback := models.RetrospectiveFeedback{}
+
+	sprint := models.Sprint{}
+
+	if err := db.Model(&models.Sprint{}).
+		Where("id = ?", sprintID).
+		Find(&sprint).Error; err != nil {
+		return nil, err
+	}
+
+	if err := db.Model(&models.RetrospectiveFeedback{}).
+		Where("id = ?", feedbackID).
+		First(&retroFeedback).Error; err != nil {
+		return nil, err
+	}
+
+	if retroFeedback.Type != models.GoalType {
+		return nil, errors.New("only goal typeed retrospective feedback could" +
+			" be resolved or unresolved")
+	}
+
+	if markResolved && retroFeedback.ResolvedAt == nil {
+		retroFeedback.ResolvedAt = sprint.EndDate
+	}
+
+	if !markResolved && retroFeedback.ResolvedAt != nil {
+		retroFeedback.ResolvedAt = nil
 	}
 
 	err = db.Save(&retroFeedback).Error
