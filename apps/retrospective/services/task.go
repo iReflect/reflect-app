@@ -91,8 +91,8 @@ func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTa
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
-	tempDB := service.tasksForActiveAndCurrentSprint(string(sprintMemberTask.TaskID), sprintID).
-		Where("sm.member_id = ? = ?", memberID).
+	tempDB := service.smtForActiveAndCurrentSprint(strconv.Itoa(int(sprintMemberTask.TaskID)), sprintID).
+		Where("sm.member_id = ?", memberID).
 		Select("sprint_member_tasks.*," +
 			"users.*," +
 			"sm.sprint_id, " +

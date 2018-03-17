@@ -4,12 +4,8 @@ import (
 	"database/sql"
 	"github.com/jinzhu/gorm"
 	"github.com/pressly/goose"
+	"github.com/iReflect/reflect-app/apps/retrospective/models"
 )
-
-type sprintMemberTask struct {
-	gorm.Model
-	Role int8 `gorm:"default:0; not null"`
-}
 
 func init() {
 	goose.AddMigration(Up00015, Down00015)
@@ -21,6 +17,11 @@ func Up00015(tx *sql.Tx) error {
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
+	}
+
+	type sprintMemberTask struct {
+		gorm.Model
+		Role int8 `gorm:"default:0; not null"`
 	}
 
 	gormdb.AutoMigrate(&sprintMemberTask{})
@@ -36,7 +37,7 @@ func Down00015(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&sprintMemberTask{}).DropColumn("role")
+	gormdb.Model(&models.SprintMemberTask{}).DropColumn("role")
 
 	return nil
 }
