@@ -114,6 +114,27 @@ func (a *App) SetRoutes() {
 	sprintMemberController := apiControllers.SprintMemberController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}
 	sprintMemberController.Routes(sprintMemberRoute)
 
+	sprintHighlightRoute := sprintRoute.Group(":sprintID/highlights")
+	sprintHighlightController := apiControllers.SprintHighlightController{
+		SprintService:     sprintService,
+		PermissionService: permissionService,
+		TrailService:      trailService}
+	sprintHighlightController.Routes(sprintHighlightRoute)
+
+	sprintGoalRoute := sprintRoute.Group(":sprintID/goals")
+	sprintGoalController := apiControllers.SprintGoalController{
+		SprintService:     sprintService,
+		PermissionService: permissionService,
+		TrailService:      trailService}
+	sprintGoalController.Routes(sprintGoalRoute)
+
+	sprintNoteRoute := sprintRoute.Group(":sprintID/notes")
+	sprintNoteController := apiControllers.SprintNoteController{
+		SprintService:     sprintService,
+		PermissionService: permissionService,
+		TrailService:      trailService}
+	sprintNoteController.Routes(sprintNoteRoute)
+
 	taskService := retrospectiveServices.TaskService{DB: a.DB}
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
 	tasksController := apiControllers.TaskController{TaskService: taskService, PermissionService: permissionService, TrailService: trailService}
