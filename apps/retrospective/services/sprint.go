@@ -504,7 +504,7 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 	return sprintMemberList, nil
 }
 
-// UpdateSprintMember updates the sprint member summary
+// UpdateSprintMember update the sprint member summary
 func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID string, memberData retrospectiveSerializers.SprintMemberSummary) (*retrospectiveSerializers.SprintMemberSummary, error) {
 	db := service.DB
 

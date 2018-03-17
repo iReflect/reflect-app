@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-// SprintController ...
+// SprintMemberController ...
 type SprintMemberController struct {
 	SprintService     retrospectiveServices.SprintService
 	PermissionService retrospectiveServices.PermissionService
@@ -92,7 +92,7 @@ func (ctrl SprintMemberController) RemoveMember(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
-// UpdateSprintMember updates the sprint member summary
+// UpdateSprintMember update the sprint member summary
 func (ctrl SprintMemberController) UpdateSprintMember(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
