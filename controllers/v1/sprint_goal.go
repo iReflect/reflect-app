@@ -63,11 +63,25 @@ func (ctrl SprintGoalController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+	goalType := c.Query("goalType")
+
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.ListGoal(
+		userID.(uint),
+		sprintID,
+		retroID,
+		goalType)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to fetch goals",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Update goal associated to a sprint

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
@@ -105,7 +104,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, sprintID string,
 			"and user_teams.user_id = ?;", retroID,
 			feedbackData.AssigneeID).Scan(&userID).Error; err != nil {
 			if err.Error() == "record not found" {
-				return nil, errors.New(fmt.Sprintf("cannot assigne to user"))
+				return nil, errors.New("cannot assign to requesxted user")
 			}
 			return nil, err
 		}
@@ -151,7 +150,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	}
 
 	if retroFeedback.Type != models.GoalType {
-		return nil, errors.New("only goal typeed retrospective feedback could" +
+		return nil, errors.New("only goal typed retrospective feedback could" +
 			" be resolved or unresolved")
 	}
 
@@ -175,4 +174,82 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	}
 
 	return feedback, nil
+}
+
+// List ...
+func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, retroID string,
+	feedbackType models.RetrospectiveFeedbackType) (
+	feedbackList *retrospectiveSerializers.RetrospectiveFeedbackListSerializer,
+	err error) {
+	db := service.DB
+
+	sprint := models.Sprint{}
+
+	if err := db.Model(&models.Sprint{}).
+		Where("id = ?", sprintID).
+		Find(&sprint).Error; err != nil {
+		return nil, err
+	}
+
+	if err := db.Model(&models.RetrospectiveFeedback{}).
+		Where("retro_id = ? AND type = ?", retroID, feedbackType).
+		Where("added_at >= ? AND added_at < ?", sprint.StartDate, sprint.EndDate).
+		Preload("Assignee").
+		Preload("CreatedBy").
+		Scan(&feedbackList.Feedbacks).Error; err != nil {
+		return nil, err
+	}
+
+	return feedbackList, nil
+}
+
+// ListGoal ...
+func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID string,
+	retroID string, goalType string) (
+	feedbackList *retrospectiveSerializers.RetrospectiveFeedbackListSerializer,
+	err error) {
+	db := service.DB
+
+	sprint := models.Sprint{}
+
+	if err := db.Model(&models.Sprint{}).
+		Where("id = ?", sprintID).
+		Find(&sprint).Error; err != nil {
+		return nil, err
+	}
+
+	switch goalType {
+	case "added":
+		if err := db.Model(&models.RetrospectiveFeedback{}).
+			Where("retro_id = ? AND type = ?", retroID, models.GoalType).
+			Where("resolved_at IS NULL").
+			Where("added_at >= ? AND added_at < ?", sprint.StartDate, sprint.EndDate).
+			Preload("Assignee").
+			Preload("CreatedBy").
+			Scan(&feedbackList.Feedbacks).Error; err != nil {
+			return nil, err
+		}
+	case "completed":
+		if err := db.Model(&models.RetrospectiveFeedback{}).
+			Where("retro_id = ? AND type = ?", retroID, models.GoalType).
+			Where("resolved_at >= ? AND resolved_at < ?", sprint.StartDate, sprint.EndDate).
+			Preload("Assignee").
+			Preload("CreatedBy").
+			Scan(&feedbackList.Feedbacks).Error; err != nil {
+			return nil, err
+		}
+	case "pending":
+		if err := db.Model(&models.RetrospectiveFeedback{}).
+			Where("retro_id = ? AND type = ?", retroID, models.GoalType).
+			Where("resolved_at IS NULL").
+			Where("added_at < ?", sprint.EndDate).
+			Preload("Assignee").
+			Preload("CreatedBy").
+			Scan(&feedbackList.Feedbacks).Error; err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("invalid goal type")
+	}
+	return feedbackList, nil
 }

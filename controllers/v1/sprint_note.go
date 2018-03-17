@@ -61,11 +61,25 @@ func (ctrl SprintNoteController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
+
+	response, err := ctrl.RetrospectiveFeedbackService.List(
+		userID.(uint),
+		sprintID,
+		retroID,
+		models.NoteType)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to fetch notes",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Update note associated to a sprint
