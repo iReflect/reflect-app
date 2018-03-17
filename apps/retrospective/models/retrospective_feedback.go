@@ -58,8 +58,8 @@ type RetrospectiveFeedback struct {
 	RetrospectiveID uint                       `gorm:"not null"`
 	Text            string                     `gorm:"type:text; not null"`
 	Scope           RetrospectiveFeedbackScope `gorm:"default:0; not null"`
-	AssigneeID      uint
-	Assignee        userModels.User
+	AssigneeID      *uint
+	Assignee        *userModels.User
 	AddedAt         *time.Time
 	ResolvedAt      *time.Time
 	ExpectedAt      *time.Time

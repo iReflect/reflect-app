@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"github.com/iReflect/reflect-app/apps/retrospective/models"
+	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,9 +11,9 @@ import (
 
 // SprintGoalController ...
 type SprintGoalController struct {
-	SprintService     retrospectiveServices.SprintService
-	PermissionService retrospectiveServices.PermissionService
-	TrailService      retrospectiveServices.TrailService
+	RetrospectiveFeedbackService retrospectiveServices.RetrospectiveFeedbackService
+	PermissionService            retrospectiveServices.PermissionService
+	TrailService                 retrospectiveServices.TrailService
 }
 
 // Routes for Sprints
@@ -28,13 +30,32 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
+
+	if err := c.BindJSON(&feedbackData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Add(
+		userID.(uint),
+		sprintID,
+		retroID,
+		models.GoalType,
+		&feedbackData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to create goal",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
 
 // List goals associated to sprint
