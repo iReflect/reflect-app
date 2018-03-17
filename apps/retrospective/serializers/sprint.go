@@ -8,16 +8,16 @@ import (
 
 // Sprint is a serializer used in the Get sprint APIs
 type Sprint struct {
-	ID               uint
-	Title            string
-	SprintID         string
-	Status           int8
-	StartDate        time.Time
-	EndDate          time.Time
-	LastSyncedAt     *time.Time
-	CurrentlySyncing bool
-	CreatedBy        userSerializer.User
-	CreatedByID      uint
+	ID           uint
+	Title        string
+	SprintID     string
+	Status       int8
+	StartDate    time.Time
+	EndDate      time.Time
+	LastSyncedAt *time.Time
+	SyncStatus   int8
+	CreatedBy    userSerializer.User
+	CreatedByID  uint
 }
 
 // SprintsSerializer ...

@@ -89,8 +89,6 @@ func (service SprintService) FreezeSprint(sprintID string) error {
 		return err
 	}
 
-	// ToDo: Check SM count > 0
-
 	sprint.Status = retroModels.CompletedSprint
 	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
 		return errors.New("sprint couldn't be frozen")
@@ -105,9 +103,20 @@ func (service SprintService) Get(sprintID string) (*retrospectiveSerializers.Spr
 	if err := db.Model(&retroModels.Sprint{}).
 		Where("id = ?", sprintID).
 		Preload("CreatedBy").
-		Find(&sprint).Error; err != nil {
+		First(&sprint).Error; err != nil {
 		return nil, err
 	}
+
+	err := db.Model(&retroModels.SprintSyncStatus{}).
+		Where("sprint_id = ?", sprintID).
+		Order("created_at desc").
+		Select("status").
+		Row().Scan(&sprint.SyncStatus)
+
+	if err != nil {
+		sprint.SyncStatus = int8(retroModels.NotSynced)
+	}
+
 	return &sprint, nil
 }
 
@@ -224,28 +233,31 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		return err
 	}
 
-	sprint.CurrentlySyncing = true
-	err = db.Save(&sprint).Error
-	if err != nil {
-		utils.LogToSentry(err)
-		return err
+	if sprint.StartDate == nil || sprint.EndDate == nil {
+		service.SetNotSynced(sprint.ID)
+		return errors.New("sprint has no start/end date")
 	}
+
+	service.SetSyncing(sprint.ID)
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
 		utils.LogToSentry(err)
+		service.SetSyncFailed(sprint.ID)
 		return err
 	}
 
 	tickets, err := tasktracker.GetSprintTaskList(taskProviderConfig, sprint.SprintID)
 	if err != nil {
 		utils.LogToSentry(err)
+		service.SetSyncFailed(sprint.ID)
 		return err
 	}
 
 	for _, ticket := range tickets {
 		err = service.addOrUpdateTask(ticket, sprint.RetrospectiveID)
 		if err != nil {
+			service.SetSyncFailed(sprint.ID)
 			return err
 		}
 	}
@@ -254,6 +266,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		err = service.SyncSprintMemberData(strconv.Itoa(int(sprintMember.ID)), false)
 		if err != nil {
 			utils.LogToSentry(err)
+			service.SetSyncFailed(sprint.ID)
 			return err
 		}
 	}
@@ -261,17 +274,45 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	// ToDo: Store tickets not in SMT
 	// Maybe a Join table ST
 
+	service.SetSynced(sprint.ID)
+
+	return nil
+}
+
+// SetNotSynced ...
+func (service SprintService) SetNotSynced(sprintID uint) {
+	db := service.DB
+	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.NotSynced})
+}
+
+// SetSyncing ...
+func (service SprintService) SetSyncing(sprintID uint) {
+	db := service.DB
+	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Syncing})
+}
+
+// SetSyncFailed ...
+func (service SprintService) SetSyncFailed(sprintID uint) {
+	db := service.DB
+	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.SyncFailed})
+}
+
+// SetSynced ...
+func (service SprintService) SetSynced(sprintID uint) {
+	db := service.DB
+	var sprint retroModels.Sprint
+	db.Model(&retroModels.Sprint{}).
+		Scopes(retroModels.NotDeletedSprint).
+		Where("id = ?", sprintID).
+		Find(&sprint)
+
 	var currentTime time.Time
 	currentTime = time.Now()
 	sprint.LastSyncedAt = &currentTime
-	sprint.CurrentlySyncing = false
-	err = db.Save(&sprint).Error
-	if err != nil {
-		utils.LogToSentry(err)
-		return err
-	}
 
-	return nil
+	db.Save(&sprint)
+
+	db.Create(&retroModels.SprintSyncStatus{SprintID: sprint.ID, Status: retroModels.Synced})
 }
 
 // SyncSprintMemberData ...
@@ -292,24 +333,24 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 
 	sprint := sprintMember.Sprint
 
-	if independentRun {
-		sprint.CurrentlySyncing = true
-		err = db.Save(&sprint).Error
-		if err != nil {
-			utils.LogToSentry(err)
-			return err
+	if sprint.StartDate == nil || sprint.EndDate == nil {
+		if independentRun {
+			service.SetSyncFailed(sprint.ID)
 		}
+		return errors.New("sprint has no start/end date")
 	}
 
-	if sprint.StartDate == nil || sprint.EndDate == nil {
-		utils.LogToSentry(err)
-		return errors.New("sprint has no start/end date")
+	if independentRun {
+		service.SetSyncing(sprint.ID)
 	}
 
 	timeLogs, err := timetracker.GetProjectTimeLogs(sprintMember.Member.TimeProviderConfig, sprint.Retrospective.ProjectName, *sprint.StartDate, *sprint.EndDate)
 
 	if err != nil {
 		utils.LogToSentry(err)
+		if independentRun {
+			service.SetSyncFailed(sprint.ID)
+		}
 		return err
 	}
 
@@ -325,12 +366,18 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprintMember.Sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
+		if independentRun {
+			service.SetSyncFailed(sprint.ID)
+		}
 		return err
 	}
 
 	tickets, err := tasktracker.GetTaskList(taskProviderConfig, ticketIDs)
 	if err != nil {
 		utils.LogToSentry(err)
+		if independentRun {
+			service.SetSyncFailed(sprint.ID)
+		}
 		return err
 	}
 
@@ -338,6 +385,9 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		err = service.addOrUpdateTask(ticket, sprintMember.Sprint.Retrospective.ID)
 		if err != nil {
 			utils.LogToSentry(err)
+			if independentRun {
+				service.SetSyncFailed(sprint.ID)
+			}
 			return err
 		}
 	}
@@ -349,6 +399,9 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 
 	if err != nil {
 		utils.LogToSentry(err)
+		if independentRun {
+			service.SetSyncFailed(sprint.ID)
+		}
 		return err
 	}
 
@@ -356,20 +409,15 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 		err = service.addOrUpdateSMT(timeLog, sprintMember.ID, sprint.RetrospectiveID)
 		if err != nil {
 			utils.LogToSentry(err)
+			if independentRun {
+				service.SetSyncFailed(sprint.ID)
+			}
 			return err
 		}
 	}
 
 	if independentRun {
-		var currentTime time.Time
-		currentTime = time.Now()
-		sprint.LastSyncedAt = &currentTime
-		sprint.CurrentlySyncing = false
-		err = db.Save(&sprint).Error
-		if err != nil {
-			utils.LogToSentry(err)
-			return err
-		}
+		service.SetSynced(sprint.ID)
 	}
 
 	return nil
@@ -624,6 +672,8 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 		return nil, err
 	}
 
+	service.SetNotSynced(sprint.ID)
+
 	for _, userID := range teamMemberIDs {
 		sprintMember = retroModels.SprintMember{
 			SprintID:  uint(sprint.ID),
@@ -679,12 +729,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		return err
 	}
 
-	sprint.CurrentlySyncing = true
-	err = db.Save(&sprint).Error
-	if err != nil {
-		utils.LogToSentry(err)
-		return err
-	}
+	service.SetSyncing(sprint.ID)
 
 	dbs := db.Model(retroModels.SprintMemberTask{}).
 		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
@@ -700,19 +745,15 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		QueryExpr()
 
 	err = db.Exec("UPDATE sprint_member_tasks "+
-		"SET points_assigned = s1.remaining_points, points_earned = s1.remaining_points "+
+		"SET points_assigned = COALESCE(s1.remaining_points,0), points_earned = COALESCE(s1.remaining_points, 0) "+
 		"FROM (?) AS s1 "+
 		"WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;", dbs, sprintID).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
 	}
-	sprint.CurrentlySyncing = false
-	err = db.Save(&sprint).Error
-	if err != nil {
-		utils.LogToSentry(err)
-		return err
-	}
+
+	service.SetSynced(sprint.ID)
 
 	return nil
 }

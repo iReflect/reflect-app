@@ -54,6 +54,7 @@ type SprintMemberTask struct {
 func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	var pointSum float64
 	var task Task
+	var sprintMember SprintMember
 	// TaskID is set when we use gorm and Task.ID is set when we use QOR admin,
 	// so we need to add checks for both the cases.
 	if sprintMemberTask.Task.ID == 0 {
@@ -63,7 +64,23 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	} else {
 		task = sprintMemberTask.Task
 	}
-	db.Model(SprintMemberTask{}).Where("task_id = ? AND id <> ?", task.ID, sprintMemberTask.ID).Select("SUM(points_earned)").Row().Scan(&pointSum)
+
+	if sprintMemberTask.SprintMember.ID == 0 {
+		if err = db.Where("id = ?", sprintMemberTask.SprintMemberID).Find(&sprintMember).Error; err != nil {
+			return err
+		}
+	} else {
+		sprintMember = sprintMemberTask.SprintMember
+	}
+
+	db.Model(SprintMemberTask{}).
+		Where("task_id = ?", task.ID).
+		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
+		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
+		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Where("(sprints.status <> ? OR sprints.id = ?)", DraftSprint, sprintMember.SprintID).
+		Scopes(NotDeletedSprint).
+		Select("SUM(points_earned)").Row().Scan(&pointSum)
 
 	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate
 	if task.Estimate != nil && pointSum+sprintMemberTask.PointsEarned > *task.Estimate {

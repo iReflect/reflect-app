@@ -9,18 +9,21 @@ import (
 	"time"
 )
 
+// RandToken ...
 func RandToken() string {
 	b := make([]byte, 32)
 	rand.Read(b)
 	return base64.URLEncoding.EncodeToString(b)
 }
 
+// LogToSentry ...
 func LogToSentry(err error) {
 	logrus.Error(err.Error())
 	// ToDo: Add extra info like release, etc
 	raven.CaptureError(err, nil)
 }
 
+// UIntInSlice ...
 func UIntInSlice(element uint, slice []uint) bool {
 	for _, sliceElement := range slice {
 		if sliceElement == element {
@@ -30,6 +33,7 @@ func UIntInSlice(element uint, slice []uint) bool {
 	return false
 }
 
+// EncryptionKey ...
 func EncryptionKey() []byte {
 	key := os.Getenv("ENCRYPTION_KEY")
 	if len(key) == 0 {
