@@ -105,6 +105,8 @@ func (a *App) SetRoutes() {
 	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService, PermissionService: permissionService, TrailService: trailService}
 	retrospectiveController.Routes(retrospectiveRoute)
 
+	retrospectiveFeedbackService := retrospectiveServices.RetrospectiveFeedbackService{DB: a.DB}
+
 	sprintRoute := retrospectiveRoute.Group(":retroID/sprints")
 	sprintService := retrospectiveServices.SprintService{DB: a.DB}
 	sprintController := apiControllers.SprintController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}
@@ -116,23 +118,23 @@ func (a *App) SetRoutes() {
 
 	sprintHighlightRoute := sprintRoute.Group(":sprintID/highlights")
 	sprintHighlightController := apiControllers.SprintHighlightController{
-		SprintService:     sprintService,
-		PermissionService: permissionService,
-		TrailService:      trailService}
+		RetrospectiveFeedbackService: retrospectiveFeedbackService,
+		PermissionService:            permissionService,
+		TrailService:                 trailService}
 	sprintHighlightController.Routes(sprintHighlightRoute)
 
 	sprintGoalRoute := sprintRoute.Group(":sprintID/goals")
 	sprintGoalController := apiControllers.SprintGoalController{
-		SprintService:     sprintService,
-		PermissionService: permissionService,
-		TrailService:      trailService}
+		RetrospectiveFeedbackService: retrospectiveFeedbackService,
+		PermissionService:            permissionService,
+		TrailService:                 trailService}
 	sprintGoalController.Routes(sprintGoalRoute)
 
 	sprintNoteRoute := sprintRoute.Group(":sprintID/notes")
 	sprintNoteController := apiControllers.SprintNoteController{
-		SprintService:     sprintService,
-		PermissionService: permissionService,
-		TrailService:      trailService}
+		RetrospectiveFeedbackService: retrospectiveFeedbackService,
+		PermissionService:            permissionService,
+		TrailService:                 trailService}
 	sprintNoteController.Routes(sprintNoteRoute)
 
 	taskService := retrospectiveServices.TaskService{DB: a.DB}

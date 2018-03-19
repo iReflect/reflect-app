@@ -1,6 +1,9 @@
 package v1
 
 import (
+	"fmt"
+	"github.com/iReflect/reflect-app/apps/retrospective/models"
+	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,9 +12,9 @@ import (
 
 // SprintNoteController ...
 type SprintNoteController struct {
-	SprintService     retrospectiveServices.SprintService
-	PermissionService retrospectiveServices.PermissionService
-	TrailService      retrospectiveServices.TrailService
+	RetrospectiveFeedbackService retrospectiveServices.RetrospectiveFeedbackService
+	PermissionService            retrospectiveServices.PermissionService
+	TrailService                 retrospectiveServices.TrailService
 }
 
 // Routes for Sprints
@@ -26,13 +29,41 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
+
+	if err := c.BindJSON(&feedbackData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Add(
+		userID.(uint),
+		sprintID,
+		retroID,
+		models.NoteType,
+		&feedbackData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to create note",
+			"error":   err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Added Note", "Retrospective Feedback",
+		fmt.Sprint(response.ID),
+		userID.(uint))
+
+	c.JSON(http.StatusCreated, response)
 }
 
 // List notes associated to sprint
@@ -40,11 +71,30 @@ func (ctrl SprintNoteController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
+
+	response, err := ctrl.RetrospectiveFeedbackService.List(
+		userID.(uint),
+		sprintID,
+		retroID,
+		models.NoteType)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to fetch notes",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Update note associated to a sprint
@@ -52,12 +102,39 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//noteID := c.Param("noteID")
+	noteID := c.Param("noteID")
+	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
+
+	if err := c.BindJSON(&feedbackData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Update(
+		userID.(uint),
+		retroID,
+		noteID,
+		&feedbackData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to update note",
+			"error":   err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Updated Note", "Retrospective Feedback",
+		noteID,
+		userID.(uint))
+
+	c.JSON(http.StatusOK, response)
 }

@@ -56,7 +56,7 @@ func (service RetrospectiveService) List(userID uint, perPage int, page int) (
 	return retrospectiveList, nil
 }
 
-// Get the details of the given RetroSpective.
+// Get the details of the given Retrospective.
 func (service RetrospectiveService) Get(retrospectiveID string, isEagerLoading bool) (retrospective *retrospectiveSerializers.Retrospective, err error) {
 	db := service.DB
 
