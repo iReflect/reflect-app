@@ -100,7 +100,7 @@ func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string)
 	err := db.Model(&retroModels.Sprint{}).
 		Where("sprints.id=?", sprintID).
 		Where("sprints.status in (?)",
-			[2]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
+			[]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroModels.Sprint{}).
 		Error
