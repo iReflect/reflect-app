@@ -11,13 +11,15 @@ type UserAuthController struct {
 	AuthService userServices.AuthenticationService
 }
 
-//Add Routes
+// Routes for UserAuthController
 func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.GET("/login/", ctrl.Login)
 	// TODO make auth get and receive request directly from google
 	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
 }
+
+// ToDo: handle errors like in retrospectives/sprints controllers
 
 // Login ...
 func (ctrl UserAuthController) Login(c *gin.Context) {

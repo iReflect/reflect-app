@@ -67,12 +67,14 @@ func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
 			credentials["password"], err = cryptkeeper.Encrypt(val.(string))
 
 			if err != nil {
+				utils.LogToSentry(err)
 				return nil, err
 			}
 		}
 		if val, ok := credentials["apiToken"]; ok {
 			credentials["apiToken"], err = cryptkeeper.Encrypt(val.(string))
 			if err != nil {
+				utils.LogToSentry(err)
 				return nil, err
 			}
 		}
@@ -187,7 +189,8 @@ func ValidateConfigs(taskProviderConfigList []map[string]interface{}) (err error
 		taskProvider := GetTaskProvider(taskProviderConfig["type"].(string))
 		taskProviderConnection := taskProvider.New(taskProviderConfig["data"])
 		if err = taskProviderConnection.ValidateConfig(); err != nil {
-			return err
+			utils.LogToSentry(err)
+			return errors.New("failed to validate config for " + taskProviderConfig["type"].(string))
 		}
 	}
 	return nil

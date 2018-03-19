@@ -7,6 +7,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"net/http"
 )
 
 //TeamService ...
@@ -15,7 +16,7 @@ type TeamService struct {
 }
 
 // UserTeamList ...
-func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, err error) {
+func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, status int, err error) {
 	db := service.DB
 	teams = new(userSerializers.TeamsSerializer)
 
@@ -30,20 +31,20 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 
 	err = filterQuery.Scan(&teams.Teams).Error
 	if err != nil {
-		return nil, err
+		return nil, http.StatusInternalServerError, errors.New("failed to get user team list")
 	}
-	return teams, nil
+	return teams, http.StatusOK, nil
 }
 
 // MemberList ...
-func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (members *userSerializers.MembersSerializer, err error) {
+func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (members *userSerializers.MembersSerializer, status int, err error) {
 	db := service.DB
 	members = new(userSerializers.MembersSerializer)
 	activeMemberIDs := service.getTeamMemberIDs(teamID, true)
 	var memberIDs []uint
 
 	if !utils.UIntInSlice(userID, activeMemberIDs) {
-		return nil, errors.New("Must be a member of this team")
+		return nil, http.StatusForbidden, errors.New("must be a member of the team")
 	}
 
 	if onlyActive {
@@ -54,10 +55,11 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 
 	err = db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Scan(&members.Members).Error
 	if err != nil {
-		return nil, err
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, err
 	}
 
-	return members, nil
+	return members, http.StatusOK, nil
 }
 
 func (service TeamService) getTeamMemberIDs(teamID string, onlyActive bool) []uint {

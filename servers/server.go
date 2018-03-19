@@ -28,6 +28,7 @@ import (
 	dbMiddlewares "github.com/iReflect/reflect-app/db/middlewares"
 )
 
+// App ...
 type App struct {
 	DB     *gorm.DB
 	Router *gin.Engine
@@ -65,6 +66,7 @@ func (a *App) Initialize(config *config.Config) {
 	r.Use(dbMiddlewares.DBMiddleware(a.DB))
 }
 
+// SetRoutes ...
 func (a *App) SetRoutes() {
 	r := a.Router
 
@@ -147,6 +149,7 @@ func (a *App) SetRoutes() {
 	taskTrackerController.Routes(v1.Group("task-tracker"))
 }
 
+// SetAdminRoutes ...
 func (a *App) SetAdminRoutes() {
 	r := a.Router
 	admin := &Admin{DB: a.DB}
@@ -159,7 +162,7 @@ func (a *App) SetAdminRoutes() {
 	adminRouterGroup.Any("/*w", gin.WrapH(adminRouter))
 }
 
-// Run the app on it's router
+// Server Run the app on it's router
 func (a *App) Server(host string) *http.Server {
 	r := a.Router
 

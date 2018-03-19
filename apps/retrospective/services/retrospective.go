@@ -7,11 +7,13 @@ import (
 	"strconv"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
-	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
+	"github.com/iReflect/reflect-app/libs/utils"
+	"net/http"
 )
 
 // RetrospectiveService ...
@@ -21,46 +23,57 @@ type RetrospectiveService struct {
 }
 
 // List all the Retrospectives of all the teams, given user is a member of.
-func (service RetrospectiveService) List(userID uint, perPage int, page int) (
-	retrospectiveList *retrospectiveSerializers.RetrospectiveListSerializer,
+func (service RetrospectiveService) List(userID uint, perPageString string, pageString string) (
+	retrospectiveList *retroSerializers.RetrospectiveListSerializer,
+	status int,
 	err error) {
 	db := service.DB
 
-	retrospectiveList = &retrospectiveSerializers.RetrospectiveListSerializer{}
-	retrospectiveList.Retrospectives = []retrospectiveSerializers.Retrospective{}
+	retrospectiveList = &retroSerializers.RetrospectiveListSerializer{}
+	retrospectiveList.Retrospectives = []retroSerializers.Retrospective{}
+
+	perPage, err := strconv.Atoi(perPageString)
+	if err != nil {
+		perPage = -1
+	}
+	page, err := strconv.Atoi(pageString)
+	if err != nil {
+		page = 1
+	}
 
 	var offset int
 	if perPage < 0 && page > 1 {
-		return retrospectiveList, nil
+		return retrospectiveList, http.StatusNoContent, nil
 	} else if page < 1 {
 		offset = 0
 	} else {
 		offset = (page - 1) * perPage
 	}
 
-	baseQuery := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams on user_teams.user_id = ? AND"+
-			" retrospectives.team_id = user_teams.team_id", userID).
+	err = db.Model(&retroModels.Retrospective{}).
+		Joins("JOIN user_teams on retrospectives.team_id = user_teams.team_id").
+		Where("user_teams.user_id = ?", userID).
 		Preload("Team").
 		Preload("CreatedBy").
+		Order("created_at desc").
 		Limit(perPage).
-		Order("created_at desc")
+		Offset(offset).
+		Find(&retrospectiveList.Retrospectives).
+		Error
 
-	if offset != 0 {
-		baseQuery = baseQuery.Offset(offset)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("unable to get retrospective list")
 	}
 
-	if err := baseQuery.Find(&retrospectiveList.Retrospectives).Error; err != nil {
-		return nil, err
-	}
-	return retrospectiveList, nil
+	return retrospectiveList, http.StatusOK, nil
 }
 
 // Get the details of the given Retrospective.
-func (service RetrospectiveService) Get(retrospectiveID string, isEagerLoading bool) (retrospective *retrospectiveSerializers.Retrospective, err error) {
+func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (retro *retroSerializers.Retrospective, status int, err error) {
 	db := service.DB
 
-	retrospective = new(retrospectiveSerializers.Retrospective)
+	retro = new(retroSerializers.Retrospective)
 
 	baseQuery := db.Model(&retroModels.Retrospective{})
 	if isEagerLoading {
@@ -69,56 +82,69 @@ func (service RetrospectiveService) Get(retrospectiveID string, isEagerLoading b
 			Preload("CreatedBy")
 	}
 
-	if err = baseQuery.
-		Where("retrospectives.id = ?", retrospectiveID).
-		First(&retrospective).Error; err != nil {
-		return nil, err
+	err = baseQuery.
+		Where("retrospectives.id = ?", retroID).
+		First(&retro).Error
+
+	if err != nil {
+		if err.Error() == "record not found" {
+			return nil, http.StatusNotFound, errors.New("retrospective not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get retrospective")
 	}
-	return retrospective, nil
+	return retro, http.StatusOK, nil
 }
 
 // GetTeamMembers ...
-func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint) (members *userSerializers.MembersSerializer, err error) {
-	retro, err := service.Get(retrospectiveID, false)
+func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint) (members *userSerializers.MembersSerializer, status int, err error) {
+	retro, status, err := service.Get(retrospectiveID, false)
 	if err != nil {
-		return nil, err
+		return nil, status, err
 	}
 
-	members, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true)
+	members, status, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true)
 	if err != nil {
-		return nil, err
+		return nil, status, err
 	}
-	return members, nil
+	return members, http.StatusOK, nil
 }
 
 // GetLatestSprint returns the latest sprint for the retro
-func (service RetrospectiveService) GetLatestSprint(retroID string) (*retrospectiveSerializers.Sprint, error) {
+func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
-	var sprint retrospectiveSerializers.Sprint
-	if err := db.Model(&retroModels.Sprint{}).
+	var sprint retroSerializers.Sprint
+
+	err := db.Model(&retroModels.Sprint{}).
 		Where("retrospective_id = ?", retroID).
 		Where("status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
 		Order("end_date desc").
 		Preload("CreatedBy").
-		First(&sprint).Error; err != nil {
-		return nil, err
+		First(&sprint).Error
+	if err != nil {
+		if err.Error() == "record not found" {
+			return nil, http.StatusNotFound, errors.New("retrospective does not have any active or frozen sprint")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, err
 	}
-	return &sprint, nil
+
+	return &sprint, http.StatusOK, nil
 }
 
 // Create the Retrospective with the given values (provided the user is a member of the retrospective's team.
 func (service RetrospectiveService) Create(userID uint,
-	retrospectiveData *retrospectiveSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, error) {
+	retrospectiveData *retroSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, int, error) {
 	db := service.DB
 	var err error
 
 	// Check if the user has the permission to create the retro
-	if err = db.Model(&userModels.UserTeam{}).
+	err = db.Model(&userModels.UserTeam{}).
 		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
 			retrospectiveData.TeamID, userID).
-		Find(&userModels.UserTeam{}).Error; err != nil {
-		err = errors.New("user doesn't have the permission to create the retro")
-		return nil, err
+		Find(&userModels.UserTeam{}).Error
+	if err != nil {
+		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to create the retro")
 	}
 
 	var retro retroModels.Retrospective
@@ -132,18 +158,23 @@ func (service RetrospectiveService) Create(userID uint,
 	retro.StoryPointPerWeek = retrospectiveData.StoryPointPerWeek
 
 	if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
-		return nil, err
+		return nil, http.StatusBadRequest, err
 	}
 
 	if taskProviders, err = json.Marshal(retrospectiveData.TaskProviderConfig); err != nil {
-		return nil, err
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
 	}
 
 	if encryptedTaskProviders, err = tasktracker.EncryptTaskProviders(taskProviders); err != nil {
-		return nil, err
+		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
 	}
 	retro.TaskProviderConfig = encryptedTaskProviders
 
 	err = db.Create(&retro).Error
-	return &retro, err
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
+	}
+	return &retro, http.StatusCreated, nil
 }

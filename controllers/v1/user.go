@@ -15,6 +15,8 @@ func (ctrl UserController) Routes(r *gin.RouterGroup) {
 	r.GET("/current/", ctrl.Current)
 }
 
+// ToDo: handle errors like in retrospectives/sprints controllers
+
 // Current Get current user
 func (ctrl UserController) Current(c *gin.Context) {
 	user, ok := c.Get("user")
