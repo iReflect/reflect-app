@@ -2,23 +2,26 @@ package serializers
 
 import (
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
+	"github.com/iReflect/reflect-app/apps/user/serializers"
 	"time"
 )
 
-//// RetrospectiveFeedback ...
-//type RetrospectiveFeedback struct {
-//	ID              uint
-//	SubType         string
-//	Type            models.RetrospectiveFeedbackType
-//	RetrospectiveID uint
-//	Text            string
-//	Scope           models.RetrospectiveFeedbackScope
-//	Assignee        *serializers.User
-//	AddedAt         *time.Time
-//	ResolvedAt      *time.Time
-//	ExpectedAt      *time.Time
-//	CreatedBy       serializers.User
-//}
+// RetrospectiveFeedback ...
+type RetrospectiveFeedback struct {
+	ID              uint
+	SubType         string
+	Type            models.RetrospectiveFeedbackType
+	RetrospectiveID uint
+	Text            string
+	Scope           models.RetrospectiveFeedbackScope
+	AssigneeID      *uint
+	Assignee        *serializers.User
+	AddedAt         *time.Time
+	ResolvedAt      *time.Time
+	ExpectedAt      *time.Time
+	CreatedByID     uint
+	CreatedBy       serializers.User
+}
 
 // RetrospectiveFeedbackUpdateSerializer ...
 type RetrospectiveFeedbackUpdateSerializer struct {
