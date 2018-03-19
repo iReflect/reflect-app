@@ -93,3 +93,16 @@ func (service PermissionService) UserCanEditTask(retroID string, sprintID string
 		Error
 	return err == nil
 }
+
+// CanAccessRetrospectiveFeedback ...
+func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string) bool {
+	db := service.DB
+	err := db.Model(&retroModels.Sprint{}).
+		Where("sprints.id=?", sprintID).
+		Where("sprints.status in (?)",
+			[]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
+		Scopes(retroModels.NotDeletedSprint).
+		Find(&retroModels.Sprint{}).
+		Error
+	return err == nil
+}

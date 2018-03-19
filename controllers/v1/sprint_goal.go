@@ -1,17 +1,19 @@
 package v1
 
 import (
-	"net/http"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/iReflect/reflect-app/apps/retrospective/models"
+	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"net/http"
 )
 
 // SprintGoalController ...
 type SprintGoalController struct {
-	SprintService     retrospectiveServices.SprintService
-	PermissionService retrospectiveServices.PermissionService
-	TrailService      retrospectiveServices.TrailService
+	RetrospectiveFeedbackService retrospectiveServices.RetrospectiveFeedbackService
+	PermissionService            retrospectiveServices.PermissionService
+	TrailService                 retrospectiveServices.TrailService
 }
 
 // Routes for Sprints
@@ -28,13 +30,40 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
+
+	if err := c.BindJSON(&feedbackData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Add(
+		userID.(uint),
+		sprintID,
+		retroID,
+		models.GoalType,
+		&feedbackData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to create goal",
+			"error":   err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Added Goal", "Retrospective Feedback",
+		fmt.Sprint(response.ID),
+		userID.(uint))
+	c.JSON(http.StatusCreated, response)
 }
 
 // List goals associated to sprint
@@ -42,11 +71,31 @@ func (ctrl SprintGoalController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+	goalType := c.Query("goalType")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
+
+	response, err := ctrl.RetrospectiveFeedbackService.ListGoal(
+		userID.(uint),
+		sprintID,
+		retroID,
+		goalType)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to fetch goals",
+			"error":   err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Update goal associated to a sprint
@@ -54,14 +103,41 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//goalID := c.Param("goalID")
+	goalID := c.Param("goalID")
+	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
+
+	if err := c.BindJSON(&feedbackData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Update(
+		userID.(uint),
+		retroID,
+		goalID,
+		&feedbackData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to update goal",
+			"error":   err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Updated Goal", "Retrospective Feedback",
+		goalID,
+		userID.(uint))
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Resolve goal associated to a sprint
@@ -69,14 +145,35 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//goalID := c.Param("goalID")
+	goalID := c.Param("goalID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Resolve(
+		userID.(uint),
+		sprintID,
+		retroID,
+		goalID,
+		true)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to resolved goal",
+			"error":   err.Error()})
+		return
+	}
+	ctrl.TrailService.Add("Resolved Goal", "Retrospective Feedback",
+		goalID,
+		userID.(uint))
+
+	c.JSON(http.StatusOK, response)
 }
 
 // UnResolve a goal associated to a sprint
@@ -84,12 +181,34 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	//goalID := c.Param("goalID")
+	goalID := c.Param("goalID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response, err := ctrl.RetrospectiveFeedbackService.Resolve(
+		userID.(uint),
+		sprintID,
+		retroID,
+		goalID,
+		false)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to un-resolve goal",
+			"error":   err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add("Unresolved Goal", "Retrospective Feedback",
+		goalID,
+		userID.(uint))
+
+	c.JSON(http.StatusOK, response)
 }

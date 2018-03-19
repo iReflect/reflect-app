@@ -13,6 +13,7 @@ import (
 )
 
 // IsValidTaskProviderConfigList validates the TaskProviderConfig
+//noinspection GoUnusedParameter
 func IsValidTaskProviderConfigList(
 	v *validator.Validate,
 	topStruct reflect.Value,
@@ -80,6 +81,7 @@ func IsValidTeam(db *gorm.DB) validator.Func {
 }
 
 // IsValidRating ...
+//noinspection GoUnusedParameter
 func IsValidRating(
 	v *validator.Validate,
 	topStruct reflect.Value,
@@ -97,6 +99,7 @@ func IsValidRating(
 }
 
 // IsValidTaskRole ...
+//noinspection GoUnusedParameter
 func IsValidTaskRole(
 	v *validator.Validate,
 	topStruct reflect.Value,
