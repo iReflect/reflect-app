@@ -1,12 +1,12 @@
 package v1
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"net/http"
 )
 
 // SprintGoalController ...
@@ -37,6 +37,11 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 		return
 	}
 
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
@@ -55,6 +60,9 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 		return
 	}
 
+	ctrl.TrailService.Add("Added Goal", "Retrospective Feedback",
+		fmt.Sprint(response.ID),
+		userID.(uint))
 	c.JSON(http.StatusCreated, response)
 }
 
@@ -65,10 +73,16 @@ func (ctrl SprintGoalController) List(c *gin.Context) {
 	retroID := c.Param("retroID")
 	goalType := c.Query("goalType")
 
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
+
 	response, err := ctrl.RetrospectiveFeedbackService.ListGoal(
 		userID.(uint),
 		sprintID,
@@ -97,6 +111,11 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 		return
 	}
 
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
@@ -104,7 +123,6 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 
 	response, err := ctrl.RetrospectiveFeedbackService.Update(
 		userID.(uint),
-		sprintID,
 		retroID,
 		goalID,
 		&feedbackData)
@@ -115,6 +133,10 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 		return
 	}
 
+	ctrl.TrailService.Add("Updated Goal", "Retrospective Feedback",
+		goalID,
+		userID.(uint))
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -124,6 +146,11 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
 	goalID := c.Param("goalID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
@@ -142,6 +169,9 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 			"error":   err.Error()})
 		return
 	}
+	ctrl.TrailService.Add("Resolved Goal", "Retrospective Feedback",
+		goalID,
+		userID.(uint))
 
 	c.JSON(http.StatusOK, response)
 }
@@ -152,6 +182,11 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
 	goalID := c.Param("goalID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
@@ -170,6 +205,10 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 			"error":   err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Unresolved Goal", "Retrospective Feedback",
+		goalID,
+		userID.(uint))
 
 	c.JSON(http.StatusOK, response)
 }

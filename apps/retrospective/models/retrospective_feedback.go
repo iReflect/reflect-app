@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/jinzhu/gorm"
 
@@ -59,12 +60,39 @@ type RetrospectiveFeedback struct {
 	Text            string                     `gorm:"type:text; not null"`
 	Scope           RetrospectiveFeedbackScope `gorm:"default:0; not null"`
 	AssigneeID      *uint
-	Assignee        *userModels.User
+	Assignee        userModels.User
 	AddedAt         *time.Time
 	ResolvedAt      *time.Time
 	ExpectedAt      *time.Time
 	CreatedByID     uint `gorm:"not null"`
 	CreatedBy       userModels.User
+}
+
+// BeforeSave ...
+func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
+	if feedback.ExpectedAt != nil && feedback.ExpectedAt.Before(*feedback.AddedAt) {
+		err = errors.New("expected_at can not be before added at")
+		return err
+	}
+	if feedback.ResolvedAt != nil && feedback.ResolvedAt.Before(*feedback.AddedAt) {
+		err = errors.New("resolved_at can not be before added at")
+		return err
+	}
+
+	if feedback.AssigneeID != nil {
+		var userIds []uint
+		if err = db.Raw("SELECT user_teams.user_id FROM user_teams JOIN retrospectives "+
+			"ON retrospectives.team_id = user_teams.team_id WHERE retrospectives.id = ? "+
+			"and user_teams.user_id = ?", feedback.RetrospectiveID, feedback.AssigneeID).
+			Scan(&userIds).Error; err != nil {
+			if err.Error() == "record not found" {
+				return errors.New("cannot assign to requested user")
+			}
+			return err
+		}
+
+	}
+	return
 }
 
 // TODO add admin support

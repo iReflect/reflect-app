@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"net/http"
@@ -35,6 +36,11 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 		return
 	}
 
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
@@ -53,6 +59,10 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 		return
 	}
 
+	ctrl.TrailService.Add("Added Note", "Retrospective Feedback",
+		fmt.Sprint(response.ID),
+		userID.(uint))
+
 	c.JSON(http.StatusCreated, response)
 }
 
@@ -61,6 +71,11 @@ func (ctrl SprintNoteController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
@@ -87,11 +102,16 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
-	noteID := c.Param("highlightID")
+	noteID := c.Param("noteID")
 	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		return
+	}
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
@@ -102,7 +122,6 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 
 	response, err := ctrl.RetrospectiveFeedbackService.Update(
 		userID.(uint),
-		sprintID,
 		retroID,
 		noteID,
 		&feedbackData)
@@ -112,6 +131,10 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 			"error":   err.Error()})
 		return
 	}
+
+	ctrl.TrailService.Add("Updated Note", "Retrospective Feedback",
+		noteID,
+		userID.(uint))
 
 	c.JSON(http.StatusOK, response)
 }

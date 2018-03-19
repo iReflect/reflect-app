@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -91,7 +92,7 @@ func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTa
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
-	tempDB := service.tasksForActiveAndCurrentSprint(string(sprintMemberTask.TaskID), sprintID).
+	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.TaskID), sprintID).
 		Where("sm.member_id = ? = ?", memberID).
 		Select("sprint_member_tasks.*," +
 			"users.*," +
