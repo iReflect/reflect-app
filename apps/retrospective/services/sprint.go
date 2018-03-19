@@ -2,13 +2,13 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
 
-	"fmt"
-	"github.com/gocraft/work"
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -596,34 +596,19 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 func (service SprintService) Create(retroID string, sprintData retrospectiveSerializers.CreateSprintSerializer) (*retroModels.Sprint, error) {
 	db := service.DB
 	var err error
+	var previousSprint retroModels.Sprint
 	var sprint retroModels.Sprint
 	var retro retroModels.Retrospective
 	var sprintMember retroModels.SprintMember
+	var iteratorLen int
+	iteratorType := "member"
+	var previousSprintMembers []retroModels.SprintMember
+	var teamMemberIDs []uint
 
 	if err := db.Model(&retro).
 		Where("id = ?", retroID).
 		Find(&retro).Error; err != nil {
 		return nil, err
-	}
-
-	var teamMemberIDs []uint
-
-	err = db.Model(&retroModels.Sprint{}).
-		Joins("JOIN sprint_members ON sprint_members.sprint_id = sprints.id").
-		Where("sprints.status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
-		Where("sprints.retrospective_id = ?", retro.ID).
-		Order("sprints.end_date DESC, sprints.created_at DESC").
-		Pluck("sprint_members.member_id", &teamMemberIDs).
-		Error
-	if err != nil || len(teamMemberIDs) < 1 {
-		err = db.Model(&userModels.UserTeam{}).
-			Where("team_id = ?", retro.TeamID).
-			Where("leaved_at IS NULL OR leaved_at > NOW()").
-			Pluck("DISTINCT user_id", &teamMemberIDs).
-			Error
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	sprint.Title = sprintData.Title
@@ -665,25 +650,67 @@ func (service SprintService) Create(retroID string, sprintData retrospectiveSeri
 		}
 	}
 
+	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
+		Where("sprints.retrospective_id = ?", retro.ID).
+		Order("sprints.end_date DESC, sprints.created_at DESC").
+		First(&previousSprint).Error
+
+	if err != nil && err.Error() != "record not found" {
+		return nil, err
+	} else if err == nil {
+		if err = db.Model(&retroModels.SprintMember{}).
+			Joins("join sprints on sprint_members.sprint_id = sprints.id").
+			Joins("join retrospectives on sprints.retrospective_id = retrospectives.id").
+			Joins("join user_teams on user_teams.team_id = retrospectives.team_id").
+			Where("sprint_members.sprint_id = ?", previousSprint.ID).
+			Where("leaved_at IS NULL OR leaved_at >= ?", sprint.EndDate).
+			Select("DISTINCT(sprint_members.*)").
+			Find(&previousSprintMembers).Error; err != nil {
+			return nil, err
+		}
+		iteratorLen = len(previousSprintMembers)
+	}
+
+	if iteratorLen < 1 {
+		if err = db.Model(&userModels.UserTeam{}).
+			Where("team_id = ?", retro.TeamID).
+			Where("leaved_at IS NULL OR leaved_at >= ?", sprint.EndDate).
+			Pluck("DISTINCT user_id", &teamMemberIDs).
+			Error; err != nil {
+			return nil, err
+		}
+		iteratorType = "memberID"
+		iteratorLen = len(teamMemberIDs)
+
+	}
+
 	tx := db.Begin() // transaction begin
 
 	if err = tx.Create(&sprint).Error; err != nil {
 		tx.Rollback()
 		return nil, err
 	}
-
 	service.SetNotSynced(sprint.ID)
 
-	for _, userID := range teamMemberIDs {
+	for i := 0; i < iteratorLen; i++ {
+		var userID uint
+		allocationPercent := 100.00
+		expectationPercent := 100.00
+		if iteratorType == "member" {
+			allocationPercent = previousSprintMembers[i].AllocationPercent
+			expectationPercent = previousSprintMembers[i].ExpectationPercent
+			userID = previousSprintMembers[i].MemberID
+		} else {
+			userID = teamMemberIDs[i]
+		}
 		sprintMember = retroModels.SprintMember{
-			SprintID:  uint(sprint.ID),
-			MemberID:  userID,
-			Vacations: 0,
-			Rating:    retrospective.DecentRating,
-			// TODO: Instead of setting it to default to 100%,
-			// we can use the previous active sprint's data for the allocation and expectation values
-			AllocationPercent:  100,
-			ExpectationPercent: 100,
+			SprintID:           uint(sprint.ID),
+			MemberID:           userID,
+			Vacations:          0,
+			Rating:             retrospective.DecentRating,
+			AllocationPercent:  allocationPercent,
+			ExpectationPercent: expectationPercent,
 		}
 		if err = tx.Create(&sprintMember).Error; err != nil {
 			tx.Rollback()
