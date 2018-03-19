@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// RetrospectiveFeedbackSerializer ...
-type RetrospectiveFeedbackSerializer struct {
+// RetrospectiveFeedback ...
+type RetrospectiveFeedback struct {
 	ID              uint
 	SubType         string
 	Type            models.RetrospectiveFeedbackType
@@ -36,5 +36,5 @@ type RetrospectiveFeedbackCreateSerializer struct {
 
 // RetrospectiveFeedbackListSerializer ...
 type RetrospectiveFeedbackListSerializer struct {
-	Feedbacks []*RetrospectiveFeedbackSerializer
+	Feedbacks []RetrospectiveFeedback
 }

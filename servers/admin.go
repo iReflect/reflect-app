@@ -46,6 +46,7 @@ func (a *Admin) Router() *http.ServeMux {
 	retrospectiveModels.RegisterSprintToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	Admin.AddResource(&retrospectiveModels.SprintMember{}, &admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintMemberTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	Admin.AddResource(&retrospectiveModels.RetrospectiveFeedback{}, &admin.Config{Menu: []string{"Retrospective Management"}})
 	Admin.AddResource(&retrospectiveModels.Trail{}, &admin.Config{Menu: []string{"Retrospective Audit Trail Management"}})
 	//Todo: Fix SMT Creation
 

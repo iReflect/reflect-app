@@ -19,7 +19,7 @@ type RetrospectiveFeedbackService struct {
 func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, retroID string,
 	feedbackType models.RetrospectiveFeedbackType,
 	feedbackData *retrospectiveSerializers.RetrospectiveFeedbackCreateSerializer) (
-	feedback *retrospectiveSerializers.RetrospectiveFeedbackSerializer,
+	feedback *retrospectiveSerializers.RetrospectiveFeedback,
 	err error) {
 	db := service.DB
 
@@ -31,6 +31,8 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 		Find(&sprint).Error; err != nil {
 		return nil, err
 	}
+
+	feedback = new(retrospectiveSerializers.RetrospectiveFeedback)
 
 	retroFeedback := models.RetrospectiveFeedback{
 		RetrospectiveID: uint(retroIDInt),
@@ -57,7 +59,7 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 	}
 
 	err = db.Model(&retroFeedback).Preload("CreatedBy").Preload("Assignee").
-		Scan(feedback).Error
+		First(feedback).Error
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +71,7 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 func (service RetrospectiveFeedbackService) Update(userID uint, sprintID string, retroID string,
 	feedbackID string,
 	feedbackData *retrospectiveSerializers.RetrospectiveFeedbackUpdateSerializer) (
-	feedback *retrospectiveSerializers.RetrospectiveFeedbackSerializer,
+	feedback *retrospectiveSerializers.RetrospectiveFeedback,
 	err error) {
 	db := service.DB
 
@@ -129,7 +131,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, sprintID string,
 func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string, retroID string,
 	feedbackID string,
 	markResolved bool) (
-	feedback *retrospectiveSerializers.RetrospectiveFeedbackSerializer,
+	feedback *retrospectiveSerializers.RetrospectiveFeedback,
 	err error) {
 	db := service.DB
 
@@ -183,6 +185,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	err error) {
 	db := service.DB
 
+	feedbackList = new(retrospectiveSerializers.RetrospectiveFeedbackListSerializer)
 	sprint := models.Sprint{}
 
 	if err := db.Model(&models.Sprint{}).
@@ -192,8 +195,8 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
-		Where("retro_id = ? AND type = ?", retroID, feedbackType).
-		Where("added_at >= ? AND added_at < ?", sprint.StartDate, sprint.EndDate).
+		Where("retrospective_id = ? AND type = ?", retroID, feedbackType).
+		Where("added_at >= ? AND added_at < ?", *sprint.StartDate, *sprint.EndDate).
 		Preload("Assignee").
 		Preload("CreatedBy").
 		Scan(&feedbackList.Feedbacks).Error; err != nil {
@@ -211,6 +214,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	db := service.DB
 
 	sprint := models.Sprint{}
+	feedbackList = new(retrospectiveSerializers.RetrospectiveFeedbackListSerializer)
 
 	if err := db.Model(&models.Sprint{}).
 		Where("id = ?", sprintID).
@@ -221,7 +225,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	switch goalType {
 	case "added":
 		if err := db.Model(&models.RetrospectiveFeedback{}).
-			Where("retro_id = ? AND type = ?", retroID, models.GoalType).
+			Where("retrospective_id = ? AND type = ?", retroID, models.GoalType).
 			Where("resolved_at IS NULL").
 			Where("added_at >= ? AND added_at < ?", sprint.StartDate, sprint.EndDate).
 			Preload("Assignee").
@@ -231,7 +235,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 		}
 	case "completed":
 		if err := db.Model(&models.RetrospectiveFeedback{}).
-			Where("retro_id = ? AND type = ?", retroID, models.GoalType).
+			Where("retrospective_id = ? AND type = ?", retroID, models.GoalType).
 			Where("resolved_at >= ? AND resolved_at < ?", sprint.StartDate, sprint.EndDate).
 			Preload("Assignee").
 			Preload("CreatedBy").
@@ -240,7 +244,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 		}
 	case "pending":
 		if err := db.Model(&models.RetrospectiveFeedback{}).
-			Where("retro_id = ? AND type = ?", retroID, models.GoalType).
+			Where("retrospective_id = ? AND type = ?", retroID, models.GoalType).
 			Where("resolved_at IS NULL").
 			Where("added_at < ?", sprint.EndDate).
 			Preload("Assignee").
