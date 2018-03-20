@@ -12,6 +12,7 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"io/ioutil"
+	"fmt"
 )
 
 // JIRATaskProvider ...
@@ -212,9 +213,11 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool) (t
 
 	// ToDo: Use pagination
 	tickets, res, err := c.client.Issue.Search(jql, &searchOptions)
+	fmt.Println(res.Request.URL)
 	if err != nil {
 		jiraErr, _ := ioutil.ReadAll(res.Response.Body)
 		utils.LogToSentry(errors.New(string(jiraErr)))
+		return nil, err
 	}
 
 	return c.serializeTickets(tickets), nil
