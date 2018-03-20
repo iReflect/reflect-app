@@ -199,7 +199,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
-		Where("sprint_member.id = ?", sprintMember.ID).
+		Where("sprint_members.id = ?", sprintMember.ID).
 		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
 		Select("DISTINCT sprint_members.*, users.*").
 		Scan(&sprintMemberSummary).

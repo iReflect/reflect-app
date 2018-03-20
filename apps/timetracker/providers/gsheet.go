@@ -115,12 +115,14 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 	log.Println("Result : ", trackerData.Result)
 
 	for _, logData := range trackerData.Result {
-		timeLogs = append(timeLogs, serializers.TimeLog{
-			Project: logData.Project,
-			TaskID:  logData.TaskID,
-			Logger:  "GSheets",
-			Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
-		})
+		if logData.TaskID != "" {
+			timeLogs = append(timeLogs, serializers.TimeLog{
+				Project: logData.Project,
+				TaskID:  logData.TaskID,
+				Logger:  "GSheets",
+				Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
+			})
+		}
 	}
 
 	return timeLogs
