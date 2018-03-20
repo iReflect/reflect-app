@@ -64,7 +64,7 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 		}
 	}
 	sprint.Status = retroModels.DeletedSprint
-	if err := tx.Save(&sprint).Error; err != nil {
+	if err := tx.Exec("UPDATE sprints set status=? where id=?", retroModels.DeletedSprint, sprintID).Error; err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
 		return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
