@@ -69,6 +69,7 @@ type timeTrackerConfig struct {
 	ScriptID          string `env:"TIMETRACKER_SCRIPT_ID"  envDefault:"MBPTr9ro72YqzPNl1DkDD9ldaih63P1hV"`
 	FnGetTimeLog      string `env:"TIMETRACKER_FN_GETTIMELOG"  envDefault:"GetProjectTimeLogs"`
 	GoogleCredentials string `env:"TIMETRACKER_CREDENTIALS"  envDefault:"config/timetracker_credentials.json"`
+	TimeZone          string `env:"TIMETRACKER_TIME_ZONE"  envDefault:"Asia/Kolkata"`
 }
 
 // GetConfig ...
