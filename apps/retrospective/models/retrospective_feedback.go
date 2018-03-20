@@ -95,4 +95,8 @@ func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+func (feedback *RetrospectiveFeedback) BeforeUpdate(db *gorm.DB) (err error) {
+	return feedback.BeforeSave(db)
+}
+
 // TODO add admin support

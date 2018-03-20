@@ -96,6 +96,10 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+func (sprint *Sprint) BeforeUpdate(db *gorm.DB) (err error) {
+	return sprint.BeforeSave(db)
+}
+
 // RegisterSprintToAdmin ...
 func RegisterSprintToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprint := Admin.AddResource(&Sprint{}, &config)

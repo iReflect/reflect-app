@@ -92,6 +92,10 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+func (smt *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) {
+	return smt.BeforeSave(db)
+}
+
 // RegisterSprintMemberTaskToAdmin ...
 func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMemberTask := Admin.AddResource(&SprintMemberTask{}, &config)
