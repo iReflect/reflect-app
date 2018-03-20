@@ -20,7 +20,7 @@ type Task struct {
 	Status            string `gorm:"type:varchar(50); not null"`
 	Priority          string `gorm:"type:varchar(50); not null"`
 	Assignee          string `gorm:"type:varchar(100); not null"`
-	Estimate          *float64
+	Estimate          float64 `gorm:"not null; default: 0"`
 	Fields            fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	SprintMemberTasks []SprintMemberTask
 }

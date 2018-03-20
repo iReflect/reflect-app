@@ -193,7 +193,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
 		Where("retrospective_id = ? AND type = ?", retroID, feedbackType).
-		Where("added_at >= ? AND added_at < ?", *sprint.StartDate, *sprint.EndDate).
+		Where("added_at >= ? AND added_at <= ?", *sprint.StartDate, *sprint.EndDate).
 		Preload("Assignee").
 		Preload("CreatedBy").
 		Find(&feedbackList.Feedbacks).Error; err != nil {
@@ -231,10 +231,10 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	switch goalType {
 	case "added":
 		query = query.Where("resolved_at IS NULL").
-			Where("added_at >= ? AND added_at < ?", sprint.StartDate, sprint.EndDate)
+			Where("added_at >= ? AND added_at <= ?", sprint.StartDate, sprint.EndDate)
 	case "completed":
 		query = query.
-			Where("resolved_at >= ? AND resolved_at < ?", sprint.StartDate, sprint.EndDate)
+			Where("resolved_at >= ? AND resolved_at <= ?", sprint.StartDate, sprint.EndDate)
 	case "pending":
 		query = query.
 			Where("resolved_at IS NULL").
