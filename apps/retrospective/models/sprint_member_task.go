@@ -82,8 +82,9 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 		Scopes(NotDeletedSprint).
 		Select("SUM(points_earned)").Row().Scan(&pointSum)
 
-	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate
-	if task.Estimate != nil && pointSum+sprintMemberTask.PointsEarned > *task.Estimate {
+	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate. Adding a 0.05 buffer for rounding errors
+	// ToDo: Revisit to see if we can improve this.
+	if pointSum+sprintMemberTask.PointsEarned > task.Estimate + 0.05 {
 		err = errors.New("cannot earn more than estimate")
 		return err
 	}

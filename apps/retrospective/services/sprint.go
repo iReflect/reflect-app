@@ -424,6 +424,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string, indepen
 }
 
 func (service SprintService) insertTask(ticketID string, retroID uint) (err error) {
+	// ToDo: Handle moved issues! ie ticket id changes
 	db := service.DB
 	var task retroModels.Task
 	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticketID}).
@@ -437,7 +438,6 @@ func (service SprintService) insertTask(ticketID string, retroID uint) (err erro
 }
 
 func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task, retroID uint) (err error) {
-	// ToDo: Handle moved issues! ie ticket id changes
 	db := service.DB
 	var task retroModels.Task
 	err = db.Where(retroModels.Task{RetrospectiveID: retroID, TaskID: ticket.ID}).
@@ -445,7 +445,6 @@ func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task,
 			Summary:  ticket.Summary,
 			Type:     ticket.Type,
 			Priority: ticket.Priority,
-			Estimate: ticket.Estimate,
 			Assignee: ticket.Assignee,
 			Status:   ticket.Status,
 		}).
@@ -454,6 +453,12 @@ func (service SprintService) addOrUpdateTask(ticket taskTrackerSerializers.Task,
 	if err != nil {
 		utils.LogToSentry(err)
 		return err
+	}
+
+	if ticket.Estimate == nil {
+		service.ChangeTaskEstimates(task, 0)
+	} else {
+		service.ChangeTaskEstimates(task, *ticket.Estimate)
 	}
 
 	return nil
@@ -470,6 +475,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("tasks.retrospective_id = ?", retroID).
 		FirstOrInit(&sprintMemberTask).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return nil
 	}
 
@@ -478,6 +484,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		Where("tasks.retrospective_id = ?", retroID).
 		First(&task).Error
 	if err != nil {
+		utils.LogToSentry(err)
 		return nil
 	}
 
@@ -782,5 +789,72 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 
 	service.SetSynced(sprint.ID)
 
+	return nil
+}
+
+// ChangeTaskEstimates ...
+func (service SprintService) ChangeTaskEstimates(task retroModels.Task, estimate float64) (err error) {
+	db := service.DB
+
+	switch {
+	case task.Estimate > estimate:
+		db.Model(&task).UpdateColumn("estimate", estimate)
+	case task.Estimate < estimate:
+		db.Model(&task).UpdateColumn("estimate", estimate)
+		return nil
+	default:
+		return nil
+	}
+
+	fmt.Println("Rebalancing Points")
+	activeAndFrozenSprintSMT := db.Model(retroModels.SprintMemberTask{}).
+		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
+		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
+		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Where("sprints.status <> ?", retroModels.DraftSprint).
+		Scopes(retroModels.NotDeletedSprint).
+		Where("tasks.id = ?", task.ID)
+
+	dbs := activeAndFrozenSprintSMT.
+		Where("sprint_member_tasks.points_earned != 0").
+		Select("sprint_member_tasks.*," +
+			"sm.sprint_id, " +
+			"(tasks.estimate / (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as estimate_ratio").
+		QueryExpr()
+
+	err = db.Exec("UPDATE sprint_member_tasks "+
+		"SET points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2) "+
+		"FROM (?) AS s1 "+
+		"WHERE sprint_member_tasks.id = s1.id AND estimate_ratio < 1;", dbs).Error
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}
+
+	dbs = activeAndFrozenSprintSMT.
+		Select("DISTINCT(tasks.id)," +
+			"(tasks.estimate - (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as remaining_points").
+		QueryExpr()
+
+	err = db.Exec("UPDATE sprint_member_tasks "+
+		"SET points_earned = round(s2.target_earned::numeric,2) "+
+		"FROM (" +
+			"SELECT DISTINCT(smt.id), " +
+			"s1.remaining_points, " +
+			"(SUM(smt.points_earned) over (PARTITION BY sm.sprint_id)) as current_total, " +
+			"(s1.remaining_points * (points_earned / (SUM(smt.points_earned) over (PARTITION BY sm.sprint_id)))) as target_earned " +
+			"FROM sprint_member_tasks AS smt " +
+			"JOIN sprint_members AS sm ON sm.id=smt.sprint_member_id " +
+			"JOIN sprints ON sprints.id=sm.sprint_id " +
+			"JOIN (?) AS s1 ON smt.task_id=s1.id " +
+			"WHERE sprints.status = ? AND points_earned != 0" +
+		") AS s2 "+
+		"WHERE sprint_member_tasks.id = s2.id AND s2.current_total > s2.remaining_points;", dbs, retroModels.DraftSprint).Error
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}
 	return nil
 }
