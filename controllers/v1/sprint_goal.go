@@ -21,8 +21,8 @@ func (ctrl SprintGoalController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.Add)
 	r.GET("/", ctrl.List)
 	r.PUT("/:goalID/", ctrl.Update)
-	r.POST("/:goalID/resolve", ctrl.Resolve)
-	r.DELETE("/:goalID/resolve", ctrl.UnResolve)
+	r.POST("/:goalID/resolve/", ctrl.Resolve)
+	r.DELETE("/:goalID/resolve/", ctrl.UnResolve)
 }
 
 // Add Goal to sprint's retrospective
