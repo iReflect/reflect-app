@@ -80,38 +80,36 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 // ActivateSprint activates the given sprint
 func (service SprintService) ActivateSprint(sprintID string) (int, error) {
 	db := service.DB
+	var sprint retroModels.Sprint
 
-	err := db.Model(retroModels.Sprint{}).
-		Where("id = ?", sprintID).
+	if err := db.Where("id = ?", sprintID).
 		Where("status = ?", retroModels.DraftSprint).
-		Update("status", retroModels.ActiveSprint).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return http.StatusNotFound, errors.New("sprint not found")
-		}
-		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("failed to freeze sprint")
+		Find(&sprint).Error; err != nil {
+		return http.StatusNotFound, nil
 	}
 
+	sprint.Status = retroModels.ActiveSprint
+	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
+		return http.StatusInternalServerError, errors.New("sprint couldn't be activated")
+	}
 	return http.StatusNoContent, nil
 }
 
 // FreezeSprint freezes the given sprint
 func (service SprintService) FreezeSprint(sprintID string) (int, error) {
 	db := service.DB
+	var sprint retroModels.Sprint
 
-	err := db.Model(retroModels.Sprint{}).
-		Where("id = ?", sprintID).
+	if err := db.Where("id = ?", sprintID).
 		Where("status = ?", retroModels.ActiveSprint).
-		Update("status", retroModels.CompletedSprint).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return http.StatusNotFound, errors.New("sprint not found")
-		}
-		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("failed to freeze sprint")
+		Find(&sprint).Error; err != nil {
+		return http.StatusNotFound, err
 	}
 
+	sprint.Status = retroModels.CompletedSprint
+	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
+		return http.StatusInternalServerError, errors.New("sprint couldn't be frozen")
+	}
 	return http.StatusNoContent, nil
 }
 
