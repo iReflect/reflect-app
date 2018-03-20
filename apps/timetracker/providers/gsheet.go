@@ -94,7 +94,16 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 	timeTrackerConfig := config.GetConfig().TimeTracker
 	appExecutor := google.AppScriptExecutor{ScriptID: timeTrackerConfig.ScriptID, CredentialsFile: timeTrackerConfig.GoogleCredentials}
 
-	reponseBytes, err := appExecutor.Run(timeTrackerConfig.FnGetTimeLog, m.config.Email, project, startTime.Format("2006-01-02"), endTime.Format("2006-01-02"))
+	location, err := time.LoadLocation(timeTrackerConfig.TimeZone)
+	if err != nil {
+		log.Println("Invalid Timezone: ", err)
+		return timeLogs
+	}
+	responseBytes, err := appExecutor.Run(
+		timeTrackerConfig.FnGetTimeLog,
+		m.config.Email,
+		project, startTime.In(location).Format("2006-01-02"),
+		endTime.In(location).Format("2006-01-02"))
 	if err != nil {
 		log.Println("App Executor Failed: ", err)
 		return timeLogs
@@ -107,7 +116,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 
 	var trackerData Response
 
-	if err := json.Unmarshal(reponseBytes, &trackerData); err != nil {
+	if err := json.Unmarshal(responseBytes, &trackerData); err != nil {
 		log.Println("Respoonse decoding error: ", err)
 		return timeLogs
 	}
