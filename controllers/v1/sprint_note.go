@@ -32,7 +32,7 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
 
@@ -46,16 +46,14 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.RetrospectiveFeedbackService.Add(
+	response, status, err := ctrl.RetrospectiveFeedbackService.Add(
 		userID.(uint),
 		sprintID,
 		retroID,
 		models.NoteType,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to create note",
-			"error":   err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -63,7 +61,7 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 		fmt.Sprint(response.ID),
 		userID.(uint))
 
-	c.JSON(http.StatusCreated, response)
+	c.JSON(status, response)
 }
 
 // List notes associated to sprint
@@ -82,19 +80,17 @@ func (ctrl SprintNoteController) List(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.RetrospectiveFeedbackService.List(
+	response, status, err := ctrl.RetrospectiveFeedbackService.List(
 		userID.(uint),
 		sprintID,
 		retroID,
 		models.NoteType)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to fetch notes",
-			"error":   err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(status, response)
 }
 
 // Update note associated to a sprint
@@ -106,7 +102,7 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
 
@@ -120,15 +116,13 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.RetrospectiveFeedbackService.Update(
+	response, status, err := ctrl.RetrospectiveFeedbackService.Update(
 		userID.(uint),
 		retroID,
 		noteID,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to update note",
-			"error":   err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -136,5 +130,5 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 		noteID,
 		userID.(uint))
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(status, response)
 }

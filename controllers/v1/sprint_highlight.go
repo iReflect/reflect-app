@@ -32,7 +32,7 @@ func (ctrl SprintHighlightController) Add(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
 
@@ -46,23 +46,22 @@ func (ctrl SprintHighlightController) Add(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.RetrospectiveFeedbackService.Add(
+	response, status, err := ctrl.RetrospectiveFeedbackService.Add(
 		userID.(uint),
 		sprintID,
 		retroID,
 		models.HighlightType,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to create highlight",
-			"error":   err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctrl.TrailService.Add("Added Highlight", "Retrospective Feedback",
 		fmt.Sprint(response.ID),
 		userID.(uint))
-	c.JSON(http.StatusCreated, response)
+
+	c.JSON(status, response)
 }
 
 // List highlights associated to sprint
@@ -81,19 +80,17 @@ func (ctrl SprintHighlightController) List(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.RetrospectiveFeedbackService.List(
+	response, status, err := ctrl.RetrospectiveFeedbackService.List(
 		userID.(uint),
 		sprintID,
 		retroID,
 		models.HighlightType)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to fetch highlights",
-			"error":   err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(status, response)
 }
 
 // Update highlight associated to a sprint
@@ -105,7 +102,7 @@ func (ctrl SprintHighlightController) Update(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
 
@@ -119,15 +116,13 @@ func (ctrl SprintHighlightController) Update(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.RetrospectiveFeedbackService.Update(
+	response, status, err := ctrl.RetrospectiveFeedbackService.Update(
 		userID.(uint),
 		retroID,
 		highlightID,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to update highlight",
-			"error":   err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -135,5 +130,5 @@ func (ctrl SprintHighlightController) Update(c *gin.Context) {
 		highlightID,
 		userID.(uint))
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(status, response)
 }

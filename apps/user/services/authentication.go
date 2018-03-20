@@ -90,7 +90,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 	userEmail := getAccountEmail(googleUser)
 	user := userModels.User{}
 	if err := db.Where("email = ?", userEmail).First(&user).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			logrus.Info(fmt.Sprintf("User with email %s not found", userEmail))
 			return getNotFoundErrorResponse()
 		}

@@ -19,6 +19,8 @@ func (ctrl TeamFeedbackController) Routes(r *gin.RouterGroup) {
 	r.GET("/:id/", ctrl.Get)
 }
 
+// ToDo: handle errors like in retrospectives/sprints controllers
+
 // Get feedback
 func (ctrl TeamFeedbackController) Get(c *gin.Context) {
 	id := c.Param("id")

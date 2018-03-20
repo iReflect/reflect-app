@@ -21,6 +21,8 @@ func (ctrl FeedbackController) Routes(r *gin.RouterGroup) {
 	r.PUT("/:id/", ctrl.Put)
 }
 
+// ToDo: handle errors like in retrospectives/sprints controllers
+
 // Get feedback
 func (ctrl FeedbackController) Get(c *gin.Context) {
 	id := c.Param("id")
@@ -40,7 +42,7 @@ func (ctrl FeedbackController) Put(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	feedBackResponseData := feedbackSerializers.FeedbackResponseSerializer{FeedbackID: id}
 	if err := c.BindJSON(&feedBackResponseData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request data", "error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
 	code, err := ctrl.FeedbackService.Put(id, userID.(uint), feedBackResponseData)
