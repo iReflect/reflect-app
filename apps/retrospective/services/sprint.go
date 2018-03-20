@@ -41,7 +41,7 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 		Find(&sprint).Error
 
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -86,7 +86,7 @@ func (service SprintService) ActivateSprint(sprintID string) (int, error) {
 		Where("status = ?", retroModels.DraftSprint).
 		Update("status", retroModels.ActiveSprint).Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -105,7 +105,7 @@ func (service SprintService) FreezeSprint(sprintID string) (int, error) {
 		Where("status = ?", retroModels.ActiveSprint).
 		Update("status", retroModels.CompletedSprint).Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -122,7 +122,7 @@ func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int
 
 	err := db.Model(&retroModels.Sprint{}).Where("id = ?", sprintID).Preload("CreatedBy").First(&sprint).Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -167,7 +167,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		Find(&sprint).
 		Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusBadRequest, errors.New("member is not a part of the retrospective team")
 		}
 		utils.LogToSentry(err)
@@ -204,7 +204,7 @@ func (service SprintService) AddSprintMember(sprintID string, memberID uint) (*r
 		Select("DISTINCT sprint_members.*, users.*").
 		Scan(&sprintMemberSummary).
 		Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("member not found in sprint")
 		}
 		utils.LogToSentry(err)
@@ -230,7 +230,7 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 		Error
 
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return http.StatusNotFound, errors.New("sprint member not found")
 		}
 		utils.LogToSentry(err)
@@ -566,7 +566,7 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (*retroSer
 		Find(&sprint).
 		Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -619,7 +619,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 		Preload("Sprint.Retrospective").
 		Find(&sprintMember).
 		Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint member not found")
 		}
 		utils.LogToSentry(err)
@@ -671,7 +671,7 @@ func (service SprintService) Create(retroID string, sprintData retroSerializers.
 		Where("id = ?", retroID).
 		Find(&retro).Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("retrospective not found")
 		}
 		utils.LogToSentry(err)
@@ -725,7 +725,7 @@ func (service SprintService) Create(retroID string, sprintData retroSerializers.
 		Order("sprints.end_date DESC, sprints.created_at DESC").
 		First(&previousSprint).Error
 
-	if err != nil && err.Error() != "record not found" {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
 	} else if err == nil {
 		if err = db.Model(&retroModels.SprintMember{}).
@@ -807,7 +807,7 @@ func (service SprintService) UpdateSprint(sprintID string, sprintData retroSeria
 
 	if err := db.Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)

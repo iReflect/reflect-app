@@ -85,7 +85,7 @@ func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
 			"ON retrospectives.team_id = user_teams.team_id WHERE retrospectives.id = ? "+
 			"and user_teams.user_id = ?", feedback.RetrospectiveID, feedback.AssigneeID).
 			Scan(&userIds).Error; err != nil {
-			if err.Error() == "record not found" {
+			if err == gorm.ErrRecordNotFound {
 				return errors.New("cannot assign to requested user")
 			}
 			return err

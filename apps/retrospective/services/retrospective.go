@@ -87,7 +87,7 @@ func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (re
 		First(&retro).Error
 
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("retrospective not found")
 		}
 		utils.LogToSentry(err)
@@ -122,7 +122,7 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSeria
 		Preload("CreatedBy").
 		First(&sprint).Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("retrospective does not have any active or frozen sprint")
 		}
 		utils.LogToSentry(err)

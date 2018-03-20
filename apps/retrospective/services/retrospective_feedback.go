@@ -33,7 +33,7 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 	if err := db.Model(&models.Sprint{}).
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -78,7 +78,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	if err := db.Model(&models.RetrospectiveFeedback{}).
 		Where("id = ?", feedbackID).
 		First(&retroFeedback).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("retrospective feedback not found")
 		}
 		utils.LogToSentry(err)
@@ -132,7 +132,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	if err := db.Model(&models.Sprint{}).
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -142,7 +142,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	if err := db.Model(&models.RetrospectiveFeedback{}).
 		Where("id = ?", feedbackID).
 		First(&retroFeedback).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("goal not found")
 		}
 		utils.LogToSentry(err)
@@ -184,7 +184,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	if err := db.Model(&models.Sprint{}).
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -218,7 +218,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	if err := db.Model(&models.Sprint{}).
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
@@ -264,7 +264,7 @@ func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedba
 		Preload("Assignee").
 		First(&feedback).Error
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)

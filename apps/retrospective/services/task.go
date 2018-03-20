@@ -129,7 +129,7 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 		Find(&sprintMember).Error
 
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("member is not a part of the sprint")
 		}
 		utils.LogToSentry(err)
@@ -182,7 +182,7 @@ func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprin
 		Find(&sprintMemberTask).Error
 
 	if err != nil {
-		if err.Error() == "record not found" {
+		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("task member not found")
 		}
 		utils.LogToSentry(err)
