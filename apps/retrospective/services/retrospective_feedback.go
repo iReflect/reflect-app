@@ -196,6 +196,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 		Where("added_at >= ? AND added_at <= ?", *sprint.StartDate, *sprint.EndDate).
 		Preload("Assignee").
 		Preload("CreatedBy").
+		Order("added_at DESC, created_at DESC").
 		Find(&feedbackList.Feedbacks).Error; err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to get retrospective feedbacks")
@@ -231,14 +232,17 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	switch goalType {
 	case "added":
 		query = query.Where("resolved_at IS NULL").
-			Where("added_at >= ? AND added_at <= ?", sprint.StartDate, sprint.EndDate)
+			Where("added_at >= ? AND added_at <= ?", sprint.StartDate, sprint.EndDate).
+			Order("added_at DESC, created_at DESC")
 	case "completed":
 		query = query.
-			Where("resolved_at >= ? AND resolved_at <= ?", sprint.StartDate, sprint.EndDate)
+			Where("resolved_at >= ? AND resolved_at <= ?", sprint.StartDate, sprint.EndDate).
+			Order("resolved_at DESC, added_at DESC, created_at DESC")
 	case "pending":
 		query = query.
 			Where("resolved_at IS NULL").
-			Where("added_at < ?", sprint.EndDate)
+			Where("added_at < ?", sprint.EndDate).
+			Order("expected_at, added_at DESC, created_at DESC")
 	default:
 		return nil, http.StatusBadRequest, errors.New("invalid goal type")
 	}

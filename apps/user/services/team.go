@@ -23,7 +23,8 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 	filterQuery := db.Model(&userModels.Team{}).
 		Joins("JOIN user_teams ON teams.id = user_teams.team_id").
 		Where("user_teams.user_id = ?", userID).
-		Where("teams.active = true")
+		Where("teams.active = true").
+		Order("teams.name, teams.created_at")
 
 	if onlyActive {
 		filterQuery = filterQuery.Where("(leaved_at IS NULL OR leaved_at > NOW())")
@@ -53,7 +54,7 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 		memberIDs = service.getTeamMemberIDs(teamID, false)
 	}
 
-	err = db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Scan(&members.Members).Error
+	err = db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Order("users.first_name, users.last_name, id").Scan(&members.Members).Error
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, err
