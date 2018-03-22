@@ -6,6 +6,11 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"time"
+	"github.com/qor/qor"
+	"strconv"
+	"github.com/qor/qor/resource"
+	"github.com/sirupsen/logrus"
+	"github.com/qor/admin"
 )
 
 // RetrospectiveFeedbackScopeValues ...
@@ -99,4 +104,74 @@ func (feedback *RetrospectiveFeedback) BeforeUpdate(db *gorm.DB) (err error) {
 	return feedback.BeforeSave(db)
 }
 
-// TODO add admin support
+// RegisterRetrospectiveFeedbackToAdmin ...
+func RegisterRetrospectiveFeedbackToAdmin(Admin *admin.Admin, config admin.Config) {
+	retroFeedback := Admin.AddResource(&RetrospectiveFeedback{}, &config)
+	typeMeta := getRetrospectiveFeedbackTypeFieldMeta()
+	retroFeedback.Meta(&typeMeta)
+
+	scopeMeta := getRetrospectiveFeedbackScopeFieldMeta()
+	retroFeedback.Meta(&scopeMeta)
+}
+
+// getRetrospectiveFeedbackTypeFieldMeta is the meta config for the type field
+func getRetrospectiveFeedbackTypeFieldMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Type",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			retroFeedback := value.(*RetrospectiveFeedback)
+			return strconv.Itoa(int(retroFeedback.Type))
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			retroFeedback := resource.(*RetrospectiveFeedback)
+			value, err := strconv.Atoi(metaValue.Value.([]string)[0])
+			if err != nil {
+				logrus.Error("Cannot convert string to int")
+				return
+			}
+			retroFeedback.Type = RetrospectiveFeedbackType(value)
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for index, value := range RetrospectiveFeedbackTypeValues {
+				results = append(results, []string{strconv.Itoa(index), value})
+			}
+			return
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			retroFeedback := value.(*RetrospectiveFeedback)
+			return retroFeedback.Type.GetStringValue()
+		},
+	}
+}
+
+// getRetrospectiveFeedbackScopeFieldMeta is the meta config for the scope field
+func getRetrospectiveFeedbackScopeFieldMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Scope",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			retroFeedback := value.(*RetrospectiveFeedback)
+			return strconv.Itoa(int(retroFeedback.Scope))
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			retroFeedback := resource.(*RetrospectiveFeedback)
+			value, err := strconv.Atoi(metaValue.Value.([]string)[0])
+			if err != nil {
+				logrus.Error("Cannot convert string to int")
+				return
+			}
+			retroFeedback.Scope = RetrospectiveFeedbackScope(value)
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for index, value := range RetrospectiveFeedbackScopeValues {
+				results = append(results, []string{strconv.Itoa(index), value})
+			}
+			return
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			retroFeedback := value.(*RetrospectiveFeedback)
+			return retroFeedback.Scope.GetStringValue()
+		},
+	}
+}

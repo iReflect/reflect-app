@@ -581,10 +581,11 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (*retroSer
 		Where("sprint_id = ?", sprint.ID).
 		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("DISTINCT sprint_members.*, users.*, " +
-			"SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_story_point, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) " +
-			"as total_time_spent_in_min").
+		Select(`DISTINCT sprint_members.*,
+                               users.*,
+			                   SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_story_point,
+			                   SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) as total_time_spent_in_min
+        `).
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		utils.LogToSentry(err)
@@ -645,8 +646,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
 		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
-		Select("COALESCE(SUM(smt.points_earned), 0) as actual_story_point, "+
-			"COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_in_min").
+		Select("COALESCE(SUM(smt.points_earned), 0) as actual_story_point, COALESCE(SUM(smt.time_spent_minutes), 0) as total_time_spent_in_min").
 		Group("sprint_members.id").
 		Row().
 		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
@@ -852,16 +852,20 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
-		Select("sprint_member_tasks.*," +
-			"row_number() over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id order by sprint_member_tasks.time_spent_minutes desc) as time_spent_rank, " +
-			"sm.sprint_id, " +
-			"(tasks.estimate - (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as remaining_points").
+		Select(`sprint_member_tasks.*, 
+                      row_number() over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id order by sprint_member_tasks.time_spent_minutes desc) as time_spent_rank,
+                      sm.sprint_id,
+                      (tasks.estimate - (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as remaining_points
+        `).
 		QueryExpr()
 
-	err = db.Exec("UPDATE sprint_member_tasks "+
-		"SET points_assigned = COALESCE(s1.remaining_points,0), points_earned = COALESCE(s1.remaining_points, 0) "+
-		"FROM (?) AS s1 "+
-		"WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;", dbs, sprintID).Error
+	err = db.Exec(`
+    UPDATE sprint_member_tasks 
+	    SET points_assigned = COALESCE(s1.remaining_points,0), 
+            points_earned = COALESCE(s1.remaining_points, 0) 
+        FROM (?) AS s1 
+        WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;
+    `, dbs, sprintID).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -917,20 +921,28 @@ func (service SprintService) ChangeTaskEstimates(task retroModels.Task, estimate
 			"(tasks.estimate - (SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id))) as remaining_points").
 		QueryExpr()
 
-	err = db.Exec("UPDATE sprint_member_tasks "+
-		"SET points_earned = round(s2.target_earned::numeric,2) "+
-		"FROM (" +
-			"SELECT DISTINCT(smt.id), " +
-			"s1.remaining_points, " +
-			"(SUM(smt.points_earned) over (PARTITION BY sm.sprint_id)) as current_total, " +
-			"(s1.remaining_points * (points_earned / (SUM(smt.points_earned) over (PARTITION BY sm.sprint_id)))) as target_earned " +
-			"FROM sprint_member_tasks AS smt " +
-			"JOIN sprint_members AS sm ON sm.id=smt.sprint_member_id " +
-			"JOIN sprints ON sprints.id=sm.sprint_id " +
-			"JOIN (?) AS s1 ON smt.task_id=s1.id " +
-			"WHERE sprints.status = ? AND points_earned != 0" +
-		") AS s2 "+
-		"WHERE sprint_member_tasks.id = s2.id AND s2.current_total > s2.remaining_points;", dbs, retroModels.DraftSprint).Error
+	err = db.Exec(`
+        UPDATE sprint_member_tasks 
+            SET points_earned = round(s2.target_earned::numeric,2)
+        FROM (
+            SELECT 
+                DISTINCT(smt.id),
+                s1.remaining_points,
+                (SUM(smt.points_earned) over (PARTITION BY sm.sprint_id)) as current_total,
+                (s1.remaining_points * (points_earned / (SUM(smt.points_earned) over (PARTITION BY sm.sprint_id)))) as target_earned
+            FROM sprint_member_tasks 
+                AS smt 
+            JOIN sprint_members 
+                AS sm 
+                ON sm.id=smt.sprint_member_id 
+            JOIN sprints 
+                ON sprints.id=sm.sprint_id 
+            JOIN (?) AS s1 
+                ON smt.task_id=s1.id 
+            WHERE sprints.status = ? AND points_earned != 0
+        ) AS s2 
+        WHERE sprint_member_tasks.id = s2.id AND s2.current_total > s2.remaining_points;
+    `, dbs, retroModels.DraftSprint).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
