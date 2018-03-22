@@ -28,7 +28,6 @@ export DB_DRIVER="mysql"
 ```
 go get -d github.com/iReflect/reflect-app
 cd ~/go/src/github.com/iReflect/reflect-app
-git checkout develop
 ```
 
 
@@ -81,6 +80,7 @@ https://developers.google.com/oauthplayground/ with Timesheet App's client_id, c
 
 ```
 https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/userinfo.email
 ```
 
 Video instructions at https://www.youtube.com/watch?v=PJWrjAuIWWo
