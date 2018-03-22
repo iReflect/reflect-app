@@ -84,7 +84,7 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 
 	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate. Adding a 0.05 buffer for rounding errors
 	// ToDo: Revisit to see if we can improve this.
-	if pointSum+sprintMemberTask.PointsEarned > task.Estimate + 0.05 {
+	if pointSum+sprintMemberTask.PointsEarned > task.Estimate+0.05 {
 		err = errors.New("cannot earn more than estimate")
 		return err
 	}
@@ -133,4 +133,9 @@ func getMemberTaskRoleFieldMeta() admin.Meta {
 			return sprintMemberTask.Role.GetStringValue()
 		},
 	}
+}
+
+// SMTJoinTask ...
+func SMTJoinTask(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN tasks ON sprint_member_tasks.task_id = tasks.id").Where("tasks.deleted_at IS NULL")
 }

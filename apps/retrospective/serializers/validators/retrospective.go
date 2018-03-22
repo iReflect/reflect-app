@@ -35,9 +35,18 @@ func IsValidTaskProviderConfigList(
 		if providerType, isValid = taskProviderConfig["type"].(string); !isValid {
 			return false
 		}
+
 		if providerData, isValid = taskProviderConfig["data"].(map[string]interface{}); !isValid {
 			return false
 		}
+
+		for _, taskType := range tasktracker.TaskTypes {
+			_, isValid := providerData[taskType].(string)
+			if !isValid {
+				return false
+			}
+		}
+
 		if credentials, isValid = providerData["credentials"].(map[string]interface{}); !isValid {
 			return false
 		}

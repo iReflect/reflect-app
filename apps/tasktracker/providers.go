@@ -7,6 +7,7 @@ import (
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"strings"
 )
 
 // Credentials ...
@@ -33,6 +34,9 @@ type Connection interface {
 
 // TaskProviders ...
 var TaskProviders = make(map[string]TaskProvider)
+
+// TaskTypes ...
+var TaskTypes = []string{"FeatureTypes", "TaskTypes", "BugTypes"}
 
 // RegisterTaskProvider ...
 func RegisterTaskProvider(name string, newProvider TaskProvider) {
@@ -181,6 +185,33 @@ func GetConnections(config []byte) (connections []Connection, err error) {
 	}
 
 	return connections, nil
+}
+
+// GetTaskTypeMappings ...
+func GetTaskTypeMappings(config []byte) (map[string]string, error) {
+	var configList []interface{}
+	types := make(map[string]string)
+
+	if err := json.Unmarshal(config, &configList); err != nil {
+		return nil, err
+	}
+
+	var data map[string]interface{}
+	for _, tpConfig := range configList {
+		tp := tpConfig.(map[string]interface{})
+		data = tp["data"].(map[string]interface{})
+
+		for _, taskType := range TaskTypes {
+			typeUpper, ok := data[taskType].(string)
+			if !ok {
+				return nil, errors.New("failed to read from retrospective config")
+			}
+
+			types[taskType] = strings.ToLower(typeUpper)
+		}
+	}
+
+	return types, nil
 }
 
 // ValidateConfigs ...

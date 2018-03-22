@@ -81,3 +81,13 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time, inclu
 
 	return workingDays
 }
+
+// CalculateExpectedSP ...
+func CalculateExpectedSP(startDate time.Time, endDate time.Time, vacations float64, expectationPercent float64, allocationPercent float64, spPerWeek float64) float64 {
+	sprintWorkingDays := GetWorkingDaysBetweenTwoDates(startDate, endDate, true)
+	workingDays := float64(sprintWorkingDays) - vacations
+	expectationCoefficient := expectationPercent / 100.00
+	allocationCoefficient := allocationPercent / 100.00
+	storyPointPerDay := spPerWeek / 5
+	return workingDays * storyPointPerDay * expectationCoefficient * allocationCoefficient
+}

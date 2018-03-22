@@ -143,3 +143,8 @@ func getSprintStatusFieldMeta() admin.Meta {
 func NotDeletedSprint(db *gorm.DB) *gorm.DB {
 	return db.Not("sprints.status = ?", DeletedSprint)
 }
+
+// SprintJoinSM ...
+func SprintJoinSM(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_members ON sprint_members.sprint_id = sprints.id").Where("sprint_members.deleted_at IS NULL")
+}

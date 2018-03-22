@@ -8,11 +8,11 @@ import (
 
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"io/ioutil"
-	"fmt"
 )
 
 // JIRATaskProvider ...

@@ -5,12 +5,12 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/jinzhu/gorm"
 
-	"time"
+	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"strconv"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
-	"github.com/qor/admin"
+	"strconv"
+	"time"
 )
 
 // RetrospectiveFeedbackScopeValues ...

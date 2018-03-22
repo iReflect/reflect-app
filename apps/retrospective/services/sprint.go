@@ -127,17 +127,129 @@ func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
 	}
 
+	summary, status, err := service.GetSprintSummary(sprintID, sprint.RetrospectiveID)
+	if err != nil {
+		return nil, status, err
+	}
+
+	sprint.Summary = *summary
+
 	err = db.Model(&retroModels.SprintSyncStatus{}).
 		Where("sprint_id = ?", sprintID).
-		Order("created_at desc").
+		Order("created_at DESC").
 		Select("status").
 		Row().Scan(&sprint.SyncStatus)
 
 	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			utils.LogToSentry(err)
+			return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		}
 		sprint.SyncStatus = int8(retroModels.NotSynced)
 	}
 
 	return &sprint, http.StatusOK, nil
+}
+
+// GetSprintSummary ...
+func (service SprintService) GetSprintSummary(sprintID string, retroID uint) (*retroSerializers.SprintSummary, int, error) {
+	db := service.DB
+
+	var sprint retroModels.Sprint
+	var summary retroSerializers.SprintSummary
+
+	err := db.Model(&retroModels.Sprint{}).Where("id = ?", sprintID).Preload("Retrospective").First(&sprint).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("sprint not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+	}
+
+	err = db.Model(&retroModels.Sprint{}).
+		Scopes(retroModels.SprintJoinSM).
+		Where("sprints.id = ?", sprintID).
+		Select("COUNT(*) AS member_count, " +
+			"SUM(allocation_percent) AS total_allocation, " +
+			"SUM(expectation_percent) AS total_expectation, " +
+			"SUM((? - vacations) * expectation_percent / 100.0 * allocation_percent / 100.0 * ?) AS target_sp, " +
+			"SUM(vacations) AS total_vacations," +
+			"0 AS holidays", utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true), sprint.Retrospective.StoryPointPerWeek / 5).
+		Scan(&summary).Error
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+	}
+
+	taskTypesSummary, status, err := service.GetSprintTaskSummary(sprintID, retroID)
+
+	summary.TaskSummary = taskTypesSummary
+	if err != nil {
+		return nil, status, errors.New("failed to get sprint")
+	}
+
+	return &summary, http.StatusOK, nil
+}
+
+// GetSprintTaskSummary ...
+func (service SprintService) GetSprintTaskSummary(sprintID string, retroID uint) (summary map[string]retroSerializers.SprintTaskSummary, status int, err error) {
+	db := service.DB
+	var retro retroModels.Retrospective
+
+	err = db.Model(&retroModels.Retrospective{}).Where("id = ?", retroID).First(&retro).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("retrospective not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+	}
+
+	taskTypes, err := tasktracker.GetTaskTypeMappings(retro.TaskProviderConfig)
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+	}
+	summary = make(map[string]retroSerializers.SprintTaskSummary)
+
+	for _, taskType := range tasktracker.TaskTypes {
+		taskSummary, status, err := service.getSprintTaskTypeSummary(sprintID, taskTypes[taskType])
+		if err != nil {
+			return nil, status, err
+		}
+		summary[taskType] = *taskSummary
+	}
+
+	return summary, http.StatusOK, nil
+}
+
+func (service SprintService) getSprintTaskTypeSummary(sprintID string, taskTypes string) (*retroSerializers.SprintTaskSummary, int, error) {
+	db := service.DB
+
+	var summary retroSerializers.SprintTaskSummary
+
+	taskList := db.Model(&retroModels.Sprint{}).
+		Scopes(retroModels.SprintJoinSM, retroModels.SMJoinSMT, retroModels.SMTJoinTask).
+		Where("sprints.id = ?", sprintID).
+		Where("LOWER(tasks.type) IN (?)", taskTypes)
+
+	doneTaskQuery := taskList.Where("sprints.start_date <= tasks.done_at").
+		Where("sprints.end_date >= tasks.done_at").
+		Select("COUNT(*) AS count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS points_earned").
+		QueryExpr()
+
+	taskQuery := taskList.Select("COUNT(*) AS total_count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS total_points_earned").QueryExpr()
+	err := db.Raw("SELECT * FROM (?) AS total CROSS JOIN (?) AS done", taskQuery, doneTaskQuery).Scan(&summary).Error
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get task info for " + taskTypes)
+	}
+
+	return &summary, http.StatusOK, nil
 }
 
 // AddSprintMember ...
