@@ -43,12 +43,12 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 }
 
 // Get ...
-func (service TaskService) Get(id string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
+func (service TaskService) Get(taskID string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
 	db := service.DB
 	var tasks []retroSerializers.Task
 
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
-		Where("tasks.id = ?", id).
+		Where("tasks.id = ?", taskID).
 		Select("tasks.*, " +
 			"sm.sprint_id, " +
 			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id) as total_time, " +
@@ -66,12 +66,65 @@ func (service TaskService) Get(id string, retroID string, sprintID string) (task
 	return &tasks[0], http.StatusOK, nil
 }
 
+// MarkDone ...
+func (service TaskService) MarkDone(taskID string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
+	db := service.DB
+	var sprint retroModels.Sprint
+	err = db.Model(&retroModels.Sprint{}).
+		Where("id = ?", sprintID).
+		Scan(&sprint).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("sprint not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
+	}
+
+	err = db.Model(&retroModels.Task{}).
+		Where("tasks.id = ?", taskID).
+		Where("done_at is NULL").
+		Update("done_at", *sprint.EndDate).
+		Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("task not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
+	}
+
+	return service.Get(taskID, retroID, sprintID)
+}
+
+// MarkUndone ...
+func (service TaskService) MarkUndone(taskID string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
+	db := service.DB
+	err = db.Model(&retroModels.Task{}).
+		Where("tasks.id = ?", taskID).
+		Where("done_at is not NULL").
+		Update("done_at", "NULL").
+		Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("task not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
+	}
+
+	return service.Get(taskID, retroID, sprintID)
+}
+
 // GetMembers ...
-func (service TaskService) GetMembers(id string, retroID string, sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, err error) {
+func (service TaskService) GetMembers(taskID string, retroID string, sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, err error) {
 	db := service.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
-	dbs := service.smtForActiveAndCurrentSprint(id, sprintID).
+	dbs := service.smtForActiveAndCurrentSprint(taskID, sprintID).
 		Select("sprint_member_tasks.*," +
 			"users.*," +
 			"sm.sprint_id, " +

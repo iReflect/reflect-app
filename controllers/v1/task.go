@@ -20,6 +20,8 @@ type TaskController struct {
 func (ctrl TaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:taskID/", ctrl.Get)
+	r.POST("/:taskID/done", ctrl.MarkDone)
+	r.DELETE("/:taskID/done", ctrl.MarkUndone)
 	r.GET("/:taskID/members/", ctrl.GetMembers)
 	r.POST("/:taskID/members/", ctrl.AddMember)
 	r.PUT("/:taskID/members/:smtID/", ctrl.UpdateTaskMember)
@@ -59,6 +61,50 @@ func (ctrl TaskController) Get(c *gin.Context) {
 	}
 
 	task, status, err := ctrl.TaskService.Get(id, retroID, sprintID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(status, task)
+}
+
+// MarkDone ...
+func (ctrl TaskController) MarkDone(c *gin.Context) {
+	id := c.Param("taskID")
+	retroID := c.Param("retroID")
+	sprintID := c.Param("sprintID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, id, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	task, status, err := ctrl.TaskService.MarkDone(id, retroID, sprintID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(status, task)
+}
+
+// MarkUndone ...
+func (ctrl TaskController) MarkUndone(c *gin.Context) {
+	id := c.Param("taskID")
+	retroID := c.Param("retroID")
+	sprintID := c.Param("sprintID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, id, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	task, status, err := ctrl.TaskService.MarkUndone(id, retroID, sprintID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
