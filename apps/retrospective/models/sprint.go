@@ -96,6 +96,7 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// BeforeUpdate ...
 func (sprint *Sprint) BeforeUpdate(db *gorm.DB) (err error) {
 	return sprint.BeforeSave(db)
 }

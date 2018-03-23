@@ -7,6 +7,7 @@ import (
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"time"
 )
 
 // Task represents the tasks for retrospectives
@@ -22,6 +23,7 @@ type Task struct {
 	Assignee          string       `gorm:"type:varchar(100); not null"`
 	Estimate          float64      `gorm:"not null; default: 0"`
 	Fields            fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
+	DoneAt            *time.Time
 	SprintMemberTasks []SprintMemberTask
 }
 

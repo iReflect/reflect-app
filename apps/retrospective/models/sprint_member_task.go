@@ -92,8 +92,9 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
-func (smt *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) {
-	return smt.BeforeSave(db)
+// BeforeUpdate ...
+func (sprintMemberTask *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) {
+	return sprintMemberTask.BeforeSave(db)
 }
 
 // RegisterSprintMemberTaskToAdmin ...

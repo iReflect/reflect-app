@@ -39,6 +39,7 @@ func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// BeforeUpdate ...
 func (sprintMember *SprintMember) BeforeUpdate(db *gorm.DB) (err error) {
 	return sprintMember.BeforeSave(db)
 }

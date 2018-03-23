@@ -1,5 +1,7 @@
 package serializers
 
+import "time"
+
 // Task ...
 type Task struct {
 	ID         uint
@@ -12,6 +14,7 @@ type Task struct {
 	Estimate   float64
 	TotalTime  uint
 	SprintTime uint
+	DoneAt     *time.Time
 }
 
 // TasksSerializer ...

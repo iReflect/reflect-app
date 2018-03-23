@@ -100,6 +100,7 @@ func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// BeforeUpdate ...
 func (feedback *RetrospectiveFeedback) BeforeUpdate(db *gorm.DB) (err error) {
 	return feedback.BeforeSave(db)
 }
