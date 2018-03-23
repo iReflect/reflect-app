@@ -105,7 +105,7 @@ func (service TaskService) MarkUndone(taskID string, retroID string, sprintID st
 	err = db.Model(&retroModels.Task{}).
 		Where("tasks.id = ?", taskID).
 		Where("done_at is not NULL").
-		Update("done_at", "NULL").
+		Update("done_at", nil).
 		Error
 
 	if err != nil {
