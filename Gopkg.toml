@@ -42,14 +42,6 @@
   name = "github.com/pressly/goose"
 
 [[constraint]]
-  name = "github.com/qor/admin"
-  version = "1.0.0"
-
-[[constraint]]
-  name = "github.com/qor/qor"
-  version = "1.0.0"
-
-[[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.4"
 
@@ -80,3 +72,15 @@
 [[constraint]]
   name = "github.com/andygrunwald/go-jira"
   branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/qor/admin"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/qor/qor"
+
+[[override]]
+  branch = "master"
+  name = "github.com/qor/roles"
