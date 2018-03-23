@@ -20,8 +20,8 @@ type TaskController struct {
 func (ctrl TaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:taskID/", ctrl.Get)
-	r.POST("/:taskID/done", ctrl.MarkDone)
-	r.DELETE("/:taskID/done", ctrl.MarkUndone)
+	r.POST("/:taskID/done/", ctrl.MarkDone)
+	r.DELETE("/:taskID/done/", ctrl.MarkUndone)
 	r.GET("/:taskID/members/", ctrl.GetMembers)
 	r.POST("/:taskID/members/", ctrl.AddMember)
 	r.PUT("/:taskID/members/:smtID/", ctrl.UpdateTaskMember)
