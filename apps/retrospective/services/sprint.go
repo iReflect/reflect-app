@@ -78,7 +78,7 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 }
 
 // ActivateSprint activates the given sprint
-func (service SprintService) ActivateSprint(sprintID string) (int, error) {
+func (service SprintService) ActivateSprint(sprintID string, retroID string) (int, error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 
@@ -88,15 +88,22 @@ func (service SprintService) ActivateSprint(sprintID string) (int, error) {
 		return http.StatusNotFound, nil
 	}
 
-	sprint.Status = retroModels.ActiveSprint
-	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
-		return http.StatusInternalServerError, errors.New("sprint couldn't be activated")
+	isValid, err := service.ValidateSprint(sprintID, retroID)
+	if err != nil {
+		return http.StatusInternalServerError, err
 	}
-	return http.StatusNoContent, nil
+	if isValid {
+		sprint.Status = retroModels.ActiveSprint
+		if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
+			return http.StatusInternalServerError, errors.New("sprint couldn't be activated")
+		}
+		return http.StatusNoContent, nil
+	}
+	return http.StatusBadRequest, errors.New("can not activate a invalid draft sprint")
 }
 
 // FreezeSprint freezes the given sprint
-func (service SprintService) FreezeSprint(sprintID string) (int, error) {
+func (service SprintService) FreezeSprint(sprintID string, retroID string) (int, error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 
@@ -105,12 +112,18 @@ func (service SprintService) FreezeSprint(sprintID string) (int, error) {
 		Find(&sprint).Error; err != nil {
 		return http.StatusNotFound, err
 	}
-
-	sprint.Status = retroModels.CompletedSprint
-	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
-		return http.StatusInternalServerError, errors.New("sprint couldn't be frozen")
+	isValid, err := service.ValidateSprint(sprintID, retroID)
+	if err != nil {
+		return http.StatusInternalServerError, err
 	}
-	return http.StatusNoContent, nil
+	if isValid {
+		sprint.Status = retroModels.CompletedSprint
+		if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
+			return http.StatusInternalServerError, errors.New("sprint couldn't be frozen")
+		}
+		return http.StatusNoContent, nil
+	}
+	return http.StatusBadRequest, errors.New("can not freeze a invalid active sprint")
 }
 
 // Get return details of the given sprint
@@ -917,6 +930,46 @@ func (service SprintService) Create(retroID string, sprintData retroSerializers.
 	}
 
 	return service.Get(fmt.Sprint(sprint.ID))
+}
+
+// ValidateSprint validate the given sprint
+func (service SprintService) ValidateSprint(sprintID string, retroID string) (bool, error) {
+	db := service.DB
+	inValidTasksCount := 0
+	query := `
+		WITH constants (retro_id, sprint_id) AS (
+		  VALUES (?, ?)
+		)
+		SELECT DISTINCT (t.*)
+		FROM constants, (SELECT
+                       tasks.id,
+                       sm.sprint_id,
+                       tasks.estimate,
+                       SUM(smt.points_earned)
+                       OVER (
+                         PARTITION BY tasks.id )               AS total_points_earned,
+                       SUM(smt.points_earned)
+                       OVER (
+                         PARTITION BY tasks.id, sm.sprint_id ) AS points_earned
+                     FROM constants, tasks
+                       JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id
+                       JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id
+                       JOIN sprints ON sm.sprint_id = sprints.id
+                     WHERE tasks.deleted_at IS NULL AND smt.deleted_at IS NULL AND sm."deleted_at" IS NULL AND
+                            ((tasks.retrospective_id = constants.retro_id) AND
+                            ((sprints.status <> ? OR sprints.id = constants.sprint_id)) AND
+                            NOT (sprints.status = ?))) AS t
+		WHERE t.sprint_id = constants.sprint_id AND (t.total_points_earned > t.estimate + 0.05);
+	`
+	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).
+		Count(&inValidTasksCount).Error
+	if err != nil {
+		utils.LogToSentry(err)
+		return false, errors.New("error in fetching in-valid sprint task lists")
+	}
+
+	return inValidTasksCount == 0, nil
+
 }
 
 // UpdateSprint updates the given sprint

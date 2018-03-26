@@ -153,7 +153,7 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 		return
 	}
 
-	status, err := ctrl.SprintService.ActivateSprint(sprintID)
+	status, err := ctrl.SprintService.ActivateSprint(sprintID, retroID)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -175,7 +175,7 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 		return
 	}
 
-	status, err := ctrl.SprintService.FreezeSprint(sprintID)
+	status, err := ctrl.SprintService.FreezeSprint(sprintID, retroID)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

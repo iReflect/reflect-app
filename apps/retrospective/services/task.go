@@ -25,14 +25,23 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 	taskList = new(retroSerializers.TasksSerializer)
 
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
-		Select("tasks.*, " +
-			"sm.sprint_id, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id) as total_time, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id, sm.sprint_id) as sprint_time").
+		Select(`
+            tasks.*,
+            sm.sprint_id,
+            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id)               AS total_time,
+            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id, sm.sprint_id) AS sprint_time,
+            SUM(smt.points_earned) OVER (PARTITION BY tasks.id)                    AS total_points_earned, 
+            SUM(smt.points_earned) OVER (PARTITION BY tasks.id, sm.sprint_id )     AS points_earned
+		`).
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) as t WHERE t.sprint_id = ?", dbs, sprintID).Order("t.task_id").
-		Scan(&taskList.Tasks).Error
+	query := `
+		SELECT 
+			DISTINCT(t.*),
+			CASE WHEN (t.total_points_earned > t.estimate + 0.05) THEN TRUE ELSE FALSE END AS is_invalid
+		FROM (?) as t WHERE t.sprint_id = ?;
+	`
+	err = db.Raw(query, dbs, sprintID).Order("t.task_id").Scan(&taskList.Tasks).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
