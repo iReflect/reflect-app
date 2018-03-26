@@ -12,7 +12,7 @@ import (
 // User represent the app user in system
 type User struct {
 	gorm.Model
-	Name               string `gorm:"-"`
+	Name               string `gorm:"type:varchar(255); not null"`
 	Email              string `gorm:"type:varchar(255); not null; unique_index"`
 	FirstName          string `gorm:"type:varchar(30); not null"`
 	LastName           string `gorm:"type:varchar(150)"`
