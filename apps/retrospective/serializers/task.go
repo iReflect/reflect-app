@@ -15,6 +15,7 @@ type Task struct {
 	TotalTime  uint
 	SprintTime uint
 	DoneAt     *time.Time
+	IsInvalid  bool
 }
 
 // TasksSerializer ...
