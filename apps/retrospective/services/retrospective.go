@@ -107,6 +107,7 @@ func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userI
 	if err != nil {
 		return nil, status, err
 	}
+
 	return members, http.StatusOK, nil
 }
 

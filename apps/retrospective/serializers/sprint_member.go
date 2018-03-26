@@ -21,15 +21,9 @@ type SprintMemberSummary struct {
 }
 
 // SetExpectedStoryPoint ...
-func (member *SprintMemberSummary) SetExpectedStoryPoint(sprint models.Sprint, retrospective models.Retrospective) {
-	sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate,
-		*sprint.EndDate, true)
-	memberWorkingDays := float64(sprintWorkingDays) - member.Vacations
-	expectationCoefficient := member.ExpectationPercent / 100.00
-	allocationCoefficient := member.AllocationPercent / 100.00
-	storyPointPerDay := retrospective.StoryPointPerWeek / 5
-	member.ExpectedStoryPoint = memberWorkingDays * storyPointPerDay *
-		expectationCoefficient * allocationCoefficient
+func (member *SprintMemberSummary) SetExpectedStoryPoint(sprint models.Sprint, retro models.Retrospective) {
+	member.ExpectedStoryPoint = utils.CalculateExpectedSP(*sprint.StartDate, *sprint.EndDate,
+		member.Vacations, member.ExpectationPercent, member.AllocationPercent, retro.StoryPointPerWeek)
 }
 
 // SprintMemberSummaryListSerializer ...

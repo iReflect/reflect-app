@@ -43,3 +43,8 @@ func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
 func (sprintMember *SprintMember) BeforeUpdate(db *gorm.DB) (err error) {
 	return sprintMember.BeforeSave(db)
 }
+
+// SMJoinSMT ...
+func SMJoinSMT(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+}
