@@ -9,6 +9,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/andygrunwald/go-jira"
+  packages = ["."]
+  revision = "73a371cdd95da260b5a70b19336ad03fd62a79e7"
+
+[[projects]]
+  branch = "master"
   name = "github.com/blaskovicz/go-cryptkeeper"
   packages = ["."]
   revision = "501fcfe3c5e966e9ff6b103e512d9f45d39d7a7f"
@@ -117,16 +123,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/iReflect/go-jira"
-  packages = ["."]
-  revision = "e4572fccba1e2cb55ea1a5b1c7f50e3544f2366e"
-
-[[projects]]
-  branch = "master"
   name = "github.com/jinzhu/gorm"
   packages = [".","dialects/postgres"]
-  revision = "2a5838f889350305ab1c2ede393fcc1aba018f14"
-  source = "https://github.com/iReflect/gorm.git"
+  revision = "52c5c8127cf4aeffde3e0aa9222640832075a90f"
 
 [[projects]]
   branch = "master"
@@ -187,7 +186,6 @@
   name = "github.com/pressly/goose"
   packages = ["."]
   revision = "3ddaf111b0c8fb76d178b8f5899d74dca89b8706"
-  source = "https://github.com/iReflect/goose.git"
 
 [[projects]]
   name = "github.com/qor/admin"
@@ -300,6 +298,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0adf69cf251ddb6f8d961c96ca305c2e5f578e589f7922b83048bd6b7a5d4fa2"
+  inputs-digest = "00d83f57a745f7e5a65575f7f594fea68c2246cced369b0be324acccf0c0ae07"
   solver-name = "gps-cdcl"
   solver-version = 1

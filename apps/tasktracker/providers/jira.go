@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iReflect/go-jira"
+	"github.com/andygrunwald/go-jira"
 
 	"encoding/json"
 	"errors"
