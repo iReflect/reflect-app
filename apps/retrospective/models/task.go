@@ -32,7 +32,10 @@ func RegisterTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	task := Admin.AddResource(&Task{}, &config)
 	taskProviderConfigMeta := getFieldsMetaFieldMeta()
 	task.Meta(&taskProviderConfigMeta)
-
+	task.IndexAttrs("-SprintMemberTasks")
+	task.NewAttrs("-SprintMemberTasks")
+	task.EditAttrs("-SprintMemberTasks")
+	task.ShowAttrs("-SprintMemberTasks")
 }
 
 // getFieldsMetaFieldMeta ...

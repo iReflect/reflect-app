@@ -29,6 +29,10 @@ func RegisterRetrospectiveToAdmin(Admin *admin.Admin, config admin.Config) {
 	retrospective := Admin.AddResource(&Retrospective{}, &config)
 	taskProviderConfigMeta := getTaskProviderConfigMetaFieldMeta()
 	retrospective.Meta(&taskProviderConfigMeta)
+	retrospective.IndexAttrs("-Sprints")
+	retrospective.NewAttrs("-Sprints")
+	retrospective.EditAttrs("-Sprints")
+	retrospective.ShowAttrs("-Sprints")
 
 }
 

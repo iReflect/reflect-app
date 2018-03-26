@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
@@ -47,4 +48,13 @@ func (sprintMember *SprintMember) BeforeUpdate(db *gorm.DB) (err error) {
 // SMJoinSMT ...
 func SMJoinSMT(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+}
+
+// RegisterSprintMemberToAdmin ...
+func RegisterSprintMemberToAdmin(Admin *admin.Admin, config admin.Config) {
+	sprintMember := Admin.AddResource(&SprintMember{}, &config)
+	sprintMember.IndexAttrs("-Tasks")
+	sprintMember.NewAttrs("-Tasks")
+	sprintMember.EditAttrs("-Tasks")
+	sprintMember.ShowAttrs("-Tasks")
 }
