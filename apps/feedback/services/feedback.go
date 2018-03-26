@@ -95,6 +95,7 @@ func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []st
 		Preload("ForUserProfile.Role").
 		Preload("FeedbackForm").
 		Limit(perPage).
+		Order("duration_end DESC, created_at DESC, id").
 		Find(&feedbacks.Feedbacks).Error; err != nil {
 		return nil, err
 	}

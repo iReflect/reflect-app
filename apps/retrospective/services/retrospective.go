@@ -55,7 +55,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		Where("user_teams.user_id = ?", userID).
 		Preload("Team").
 		Preload("CreatedBy").
-		Order("created_at desc").
+		Order("created_at DESC, title, id").
 		Limit(perPage).
 		Offset(offset).
 		Find(&retrospectiveList.Retrospectives).
@@ -119,7 +119,7 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSeria
 	err := db.Model(&retroModels.Sprint{}).
 		Where("retrospective_id = ?", retroID).
 		Where("status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
-		Order("end_date desc").
+		Order("end_date DESC").
 		Preload("CreatedBy").
 		First(&sprint).Error
 	if err != nil {

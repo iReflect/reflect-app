@@ -31,7 +31,7 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id, sm.sprint_id) as sprint_time").
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) as t WHERE t.sprint_id = ?", dbs, sprintID).
+	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) as t WHERE t.sprint_id = ?", dbs, sprintID).Order("t.task_id").
 		Scan(&taskList.Tasks).Error
 
 	if err != nil {
@@ -135,6 +135,7 @@ func (service TaskService) GetMembers(taskID string, retroID string, sprintID st
 		QueryExpr()
 
 	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_id = ?", dbs, sprintID).
+		Order("smt.role, smt.first_name, smt.last_name").
 		Scan(&members.Members).Error
 
 	if err != nil {

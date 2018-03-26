@@ -662,7 +662,7 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint)
 		Where("(sprints.status <> ? OR created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Preload("CreatedBy").
-		Order("end_date desc").
+		Order("end_date DESC, status, title, id").
 		Find(&sprints.Sprints).Error
 
 	if err != nil {
@@ -697,7 +697,8 @@ func (service SprintService) GetSprintMembersSummary(sprintID string) (*retroSer
                                users.*,
 			                   SUM(smt.points_earned) over (PARTITION BY sprint_members.id) as actual_story_point,
 			                   SUM(smt.time_spent_minutes) over (PARTITION BY sprint_members.id) as total_time_spent_in_min
-        `).
+		`).
+		Order("users.first_name, users.last_name, users.id").
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		utils.LogToSentry(err)
@@ -718,6 +719,7 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 		Where("sprint_id = ?", sprintID).
 		Joins("JOIN users ON users.id = sprint_members.member_id").
 		Select("sprint_members.id, users.email, users.first_name, users.last_name, users.active").
+		Order("users.first_name, users.last_name, users.id").
 		Scan(&sprintMemberList.Members).
 		Error; err != nil {
 		utils.LogToSentry(err)
