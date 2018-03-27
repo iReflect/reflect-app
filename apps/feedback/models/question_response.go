@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// QuestionResponseSeparator ...
 const QuestionResponseSeparator = ","
 
 // Regex to test the response format of a question
@@ -27,6 +28,7 @@ type QuestionResponse struct {
 	Comment               string `gorm:"type:text"`
 }
 
+// GetQuestionResponseList ...
 func GetQuestionResponseList(questionResponse string) []string {
 	isValid := ValidateResponseRegex(questionResponse)
 	if isValid {
@@ -35,15 +37,21 @@ func GetQuestionResponseList(questionResponse string) []string {
 	return []string{}
 }
 
+// ValidateResponseRegex ...
 func ValidateResponseRegex(questionResponse string) bool {
 	// Response can either be an empty string or should match the regex
 	return questionResponse == "" || questionResponseRegex.MatchString(questionResponse)
 }
 
+// BeforeSave ...
 func (questionResponse *QuestionResponse) BeforeSave(db *gorm.DB) (err error) {
 	// Check if the question response is valid
-	question := Question{}
-	db.Where("id = ?", questionResponse.QuestionID).First(&question)
+	var question Question
+	if questionResponse.Question.ID == 0 {
+		db.Where("id = ?", questionResponse.QuestionID).First(&question)
+	} else {
+		question = questionResponse.Question
+	}
 	if isValid := question.ValidateQuestionResponse(questionResponse.Response); !isValid {
 		err = errors.New("invalid question response")
 	}

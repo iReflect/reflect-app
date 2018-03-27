@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/iReflect/reflect-app/db/models/fields"
@@ -25,6 +27,11 @@ type Task struct {
 	Fields            fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	DoneAt            *time.Time
 	SprintMemberTasks []SprintMemberTask
+}
+
+// Stringify ...
+func (task Task) Stringify() string {
+	return fmt.Sprintf("%v", task.TaskID)
 }
 
 // RegisterTaskToAdmin ...

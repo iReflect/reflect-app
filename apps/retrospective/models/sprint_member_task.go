@@ -102,6 +102,48 @@ func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMemberTask := Admin.AddResource(&SprintMemberTask{}, &config)
 	roleMeta := getMemberTaskRoleFieldMeta()
 	sprintMemberTask.Meta(&roleMeta)
+	sprintMembersMeta := getSprintMemberMeta()
+	sprintMemberTask.Meta(&sprintMembersMeta)
+	taskMeta := getTaskMeta()
+	sprintMemberTask.Meta(&taskMeta)
+}
+
+// getSprintMemberMeta ...
+func getSprintMemberMeta() admin.Meta {
+	return admin.Meta{
+		Name: "SprintMember",
+		Type: "select_one",
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			db := context.GetDB()
+			var members []SprintMember
+			db.Model(&SprintMember{}).
+				Preload("Member").
+				Find(&members)
+
+			for _, value := range members {
+				results = append(results, []string{strconv.Itoa(int(value.ID)), "Sprint: " + strconv.Itoa(int(value.SprintID)) + " & Member: " + value.Member.FirstName + " " + value.Member.LastName})
+			}
+			return
+		},
+	}
+}
+
+// getTaskMeta ...
+func getTaskMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Task",
+		Type: "select_one",
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			db := context.GetDB()
+			var taskList []Task
+			db.Model(&Task{}).Scan(&taskList)
+
+			for _, value := range taskList {
+				results = append(results, []string{strconv.Itoa(int(value.ID)), value.TaskID})
+			}
+			return
+		},
+	}
 }
 
 // getMemberTaskRoleFieldMeta is the meta config for the role field

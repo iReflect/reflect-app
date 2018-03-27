@@ -71,10 +71,13 @@ func (userTeam *UserTeam) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// RegisterUserTeamToAdmin ...
 func RegisterUserTeamToAdmin(Admin *admin.Admin, config admin.Config) {
 	userTeam := Admin.AddResource(&UserTeam{}, &config)
 	roleMeta := getRoleFieldMeta()
 	userTeam.Meta(&roleMeta)
+	userFieldMeta := GetUserFieldMeta()
+	userTeam.Meta(&userFieldMeta)
 }
 
 // getRoleFieldMeta is the meta config for the user team role field

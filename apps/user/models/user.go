@@ -1,6 +1,9 @@
 package models
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
@@ -12,7 +15,6 @@ import (
 // User represent the app user in system
 type User struct {
 	gorm.Model
-	Name               string `gorm:"type:varchar(255); not null"`
 	Email              string `gorm:"type:varchar(255); not null; unique_index"`
 	FirstName          string `gorm:"type:varchar(30); not null"`
 	LastName           string `gorm:"type:varchar(150)"`
@@ -21,6 +23,16 @@ type User struct {
 	Profiles           []UserProfile
 	TimeProviderConfig fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	IsAdmin            bool         `gorm:"default:false; not null"`
+}
+
+// Stringify ...
+func (user User) Stringify() string {
+	return fmt.Sprintf("%v, %v", user.FirstName, user.LastName)
+}
+
+// DisplayName ...
+func (user User) DisplayName() string {
+	return user.Email
 }
 
 // RegisterUserToAdmin ...
@@ -34,10 +46,22 @@ func RegisterUserToAdmin(Admin *admin.Admin, config admin.Config) {
 	user.Meta(&timeProviderConfigMeta)
 }
 
-// AfterFind ...
-func (u *User) AfterFind() (err error) {
-	u.Name = u.FirstName + " " + u.LastName
-	return nil
+// GetUserFieldMeta ...
+func GetUserFieldMeta() admin.Meta {
+	return admin.Meta{
+		Name: "User",
+		Type: "select_one",
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			db := context.GetDB()
+			var members []User
+			db.Model(&User{}).Scan(&members)
+
+			for _, value := range members {
+				results = append(results, []string{strconv.Itoa(int(value.ID)), value.FirstName + " " + value.LastName})
+			}
+			return
+		},
+	}
 }
 
 // getTimeConfigMetaFieldMeta ...
