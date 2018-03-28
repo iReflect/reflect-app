@@ -47,9 +47,9 @@ func RegisterUserToAdmin(Admin *admin.Admin, config admin.Config) {
 }
 
 // GetUserFieldMeta ...
-func GetUserFieldMeta() admin.Meta {
+func GetUserFieldMeta(fieldName string) admin.Meta {
 	return admin.Meta{
-		Name: "User",
+		Name: fieldName,
 		Type: "select_one",
 		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
 			db := context.GetDB()

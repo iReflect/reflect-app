@@ -110,9 +110,12 @@ func RegisterRetrospectiveFeedbackToAdmin(Admin *admin.Admin, config admin.Confi
 	retroFeedback := Admin.AddResource(&RetrospectiveFeedback{}, &config)
 	typeMeta := getRetrospectiveFeedbackTypeFieldMeta()
 	retroFeedback.Meta(&typeMeta)
-
 	scopeMeta := getRetrospectiveFeedbackScopeFieldMeta()
 	retroFeedback.Meta(&scopeMeta)
+	assigneeMeta := userModels.GetUserFieldMeta("Assignee")
+	retroFeedback.Meta(&assigneeMeta)
+	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+	retroFeedback.Meta(&createdByMeta)
 }
 
 // getRetrospectiveFeedbackTypeFieldMeta is the meta config for the type field

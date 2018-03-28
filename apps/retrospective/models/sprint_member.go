@@ -57,4 +57,6 @@ func RegisterSprintMemberToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMember.NewAttrs("-Tasks")
 	sprintMember.EditAttrs("-Tasks")
 	sprintMember.ShowAttrs("-Tasks")
+	memberMeta := userModels.GetUserFieldMeta("Member")
+	sprintMember.Meta(&memberMeta)
 }

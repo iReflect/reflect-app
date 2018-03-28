@@ -76,7 +76,7 @@ func RegisterUserTeamToAdmin(Admin *admin.Admin, config admin.Config) {
 	userTeam := Admin.AddResource(&UserTeam{}, &config)
 	roleMeta := getRoleFieldMeta()
 	userTeam.Meta(&roleMeta)
-	userFieldMeta := GetUserFieldMeta()
+	userFieldMeta := GetUserFieldMeta("User")
 	userTeam.Meta(&userFieldMeta)
 }
 

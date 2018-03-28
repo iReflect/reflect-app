@@ -33,7 +33,8 @@ func RegisterRetrospectiveToAdmin(Admin *admin.Admin, config admin.Config) {
 	retrospective.NewAttrs("-Sprints")
 	retrospective.EditAttrs("-Sprints")
 	retrospective.ShowAttrs("-Sprints")
-
+	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+	retrospective.Meta(&createdByMeta)
 }
 
 // getTaskConfigMetaFieldMeta ...

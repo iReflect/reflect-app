@@ -110,6 +110,8 @@ func RegisterSprintToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprint.NewAttrs("-SprintMembers", "-SyncStatus")
 	sprint.EditAttrs("-SprintMembers", "-SyncStatus")
 	sprint.ShowAttrs("-SprintMembers", "-SyncStatus")
+	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+	sprint.Meta(&createdByMeta)
 }
 
 // getSprintStatusFieldMeta is the meta config for the sprint status field
