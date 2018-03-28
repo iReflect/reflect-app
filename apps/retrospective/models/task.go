@@ -1,13 +1,15 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
+	"fmt"
+	"time"
 
-	"github.com/iReflect/reflect-app/db/models/fields"
+	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
-	"time"
+
+	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
 // Task represents the tasks for retrospectives
@@ -27,12 +29,21 @@ type Task struct {
 	SprintMemberTasks []SprintMemberTask
 }
 
+// Stringify ...
+func (task Task) Stringify() string {
+	return fmt.Sprintf("%v", task.TaskID)
+}
+
 // RegisterTaskToAdmin ...
 func RegisterTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	task := Admin.AddResource(&Task{}, &config)
 	taskProviderConfigMeta := getFieldsMetaFieldMeta()
 	task.Meta(&taskProviderConfigMeta)
 
+	task.IndexAttrs("-SprintMemberTasks")
+	task.NewAttrs("-SprintMemberTasks")
+	task.EditAttrs("-SprintMemberTasks")
+	task.ShowAttrs("-SprintMemberTasks")
 }
 
 // getFieldsMetaFieldMeta ...

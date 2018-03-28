@@ -20,4 +20,8 @@ func RegisterSkillToAdmin(Admin *admin.Admin, config admin.Config) {
 	skill := Admin.AddResource(&Skill{}, &config)
 	questionsMeta := skill.Meta(&admin.Meta{Name: "Questions"})
 	SetQuestionRelatedFieldMeta(questionsMeta.Resource)
+	skill.IndexAttrs("-Questions")
+	skill.NewAttrs("-Questions")
+	skill.EditAttrs("-Questions")
+	skill.ShowAttrs("-Questions")
 }

@@ -28,8 +28,15 @@ type Retrospective struct {
 func RegisterRetrospectiveToAdmin(Admin *admin.Admin, config admin.Config) {
 	retrospective := Admin.AddResource(&Retrospective{}, &config)
 	taskProviderConfigMeta := getTaskProviderConfigMetaFieldMeta()
-	retrospective.Meta(&taskProviderConfigMeta)
+	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
 
+	retrospective.Meta(&taskProviderConfigMeta)
+	retrospective.Meta(&createdByMeta)
+
+	retrospective.IndexAttrs("-Sprints")
+	retrospective.NewAttrs("-Sprints")
+	retrospective.EditAttrs("-Sprints")
+	retrospective.ShowAttrs("-Sprints")
 }
 
 // getTaskConfigMetaFieldMeta ...

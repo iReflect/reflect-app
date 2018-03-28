@@ -51,7 +51,10 @@
 
 [[projects]]
   name = "github.com/garyburd/redigo"
-  packages = ["internal","redis"]
+  packages = [
+    "internal",
+    "redis"
+  ]
   revision = "47dc60e71eed504e3ef8e77ee3c6fe720f3be57f"
   version = "v1.3.0"
 
@@ -76,13 +79,21 @@
 [[projects]]
   branch = "master"
   name = "github.com/gin-gonic/contrib"
-  packages = ["ginrus","sessions"]
+  packages = [
+    "ginrus",
+    "sessions"
+  ]
   revision = "8f08bc9b92a9734916abda03656c5f1b99ad10be"
 
 [[projects]]
   branch = "master"
   name = "github.com/gin-gonic/gin"
-  packages = [".","binding","json","render"]
+  packages = [
+    ".",
+    "binding",
+    "json",
+    "render"
+  ]
   revision = "6626358d4fefa40ec37ca4b502c6c7d0cdea6d18"
 
 [[projects]]
@@ -122,9 +133,18 @@
   version = "v1.1"
 
 [[projects]]
+  name = "github.com/gosimple/slug"
+  packages = ["."]
+  revision = "e9f42fa127660e552d0ad2b589868d403a9be7c6"
+  version = "v1.1.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/jinzhu/gorm"
-  packages = [".","dialects/postgres"]
+  packages = [
+    ".",
+    "dialects/postgres"
+  ]
   revision = "52c5c8127cf4aeffde3e0aa9222640832075a90f"
 
 [[projects]]
@@ -160,7 +180,11 @@
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
-  packages = [".","hstore","oid"]
+  packages = [
+    ".",
+    "hstore",
+    "oid"
+  ]
   revision = "83612a56d3dd153a94a629cd64925371c9adad78"
 
 [[projects]]
@@ -188,16 +212,32 @@
   revision = "3ddaf111b0c8fb76d178b8f5899d74dca89b8706"
 
 [[projects]]
+  branch = "master"
   name = "github.com/qor/admin"
   packages = ["."]
-  revision = "a5c271dab2795bb9d7f855194ec0408355120e69"
-  version = "v1.0"
+  revision = "2603cc564654fc56489a3ed6c9d19521db39b530"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/qor/assetfs"
+  packages = ["."]
+  revision = "ff57fdc13a148d39c3e930cb27c7eaf82e376891"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/qor/middlewares"
+  packages = ["."]
+  revision = "781378b69454a545d08058d8154aca40d079e7ab"
+
+[[projects]]
+  branch = "master"
   name = "github.com/qor/qor"
-  packages = [".","resource","utils"]
-  revision = "d1402d1caffb8f9c05d73fa5bfaae2853c4191fb"
-  version = "v1.0"
+  packages = [
+    ".",
+    "resource",
+    "utils"
+  ]
+  revision = "1fb0672178f1da9d7786cebbf3fe066ce8b44a85"
 
 [[projects]]
   name = "github.com/qor/responder"
@@ -206,10 +246,32 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/qor/roles"
   packages = ["."]
-  revision = "f1e05694734518c0ce2dc21151e0ecfccf4db8f4"
+  revision = "d6375609fe3e5da46ad3a574fae244fb633e79c1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/qor/session"
+  packages = [
+    ".",
+    "gorilla",
+    "manager"
+  ]
+  revision = "8206b0adab706a6ef3ee6fabba2584d34429a26a"
+
+[[projects]]
+  name = "github.com/qor/validations"
+  packages = ["."]
+  revision = "87c1296c75e72a8f3247beab65c48c50b7b66a7a"
   version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/rainycape/unidecode"
+  packages = ["."]
+  revision = "cb7f23ec59bec0d61b19c56cd88cee3d0cc1870c"
 
 [[projects]]
   name = "github.com/robfig/cron"
@@ -231,7 +293,10 @@
 
 [[projects]]
   name = "github.com/trivago/tgo"
-  packages = ["tcontainer","treflect"]
+  packages = [
+    "tcontainer",
+    "treflect"
+  ]
   revision = "e4d1ddd28c17dd89ed26327cf69fded22060671b"
   version = "v1.0.1"
 
@@ -250,36 +315,70 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","html","html/atom"]
+  packages = [
+    "context",
+    "context/ctxhttp",
+    "html",
+    "html/atom"
+  ]
   revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [".","google","internal","jws","jwt"]
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
   revision = "2f32c3ac0fa4fb807a0fcefb0b6f2468a0d99bd0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "83801418e1b59fb1880e363299581ee543af32ca"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["internal/gen","unicode/cldr"]
+  packages = [
+    "internal/gen",
+    "unicode/cldr"
+  ]
   revision = "eb22672bea55af56d225d4e35405f4d2e9f062a0"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
-  packages = ["gensupport","googleapi","googleapi/internal/uritemplates","plus/v1","script/v1"]
+  packages = [
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates",
+    "plus/v1",
+    "script/v1"
+  ]
   revision = "ab90adb3efa287b869ecb698db42f923cc734972"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch"
+  ]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
@@ -298,6 +397,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "00d83f57a745f7e5a65575f7f594fea68c2246cced369b0be324acccf0c0ae07"
+  inputs-digest = "c82a43ee9ed2988878d69fa9e02f8597b5518d0ec4c850040ba55cf451541e76"
   solver-name = "gps-cdcl"
   solver-version = 1

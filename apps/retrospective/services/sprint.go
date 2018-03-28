@@ -183,12 +183,12 @@ func (service SprintService) GetSprintSummary(sprintID string, retroID uint) (*r
 	err = db.Model(&retroModels.Sprint{}).
 		Scopes(retroModels.SprintJoinSM).
 		Where("sprints.id = ?", sprintID).
-		Select("COUNT(*) AS member_count, " +
-			"SUM(allocation_percent) AS total_allocation, " +
-			"SUM(expectation_percent) AS total_expectation, " +
-			"SUM((? - vacations) * expectation_percent / 100.0 * allocation_percent / 100.0 * ?) AS target_sp, " +
-			"SUM(vacations) AS total_vacations," +
-			"0 AS holidays", utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true), sprint.Retrospective.StoryPointPerWeek / 5).
+		Select("COUNT(*) AS member_count, "+
+			"SUM(allocation_percent) AS total_allocation, "+
+			"SUM(expectation_percent) AS total_expectation, "+
+			"SUM((? - vacations) * expectation_percent / 100.0 * allocation_percent / 100.0 * ?) AS target_sp, "+
+			"SUM(vacations) AS total_vacations,"+
+			"0 AS holidays", utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true), sprint.Retrospective.StoryPointPerWeek/5).
 		Scan(&summary).Error
 
 	if err != nil {
