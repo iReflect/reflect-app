@@ -32,7 +32,6 @@
 [[constraint]]
   branch = "master"
   name = "github.com/jinzhu/gorm"
-  source = "https://github.com/iReflect/gorm.git"
 
 [[constraint]]
   branch = "master"
@@ -41,7 +40,6 @@
 [[constraint]]
   branch = "master"
   name = "github.com/pressly/goose"
-  source = "https://github.com/iReflect/goose.git"
 
 [[constraint]]
   name = "github.com/qor/admin"
@@ -80,5 +78,5 @@
   name = "github.com/getsentry/raven-go"
 
 [[constraint]]
-  name = "github.com/iReflect/go-jira"
+  name = "github.com/andygrunwald/go-jira"
   branch = "master"
