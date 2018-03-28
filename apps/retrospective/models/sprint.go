@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -11,7 +12,6 @@ import (
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 // SprintStatusValues ...
@@ -105,13 +105,15 @@ func (sprint *Sprint) BeforeUpdate(db *gorm.DB) (err error) {
 func RegisterSprintToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprint := Admin.AddResource(&Sprint{}, &config)
 	statusMeta := getSprintStatusFieldMeta()
+	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+
 	sprint.Meta(&statusMeta)
+	sprint.Meta(&createdByMeta)
+
 	sprint.IndexAttrs("-SprintMembers", "-SyncStatus")
 	sprint.NewAttrs("-SprintMembers", "-SyncStatus")
 	sprint.EditAttrs("-SprintMembers", "-SyncStatus")
 	sprint.ShowAttrs("-SprintMembers", "-SyncStatus")
-	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
-	sprint.Meta(&createdByMeta)
 }
 
 // getSprintStatusFieldMeta is the meta config for the sprint status field

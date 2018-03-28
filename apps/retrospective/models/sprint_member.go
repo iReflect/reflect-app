@@ -53,10 +53,11 @@ func SMJoinSMT(db *gorm.DB) *gorm.DB {
 // RegisterSprintMemberToAdmin ...
 func RegisterSprintMemberToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMember := Admin.AddResource(&SprintMember{}, &config)
+	memberMeta := userModels.GetUserFieldMeta("Member")
+	sprintMember.Meta(&memberMeta)
+
 	sprintMember.IndexAttrs("-Tasks")
 	sprintMember.NewAttrs("-Tasks")
 	sprintMember.EditAttrs("-Tasks")
 	sprintMember.ShowAttrs("-Tasks")
-	memberMeta := userModels.GetUserFieldMeta("Member")
-	sprintMember.Meta(&memberMeta)
 }

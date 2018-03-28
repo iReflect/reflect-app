@@ -2,9 +2,10 @@ package models
 
 import (
 	"errors"
-	"github.com/jinzhu/gorm"
 	"regexp"
 	"strings"
+
+	"github.com/jinzhu/gorm"
 )
 
 // QuestionResponseSeparator ...

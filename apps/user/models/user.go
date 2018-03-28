@@ -32,18 +32,19 @@ func (user User) Stringify() string {
 
 // DisplayName ...
 func (user User) DisplayName() string {
-	return user.Email
+	return user.FirstName + " " + user.LastName
 }
 
 // RegisterUserToAdmin ...
 func RegisterUserToAdmin(Admin *admin.Admin, config admin.Config) {
 	user := Admin.AddResource(&User{}, &config)
+	timeProviderConfigMeta := getTimeProviderConfigMetaFieldMeta()
+	user.Meta(&timeProviderConfigMeta)
+
 	user.IndexAttrs("-Teams", "-Profiles")
 	user.NewAttrs("-Teams", "-Profiles")
 	user.EditAttrs("-Teams", "-Profiles")
 	user.ShowAttrs("-Teams", "-Profiles")
-	timeProviderConfigMeta := getTimeProviderConfigMetaFieldMeta()
-	user.Meta(&timeProviderConfigMeta)
 }
 
 // GetUserFieldMeta ...

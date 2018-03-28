@@ -5,8 +5,8 @@
 
 
 ## System Setup
-Install GO - https://golang.org/doc/install  
-Install dep - https://github.com/golang/dep   
+Install GO - https://golang.org/doc/install
+Install dep - https://github.com/golang/dep
 Install Redis - https://redis.io/topics/quickstart
 
 ## Prepare DB
@@ -45,8 +45,8 @@ make all
 ```
 make run
 ```
-Vist API at - http://localhost:3000/  
-Visit Admin at - http://localhost:3000/admin/  
+Vist API at - http://localhost:3000/
+Visit Admin at - http://localhost:3000/admin/
 
 ## Run Tests
 ```
@@ -101,7 +101,7 @@ Use the Refresh token to create a JSON credentials file at `config/timetracker_c
 Generate a client_id/client_secret for the iReflect's Authentication app.
 Note, select Web Application as the application type and provide origin and redirect url of the hosted webapp
 
-Use the generated client_id/client_secret to create a JSON credentials file at `config/application_default_credentials.json` using following format  
+Use the generated client_id/client_secret to create a JSON credentials file at `config/application_default_credentials.json` using following format
 ```
 {
   "type": "authorized_user",
@@ -113,7 +113,7 @@ Use the generated client_id/client_secret to create a JSON credentials file at `
     ]
   }
 }
-```    
+```
 
 # Sentry Logging
 Specify an environment variable `SENTRY_DSN` to enable sentry logging for errors
@@ -126,8 +126,19 @@ SENTRY_DSN = https://<key>:<secret>@sentry.io/<project>
 - https://github.com/gin-gonic/gin
 - https://github.com/jinzhu/gorm
 - https://github.com/pressly/goose
+- https://github.com/qor/qor
+
+# QOR Admin Ref
+- [Building Admin](https://doc.getqor.com/admin/)
+- [General Configuration](https://doc.getqor.com/admin/general.html)
+- [Manage Resources](https://doc.getqor.com/admin/resources.html)
+  - [Fields](https://doc.getqor.com/admin/fields.html)
+  - [Data Validation](https://doc.getqor.com/admin/processing_validation.html)
+- [Authentication](https://doc.getqor.com/admin/authentication.html)
+- [Theming & Customization](https://doc.getqor.com/admin/theming_and_customization.html)
+- [Extend QOR Admin](https://doc.getqor.com/admin/extend_admin.html)
+- [Integrate with WEB frameworks](https://doc.getqor.com/admin/integration.html)
+- [Deploy To Production](https://doc.getqor.com/admin/deploy.html)
 
 # TODO:
-- API Auth
-- Admin Auth
 - API Logging

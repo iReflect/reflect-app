@@ -2,15 +2,16 @@ package models
 
 import (
 	"errors"
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
-	"github.com/jinzhu/gorm"
+	"strconv"
+	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
-	"strconv"
-	"time"
+
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 // RetrospectiveFeedbackScopeValues ...
@@ -109,12 +110,13 @@ func (feedback *RetrospectiveFeedback) BeforeUpdate(db *gorm.DB) (err error) {
 func RegisterRetrospectiveFeedbackToAdmin(Admin *admin.Admin, config admin.Config) {
 	retroFeedback := Admin.AddResource(&RetrospectiveFeedback{}, &config)
 	typeMeta := getRetrospectiveFeedbackTypeFieldMeta()
-	retroFeedback.Meta(&typeMeta)
 	scopeMeta := getRetrospectiveFeedbackScopeFieldMeta()
-	retroFeedback.Meta(&scopeMeta)
 	assigneeMeta := userModels.GetUserFieldMeta("Assignee")
-	retroFeedback.Meta(&assigneeMeta)
 	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+
+	retroFeedback.Meta(&typeMeta)
+	retroFeedback.Meta(&scopeMeta)
+	retroFeedback.Meta(&assigneeMeta)
 	retroFeedback.Meta(&createdByMeta)
 }
 

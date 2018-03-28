@@ -17,6 +17,7 @@ type Team struct {
 // RegisterTeamToAdmin ...
 func RegisterTeamToAdmin(Admin *admin.Admin, config admin.Config) {
 	team := Admin.AddResource(&Team{}, &config)
+
 	team.IndexAttrs("-Users")
 	team.NewAttrs("-Users")
 	team.EditAttrs("-Users")

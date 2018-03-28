@@ -2,13 +2,14 @@ package models
 
 import (
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
-	"strconv"
-	"time"
 )
 
 var TeamRoleValues = [...]string{
@@ -75,8 +76,9 @@ func (userTeam *UserTeam) BeforeSave(db *gorm.DB) (err error) {
 func RegisterUserTeamToAdmin(Admin *admin.Admin, config admin.Config) {
 	userTeam := Admin.AddResource(&UserTeam{}, &config)
 	roleMeta := getRoleFieldMeta()
-	userTeam.Meta(&roleMeta)
 	userFieldMeta := GetUserFieldMeta("User")
+
+	userTeam.Meta(&roleMeta)
 	userTeam.Meta(&userFieldMeta)
 }
 

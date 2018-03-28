@@ -2,13 +2,13 @@ package models
 
 import (
 	"errors"
+	"strconv"
+
+	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
-	"strconv"
-
-	"github.com/jinzhu/gorm"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 )
@@ -101,11 +101,11 @@ func (sprintMemberTask *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) 
 func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMemberTask := Admin.AddResource(&SprintMemberTask{}, &config)
 	roleMeta := getMemberTaskRoleFieldMeta()
-	sprintMemberTask.Meta(&roleMeta)
-	sprintMembersMeta := getSprintMemberMeta()
-	sprintMemberTask.Meta(&sprintMembersMeta)
 	taskMeta := getTaskMeta()
+	sprintMembersMeta := getSprintMemberMeta()
+	sprintMemberTask.Meta(&roleMeta)
 	sprintMemberTask.Meta(&taskMeta)
+	sprintMemberTask.Meta(&sprintMembersMeta)
 }
 
 // getSprintMemberMeta ...

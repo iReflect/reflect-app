@@ -2,14 +2,14 @@ package models
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
-
-	"github.com/iReflect/reflect-app/db/models/fields"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
-	"time"
+
+	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
 // Task represents the tasks for retrospectives
@@ -39,6 +39,7 @@ func RegisterTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	task := Admin.AddResource(&Task{}, &config)
 	taskProviderConfigMeta := getFieldsMetaFieldMeta()
 	task.Meta(&taskProviderConfigMeta)
+
 	task.IndexAttrs("-SprintMemberTasks")
 	task.NewAttrs("-SprintMemberTasks")
 	task.EditAttrs("-SprintMemberTasks")
