@@ -21,6 +21,7 @@ import (
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"net/http"
+	"database/sql"
 )
 
 // SprintService ...
@@ -154,7 +155,7 @@ func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int
 		Row().Scan(&sprint.SyncStatus)
 
 	if err != nil {
-		if err != gorm.ErrRecordNotFound {
+		if err != sql.ErrNoRows {
 			utils.LogToSentry(err)
 			return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
 		}
@@ -936,10 +937,9 @@ func (service SprintService) Create(retroID string, sprintData retroSerializers.
 // ValidateSprint validate the given sprint
 func (service SprintService) ValidateSprint(sprintID string, retroID string) (bool, error) {
 	db := service.DB
-	inValidTasksCount := 0
 	query := `
 		WITH constants (retro_id, sprint_id) AS (
-		  VALUES (?, ?)
+		  VALUES (CAST (? AS INTEGER), CAST (? AS INTEGER))
 		)
 		SELECT DISTINCT (t.*)
 		FROM constants, (SELECT
@@ -962,15 +962,15 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
                             NOT (sprints.status = ?))) AS t
 		WHERE t.sprint_id = constants.sprint_id AND (t.total_points_earned > t.estimate + 0.05)
 	`
-	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).
-		Count(&inValidTasksCount).Error
+	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).Error
+	if err == sql.ErrNoRows {
+		return true, nil
+	}
 	if err != nil {
 		utils.LogToSentry(err)
 		return false, errors.New("error in fetching in-valid sprint task lists")
 	}
-
-	return inValidTasksCount == 0, nil
-
+	return false, nil
 }
 
 // UpdateSprint updates the given sprint

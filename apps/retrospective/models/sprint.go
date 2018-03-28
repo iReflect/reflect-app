@@ -65,7 +65,6 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 
 	if sprint.Status == ActiveSprint {
 		sprints := []Sprint{}
-		activeSprintCount := uint(0)
 
 		// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
 		// so we need to add checks for both the cases.
@@ -76,8 +75,8 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
 
 		// More than one entries with status active for given retro should not be allowed
-		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints).Count(&activeSprintCount)
-		if activeSprintCount > 0 {
+		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints)
+		if len(sprints) > 0 {
 			err = errors.New("another sprint is currently active")
 			return err
 		}
