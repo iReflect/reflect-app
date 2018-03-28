@@ -39,7 +39,7 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 		SELECT 
 			DISTINCT(t.*),
 			CASE WHEN (t.total_points_earned > t.estimate + 0.05) THEN TRUE ELSE FALSE END AS is_invalid
-		FROM (?) as t WHERE t.sprint_id = ?;
+		FROM (?) as t WHERE t.sprint_id = ?
 	`
 	err = db.Raw(query, dbs, sprintID).Order("t.task_id").Scan(&taskList.Tasks).Error
 
