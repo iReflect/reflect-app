@@ -100,7 +100,7 @@ func (service SprintService) ActivateSprint(sprintID string, retroID string) (in
 		}
 		return http.StatusNoContent, nil
 	}
-	return http.StatusBadRequest, errors.New("can not activate a invalid draft sprint")
+	return http.StatusBadRequest, errors.New("cannot activate an invalid draft sprint")
 }
 
 // FreezeSprint freezes the given sprint
@@ -941,7 +941,7 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
 		WITH constants (retro_id, sprint_id) AS (
 		  VALUES (CAST (? AS INTEGER), CAST (? AS INTEGER))
 		)
-		SELECT DISTINCT (t.*)
+		SELECT COUNT(DISTINCT (t.*))
 		FROM constants, (SELECT
                        tasks.id,
                        sm.sprint_id,
@@ -962,13 +962,16 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
                             NOT (sprints.status = ?))) AS t
 		WHERE t.sprint_id = constants.sprint_id AND (t.total_points_earned > t.estimate + 0.05)
 	`
-	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).Error
-	if err == sql.ErrNoRows {
+	var count struct {
+		Count int
+	}
+	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).Scan(&count).Error
+	if count.Count == 0 {
 		return true, nil
 	}
 	if err != nil {
 		utils.LogToSentry(err)
-		return false, errors.New("error in fetching in-valid sprint task lists")
+		return false, errors.New("error in fetching invalid sprint task lists")
 	}
 	return false, nil
 }
