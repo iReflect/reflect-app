@@ -5,7 +5,7 @@ import "time"
 // Task ...
 type Task struct {
 	ID         uint
-	TaskID     string
+	Key        string
 	Summary    string
 	Type       string
 	Status     string

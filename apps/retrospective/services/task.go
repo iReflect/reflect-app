@@ -20,7 +20,9 @@ type TaskService struct {
 }
 
 // List ...
-func (service TaskService) List(retroID string, sprintID string) (taskList *retroSerializers.TasksSerializer, status int, err error) {
+func (service TaskService) List(
+	retroID string,
+	sprintID string) (taskList *retroSerializers.TasksSerializer, status int, err error) {
 	db := service.DB
 	taskList = new(retroSerializers.TasksSerializer)
 
@@ -39,9 +41,9 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 		SELECT 
 			DISTINCT(t.*),
 			CASE WHEN (t.total_points_earned > t.estimate + 0.05) THEN TRUE ELSE FALSE END AS is_invalid
-		FROM (?) as t WHERE t.sprint_id = ?
+		FROM (?) AS t WHERE t.sprint_id = ?
 	`
-	err = db.Raw(query, dbs, sprintID).Order("t.task_id").Scan(&taskList.Tasks).Error
+	err = db.Raw(query, dbs, sprintID).Order("t.key").Scan(&taskList.Tasks).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -52,19 +54,23 @@ func (service TaskService) List(retroID string, sprintID string) (taskList *retr
 }
 
 // Get ...
-func (service TaskService) Get(taskID string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
+func (service TaskService) Get(
+	taskID string,
+	retroID string,
+	sprintID string) (task *retroSerializers.Task, status int, err error) {
 	db := service.DB
 	var tasks []retroSerializers.Task
 
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
 		Where("tasks.id = ?", taskID).
-		Select("tasks.*, " +
-			"sm.sprint_id, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id) as total_time, " +
-			"SUM(smt.time_spent_minutes) over (PARTITION BY tasks.id, sm.sprint_id) as sprint_time").
+		Select(`
+            tasks.*,
+            sm.sprint_id,
+            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id) AS total_time,
+            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id, sm.sprint_id) AS sprint_time`).
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) as t WHERE t.sprint_id = ?", dbs, sprintID).
+	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) AS t WHERE t.sprint_id = ?", dbs, sprintID).
 		Scan(&tasks).Error
 
 	if err != nil {
@@ -76,7 +82,10 @@ func (service TaskService) Get(taskID string, retroID string, sprintID string) (
 }
 
 // MarkDone ...
-func (service TaskService) MarkDone(taskID string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
+func (service TaskService) MarkDone(
+	taskID string,
+	retroID string,
+	sprintID string) (task *retroSerializers.Task, status int, err error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
@@ -109,7 +118,10 @@ func (service TaskService) MarkDone(taskID string, retroID string, sprintID stri
 }
 
 // MarkUndone ...
-func (service TaskService) MarkUndone(taskID string, retroID string, sprintID string) (task *retroSerializers.Task, status int, err error) {
+func (service TaskService) MarkUndone(
+	taskID string,
+	retroID string,
+	sprintID string) (task *retroSerializers.Task, status int, err error) {
 	db := service.DB
 	err = db.Model(&retroModels.Task{}).
 		Where("tasks.id = ?", taskID).
@@ -129,21 +141,25 @@ func (service TaskService) MarkUndone(taskID string, retroID string, sprintID st
 }
 
 // GetMembers ...
-func (service TaskService) GetMembers(taskID string, retroID string, sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, err error) {
+func (service TaskService) GetMembers(
+	taskID string,
+	retroID string,
+	sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, err error) {
 	db := service.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
 	dbs := service.smtForActiveAndCurrentSprint(taskID, sprintID).
-		Select("sprint_member_tasks.*," +
-			"users.*," +
-			"sm.sprint_id, " +
-			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sm.member_id) as total_points, " +
-			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sm.member_id, sm.sprint_id) as sprint_points, " +
-			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sm.member_id) as total_time, " +
-			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sm.member_id, sm.sprint_id) as sprint_time").
+		Select(`
+            sprint_member_tasks.*,
+            users.*,
+            sm.sprint_id,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sm.member_id) AS total_points,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sm.member_id, sm.sprint_id) AS sprint_points,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sm.member_id) AS total_time,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sm.member_id, sm.sprint_id) AS sprint_time`).
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_id = ?", dbs, sprintID).
+	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) AS smt WHERE smt.sprint_id = ?", dbs, sprintID).
 		Order("smt.role, smt.first_name, smt.last_name").
 		Scan(&members.Members).Error
 
@@ -156,22 +172,27 @@ func (service TaskService) GetMembers(taskID string, retroID string, sprintID st
 }
 
 // GetMember returns the task member summary of a task for a particular sprint member
-func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTask, memberID uint, sprintID string) (member *retroSerializers.TaskMember, status int, err error) {
+func (service TaskService) GetMember(
+	sprintMemberTask retroModels.SprintMemberTask,
+	memberID uint, sprintID string) (member *retroSerializers.TaskMember, status int, err error) {
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
 	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.TaskID), sprintID).
 		Where("sm.member_id = ?", memberID).
-		Select("sprint_member_tasks.*," +
-			"users.*," +
-			"sm.sprint_id, " +
-			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id) as total_points, " +
-			"SUM(sprint_member_tasks.points_earned) over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) as sprint_points, " +
-			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sprint_member_tasks.task_id) as total_time, " +
-			"SUM(sprint_member_tasks.time_spent_minutes) over (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) as sprint_time").
+		Select(`
+            sprint_member_tasks.*,
+            users.*, 
+            sm.sprint_id, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id) AS total_points, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) AS sprint_points, 
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_member_tasks.task_id) AS total_time, 
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) AS sprint_time`).
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_member_id = ?", tempDB, sprintMemberTask.SprintMemberID).
+	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_member_id = ?",
+		tempDB,
+		sprintMemberTask.SprintMemberID).
 		Scan(&member).Error
 	if err != nil {
 		utils.LogToSentry(err)
@@ -182,7 +203,11 @@ func (service TaskService) GetMember(sprintMemberTask retroModels.SprintMemberTa
 }
 
 // AddMember ...
-func (service TaskService) AddMember(taskID string, retroID string, sprintID string, memberID uint) (member *retroSerializers.TaskMember, status int, err error) {
+func (service TaskService) AddMember(
+	taskID string,
+	retroID string,
+	sprintID string,
+	memberID uint) (member *retroSerializers.TaskMember, status int, err error) {
 	db := service.DB
 
 	var sprintMember retroModels.SprintMember
@@ -234,7 +259,11 @@ func (service TaskService) AddMember(taskID string, retroID string, sprintID str
 }
 
 // UpdateTaskMember ...
-func (service TaskService) UpdateTaskMember(taskID string, retroID string, sprintID string, taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, int, error) {
+func (service TaskService) UpdateTaskMember(
+	taskID string,
+	retroID string,
+	sprintID string,
+	taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, int, error) {
 	db := service.DB
 
 	sprintMemberTask := retroModels.SprintMemberTask{}

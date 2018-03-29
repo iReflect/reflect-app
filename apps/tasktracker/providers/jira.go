@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -8,7 +9,6 @@ import (
 
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
@@ -136,14 +136,24 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 }
 
 // GetTaskList ...
-func (c *JIRAConnection) GetTaskList(ticketIDs []string) []serializers.Task {
-	tickets, err := c.getTicketsFromJQL("issueKey in ("+strings.Join(ticketIDs, ",")+")", true)
+func (c *JIRAConnection) GetTaskList(ticketKeys []string) []serializers.Task {
+	tickets, err := c.getTicketsFromJQL("issueKey in ("+strings.Join(ticketKeys, ",")+")", true)
 
 	if err != nil {
 		utils.LogToSentry(err)
 	}
 
 	return tickets
+}
+
+// GetTask ...
+func (c *JIRAConnection) GetTask(ticketKey string) (*serializers.Task, error) {
+	ticket, err := c.getTicket(ticketKey)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, err
+	}
+	return ticket, nil
 }
 
 // GetSprint ...
@@ -213,7 +223,6 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool) (t
 
 	// ToDo: Use pagination
 	tickets, res, err := c.client.Issue.Search(jql, &searchOptions)
-	fmt.Println(res.Request.URL)
 	if err != nil {
 		jiraErr, _ := ioutil.ReadAll(res.Response.Body)
 		utils.LogToSentry(errors.New(string(jiraErr)))
@@ -223,46 +232,72 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool) (t
 	return c.serializeTickets(tickets), nil
 }
 
+func (c *JIRAConnection) getTicket(ticketKey string) (ticketSerialized *serializers.Task, err error) {
+
+	ticket, res, err := c.client.Issue.Get(ticketKey, nil)
+	if err != nil {
+		jiraErr, _ := ioutil.ReadAll(res.Response.Body)
+
+		if strings.Contains(err.Error(), "Issue does not exist") {
+			return nil, nil
+		}
+		utils.LogToSentry(fmt.Errorf("%s: %s", ticketKey, jiraErr))
+		return nil, err
+	}
+
+	if ticket == nil {
+		return nil, nil
+	}
+
+	return c.serializeTicket(*ticket), nil
+}
+
 func (c *JIRAConnection) serializeTickets(tickets []jira.Issue) (ticketsSerialized []serializers.Task) {
 	for _, ticket := range tickets {
-		var estimate *float64
-		if c.config.EstimateField != "" {
-			estimates := ticket.Fields.Unknowns[c.config.EstimateField]
-
-			switch estimates.(type) {
-			case string:
-				estimateFromString, err := strconv.ParseFloat(estimates.(string), 64)
-				if err.(error) == nil {
-					estimate = &estimateFromString
-				}
-			case int:
-				estimateFromInt := float64(estimates.(int))
-				estimate = &estimateFromInt
-			case float64:
-				estimateFromFloat := estimates.(float64)
-				estimate = &estimateFromFloat
-			}
-		} else {
-			timeEstimate := float64(ticket.Fields.TimeOriginalEstimate) / 3600
-			estimate = &timeEstimate
-		}
-
-		assignee := ""
-		if ticket.Fields.Assignee != nil {
-			assignee = ticket.Fields.Assignee.DisplayName
-		}
-
-		ticketsSerialized = append(ticketsSerialized, serializers.Task{
-			ID:        ticket.Key,
-			ProjectID: ticket.Fields.Project.ID,
-			Summary:   ticket.Fields.Summary,
-			Type:      ticket.Fields.Type.Name,
-			Priority:  ticket.Fields.Priority.Name,
-			Estimate:  estimate,
-			Assignee:  assignee,
-			Status:    ticket.Fields.Status.Name,
-		})
+		ticketsSerialized = append(ticketsSerialized, *c.serializeTicket(ticket))
 	}
 
 	return ticketsSerialized
+}
+
+func (c *JIRAConnection) serializeTicket(ticket jira.Issue) *serializers.Task {
+	var estimate *float64
+	if c.config.EstimateField != "" {
+		estimates := ticket.Fields.Unknowns[c.config.EstimateField]
+
+		switch estimates.(type) {
+		case string:
+			estimateFromString, err := strconv.ParseFloat(estimates.(string), 64)
+			if err.(error) == nil {
+				estimate = &estimateFromString
+			}
+		case int:
+			estimateFromInt := float64(estimates.(int))
+			estimate = &estimateFromInt
+		case float64:
+			estimateFromFloat := estimates.(float64)
+			estimate = &estimateFromFloat
+		}
+	} else {
+		timeEstimate := float64(ticket.Fields.TimeOriginalEstimate) / 3600
+		estimate = &timeEstimate
+	}
+
+	assignee := ""
+	if ticket.Fields.Assignee != nil {
+		assignee = ticket.Fields.Assignee.DisplayName
+	}
+
+	return &serializers.Task{
+		Key:              ticket.Key,
+		TrackerUniqueID: ticket.ID,
+		ProjectID:       ticket.Fields.Project.ID,
+		Summary:         ticket.Fields.Summary,
+		Description:     ticket.Fields.Description,
+		Type:            ticket.Fields.Type.Name,
+		Priority:        ticket.Fields.Priority.Name,
+		Estimate:        estimate,
+		Assignee:        assignee,
+		Status:          ticket.Fields.Status.Name,
+	}
 }

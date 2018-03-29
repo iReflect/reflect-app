@@ -3,7 +3,7 @@ package serializers
 //TimeLog ...
 type TimeLog struct {
 	Project string
-	TaskID  string
+	TaskKey string
 	Logger  string
 	Minutes uint
 }

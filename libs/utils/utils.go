@@ -91,3 +91,19 @@ func CalculateExpectedSP(startDate time.Time, endDate time.Time, vacations float
 	storyPointPerDay := spPerWeek / 5
 	return workingDays * storyPointPerDay * expectationCoefficient * allocationCoefficient
 }
+
+func StringSliceToInterfaceSlice(originalSlice []string) []interface{} {
+	newSlice := make([]interface{}, len(originalSlice))
+	for i, v := range originalSlice {
+		newSlice[i] = v
+	}
+	return newSlice
+}
+
+func InterfaceSliceToStringSlice(originalSlice []interface{}) []string {
+	newSlice := make([]string, len(originalSlice))
+	for i, v := range originalSlice {
+		newSlice[i] = v.(string)
+	}
+	return newSlice
+}
