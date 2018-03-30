@@ -268,7 +268,7 @@ func (service FeedbackService) getTeamFeedbackIDs(userID uint) []uint {
         UNION
         SELECT id
         FROM feedbacks
-        WHERE by_user_profile_id IN (SELECT id FROM user_profiles WHERE user_id = ?);
+        WHERE by_user_profile_id IN (SELECT id FROM user_profiles WHERE user_id = ?)
     `
 	var feedbackIds []uint
 

@@ -21,6 +21,7 @@ import (
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"net/http"
+	"database/sql"
 )
 
 // SprintService ...
@@ -99,7 +100,7 @@ func (service SprintService) ActivateSprint(sprintID string, retroID string) (in
 		}
 		return http.StatusNoContent, nil
 	}
-	return http.StatusBadRequest, errors.New("can not activate a invalid draft sprint")
+	return http.StatusBadRequest, errors.New("cannot activate an invalid draft sprint")
 }
 
 // FreezeSprint freezes the given sprint
@@ -154,7 +155,7 @@ func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int
 		Row().Scan(&sprint.SyncStatus)
 
 	if err != nil {
-		if err != gorm.ErrRecordNotFound {
+		if err != sql.ErrNoRows {
 			utils.LogToSentry(err)
 			return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
 		}
@@ -921,13 +922,14 @@ func (service SprintService) Create(retroID string, sprintData retroSerializers.
 		}
 	}
 
-	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID)), "assignPoints": true})
-
 	err = tx.Commit().Error
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
 	}
+
+	service.SetNotSynced(sprint.ID)
+	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": strconv.Itoa(int(sprint.ID)), "assignPoints": true})
 
 	return service.Get(fmt.Sprint(sprint.ID))
 }
@@ -935,12 +937,11 @@ func (service SprintService) Create(retroID string, sprintData retroSerializers.
 // ValidateSprint validate the given sprint
 func (service SprintService) ValidateSprint(sprintID string, retroID string) (bool, error) {
 	db := service.DB
-	inValidTasksCount := 0
 	query := `
 		WITH constants (retro_id, sprint_id) AS (
-		  VALUES (?, ?)
+		  VALUES (CAST (? AS INTEGER), CAST (? AS INTEGER))
 		)
-		SELECT DISTINCT (t.*)
+		SELECT COUNT(DISTINCT (t.*))
 		FROM constants, (SELECT
                        tasks.id,
                        sm.sprint_id,
@@ -959,17 +960,20 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
                             ((tasks.retrospective_id = constants.retro_id) AND
                             ((sprints.status <> ? OR sprints.id = constants.sprint_id)) AND
                             NOT (sprints.status = ?))) AS t
-		WHERE t.sprint_id = constants.sprint_id AND (t.total_points_earned > t.estimate + 0.05);
+		WHERE t.sprint_id = constants.sprint_id AND (t.total_points_earned > t.estimate + 0.05)
 	`
-	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).
-		Count(&inValidTasksCount).Error
+	var count struct {
+		Count int
+	}
+	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).Scan(&count).Error
+	if count.Count == 0 {
+		return true, nil
+	}
 	if err != nil {
 		utils.LogToSentry(err)
-		return false, errors.New("error in fetching in-valid sprint task lists")
+		return false, errors.New("error in fetching invalid sprint task lists")
 	}
-
-	return inValidTasksCount == 0, nil
-
+	return false, nil
 }
 
 // UpdateSprint updates the given sprint
@@ -1031,7 +1035,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	    SET points_assigned = COALESCE(s1.remaining_points,0), 
             points_earned = COALESCE(s1.remaining_points, 0) 
         FROM (?) AS s1 
-        WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id;
+        WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id
     `, dbs, sprintID).Error
 
 	if err != nil {
@@ -1076,7 +1080,7 @@ func (service SprintService) ChangeTaskEstimates(task retroModels.Task, estimate
 	err = db.Exec("UPDATE sprint_member_tasks "+
 		"SET points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2) "+
 		"FROM (?) AS s1 "+
-		"WHERE sprint_member_tasks.id = s1.id AND estimate_ratio < 1;", dbs).Error
+		"WHERE sprint_member_tasks.id = s1.id AND estimate_ratio < 1", dbs).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -1108,7 +1112,7 @@ func (service SprintService) ChangeTaskEstimates(task retroModels.Task, estimate
                 ON smt.task_id=s1.id 
             WHERE sprints.status = ? AND points_earned != 0
         ) AS s2 
-        WHERE sprint_member_tasks.id = s2.id AND s2.current_total > s2.remaining_points;
+        WHERE sprint_member_tasks.id = s2.id AND s2.current_total > s2.remaining_points
     `, dbs, retroModels.DraftSprint).Error
 
 	if err != nil {
