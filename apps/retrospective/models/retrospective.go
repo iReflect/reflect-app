@@ -1,13 +1,15 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
-	"github.com/qor/admin"
+	"errors"
+
 	"github.com/qor/qor"
+	"github.com/qor/admin"
+	"github.com/jinzhu/gorm"
 	"github.com/qor/qor/resource"
 
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/iReflect/reflect-app/db/models/fields"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 // Retrospective represents a retrospective of a team
@@ -22,6 +24,15 @@ type Retrospective struct {
 	StoryPointPerWeek  float64 `gorm:"not null"`
 	CreatedBy          userModels.User
 	CreatedByID        uint `gorm:"not null"`
+}
+
+// BeforeSave ...
+func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
+	if retrospective.StoryPointPerWeek < 0 {
+		err = errors.New("story points per week cannot be negative")
+		return err
+	}
+	return
 }
 
 // RegisterRetrospectiveToAdmin ...
