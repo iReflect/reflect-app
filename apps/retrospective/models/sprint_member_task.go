@@ -176,7 +176,7 @@ func getTaskMeta() admin.Meta {
 			db.Model(&Task{}).Scan(&taskList)
 
 			for _, value := range taskList {
-				results = append(results, []string{strconv.Itoa(int(value.ID)), value.TaskID})
+				results = append(results, []string{strconv.Itoa(int(value.ID)), value.Key})
 			}
 			return
 		},

@@ -20,11 +20,11 @@ func Up00021(tx *sql.Tx) error {
 		return err
 	}
 
-	type Task struct {
+	type task struct {
 		DoneAt *time.Time
 	}
 
-	gormdb.AutoMigrate(&Task{})
+	gormdb.AutoMigrate(&task{})
 
 	gormdb.Model(&models.Task{}).AddIndex("idx_tasks_done_at", "done_at")
 
@@ -39,7 +39,7 @@ func Down00021(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&models.Sprint{}).RemoveIndex("idx_tasks_done_at")
+	gormdb.Model(&models.Task{}).RemoveIndex("idx_tasks_done_at")
 
 	gormdb.Model(&models.Task{}).DropColumn("done_at")
 

@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"github.com/iReflect/reflect-app/libs/utils"
 	"log"
 	"time"
 
@@ -81,7 +82,7 @@ func getConfigObject(config interface{}) (GsheetConfig, error) {
 	case GsheetConfig:
 		c = config.(GsheetConfig)
 	default:
-		return c, errors.New("Invalid type")
+		return c, errors.New("invalid type")
 	}
 	return c, nil
 }
@@ -97,6 +98,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 	location, err := time.LoadLocation(timeTrackerConfig.TimeZone)
 	if err != nil {
 		log.Println("Invalid Timezone: ", err)
+		utils.LogToSentry(err)
 		return timeLogs
 	}
 	responseBytes, err := appExecutor.Run(
@@ -106,6 +108,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 		endTime.In(location).Format("2006-01-02"))
 	if err != nil {
 		log.Println("App Executor Failed: ", err)
+		utils.LogToSentry(err)
 		return timeLogs
 	}
 
@@ -118,6 +121,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 
 	if err := json.Unmarshal(responseBytes, &trackerData); err != nil {
 		log.Println("Respoonse decoding error: ", err)
+		utils.LogToSentry(err)
 		return timeLogs
 	}
 
@@ -127,7 +131,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 		if logData.TaskID != "" {
 			timeLogs = append(timeLogs, serializers.TimeLog{
 				Project: logData.Project,
-				TaskID:  logData.TaskID,
+				TaskKey: logData.TaskID,
 				Logger:  "GSheets",
 				Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
 			})

@@ -26,7 +26,8 @@ type TaskProvider interface {
 
 // Connection ...
 type Connection interface {
-	GetTaskList(ticketIDs []string) []serializers.Task
+	GetTaskList(ticketKeys []string) []serializers.Task
+	GetTask(ticketKey string) (*serializers.Task, error)
 	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint string) []serializers.Task
 	ValidateConfig() error
@@ -135,56 +136,58 @@ func ValidateCredentials(credentials map[string]interface{}) (err error) {
 }
 
 // GetTaskList ...
-func GetTaskList(config []byte, taskIDs []string) (tasks []serializers.Task, err error) {
-	if len(taskIDs) == 0 {
+func GetTaskList(config []byte, taskKeys []string) (tasks []serializers.Task, err error) {
+	if len(taskKeys) == 0 {
 		return tasks, nil
 	}
 
-	connections, err := GetConnections(config)
-	if err != nil {
-		return nil, err
+	connection := GetConnection(config)
+	if connection == nil {
+		return nil, errors.New("task_list: invalid connection config")
 	}
 
-	for _, connection := range connections {
-		tasks = append(tasks, connection.GetTaskList(taskIDs)...)
-	}
+	tasks = append(tasks, connection.GetTaskList(taskKeys)...)
 	return tasks, nil
+}
+
+// GetTaskDetails ...
+func GetTaskDetails(config []byte, taskKey string) (*serializers.Task, error) {
+
+	connection := GetConnection(config)
+	if connection == nil {
+		return nil, errors.New("task_details: invalid connection config")
+	}
+
+	return connection.GetTask(taskKey)
 }
 
 // GetSprintTaskList ...
-func GetSprintTaskList(config []byte, sprintIDs string) (tasks []serializers.Task, err error) {
-	connections, err := GetConnections(config)
-	if err != nil {
-		return nil, err
+func GetSprintTaskList(config []byte, sprint string) (tasks []serializers.Task, err error) {
+	connection := GetConnection(config)
+	if connection == nil {
+		return nil, errors.New("sprint_task_list: invalid connection config")
 	}
 
-	for _, connection := range connections {
-		tasks = append(tasks, connection.GetSprintTaskList(sprintIDs)...)
-	}
+	tasks = append(tasks, connection.GetSprintTaskList(sprint)...)
 	return tasks, nil
 }
 
-// GetConnections ...
-func GetConnections(config []byte) (connections []Connection, err error) {
+// GetConnection ...
+func GetConnection(config []byte) Connection {
 	var configList []interface{}
-	if err = json.Unmarshal(config, &configList); err != nil {
-		return nil, err
+	if err := json.Unmarshal(config, &configList); err != nil {
+		return nil
 	}
-
 	var data map[string]interface{}
 	var name string
-	var connection Connection
-	for _, tpConfig := range configList {
-		tp := tpConfig.(map[string]interface{})
-		data = tp["data"].(map[string]interface{})
-		name = tp["type"].(string)
-		connection = GetTaskProvider(name).New(data)
-		if connection != nil {
-			connections = append(connections, connection)
-		}
+	if len(configList) == 0 {
+		return nil
 	}
-
-	return connections, nil
+	tpConfig := configList[0]
+	tp := tpConfig.(map[string]interface{})
+	data = tp["data"].(map[string]interface{})
+	name = tp["type"].(string)
+	return GetTaskProvider(name).New(data)
 }
 
 // GetTaskTypeMappings ...

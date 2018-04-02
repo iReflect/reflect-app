@@ -6,14 +6,16 @@ import (
 
 //Task ...
 type Task struct {
-	ID        string
-	ProjectID string
-	Summary   string
-	Type      string
-	Priority  string
-	Estimate  *float64
-	Assignee  string
-	Status    string
+	Key             string
+	TrackerUniqueID string
+	ProjectID       string
+	Summary         string
+	Description     string
+	Type            string
+	Priority        string
+	Estimate        *float64
+	Assignee        string
+	Status          string
 }
 
 //Sprint ...
