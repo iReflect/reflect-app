@@ -6,7 +6,7 @@ import (
 
 //Task ...
 type Task struct {
-	Key              string
+	Key             string
 	TrackerUniqueID string
 	ProjectID       string
 	Summary         string

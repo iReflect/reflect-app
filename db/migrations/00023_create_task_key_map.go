@@ -21,8 +21,7 @@ func Up00023(tx *sql.Tx) error {
 
 	gormdb.AutoMigrate(&models.TaskKeyMap{})
 	gormdb.Model(&models.TaskKeyMap{}).AddForeignKey("task_id", "tasks(id)", "RESTRICT", "RESTRICT")
-	gormdb.Model(&models.TaskKeyMap{}).AddUniqueIndex("unique_task_id_key", "task_id", "key")
-	gormdb.Model(&models.TaskKeyMap{}).AddIndex("idx_task_key", "key")
+	gormdb.Model(&models.TaskKeyMap{}).AddUniqueIndex("unique_task_id_key", "key", "task_id")
 
 	return nil
 }
@@ -35,7 +34,6 @@ func Down00023(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&models.TaskKeyMap{}).RemoveIndex("idx_task_key")
 	gormdb.Model(&models.TaskKeyMap{}).RemoveIndex("unique_task_id_key")
 	gormdb.Model(&models.TaskKeyMap{}).RemoveForeignKey("task_id", "tasks(id)")
 	gormdb.DropTable(&models.TaskKeyMap{})

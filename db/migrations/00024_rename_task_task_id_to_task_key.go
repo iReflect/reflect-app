@@ -1,10 +1,10 @@
 package migrations
-	
+
 import (
 	"database/sql"
 	"github.com/iReflect/reflect-app/db/base/models"
-	"github.com/pressly/goose"
 	"github.com/jinzhu/gorm"
+	"github.com/pressly/goose"
 )
 
 func init() {
@@ -21,7 +21,6 @@ func Up00024(tx *sql.Tx) error {
 
 	gormdb.Model(&models.Task{}).RemoveIndex("index_tasks_retro_id_task_id")
 	gormdb.Exec("ALTER TABLE tasks RENAME COLUMN task_id to key")
-	gormdb.Model(&models.Task{}).AddIndex("index_tasks_retro_id_key", "retrospective_id", "key")
 
 	return nil
 }
@@ -34,7 +33,6 @@ func Down00024(tx *sql.Tx) error {
 		return err
 	}
 
-	gormdb.Model(&models.Task{}).RemoveIndex("index_tasks_retro_id_key")
 	gormdb.Exec("ALTER TABLE tasks RENAME COLUMN key to task_id")
 	gormdb.Model(&models.Task{}).AddIndex("index_tasks_retro_id_task_id", "retrospective_id", "task_id")
 

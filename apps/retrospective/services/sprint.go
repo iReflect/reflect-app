@@ -443,6 +443,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		return err
 	}
 
+	// TODO Restructure code-flow and document it to make it readable
 	taskTrackerTaskKeySet, err := service.fetchAndUpdateTaskTrackerTask(sprint, taskProviderConfig)
 	if err != nil {
 		utils.LogToSentry(err)
@@ -1179,15 +1180,13 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	alternateTaskKey string) (err error) {
 	tx := service.DB.Begin()
 
-	if ticket.TrackerUniqueID == "" {
-		ticket.TrackerUniqueID = ticket.Key
-	}
 	var task retroModels.Task
 	err = tx.Model(&retroModels.Task{}).
 		Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
 		Assign(retroModels.Task{
+			RetrospectiveID: retroID,
 			TrackerUniqueID: ticket.TrackerUniqueID,
-			Key:          ticket.Key,
+			Key:             ticket.Key,
 			Summary:         ticket.Summary,
 			Description:     ticket.Description,
 			Type:            ticket.Type,
@@ -1195,16 +1194,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 			Assignee:        ticket.Assignee,
 			Status:          ticket.Status,
 		}).
-		FirstOrInit(&task).Error
-
-	if err != nil {
-		utils.LogToSentry(err)
-		return err
-	}
-
-	task.Key = ticket.Key
-
-	err = tx.Save(&task).Error
+		FirstOrCreate(&task).Error
 
 	if err != nil {
 		tx.Rollback()

@@ -289,7 +289,7 @@ func (c *JIRAConnection) serializeTicket(ticket jira.Issue) *serializers.Task {
 	}
 
 	return &serializers.Task{
-		Key:              ticket.Key,
+		Key:             ticket.Key,
 		TrackerUniqueID: ticket.ID,
 		ProjectID:       ticket.Fields.Project.ID,
 		Summary:         ticket.Fields.Summary,

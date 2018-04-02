@@ -150,7 +150,7 @@ func GetTaskList(config []byte, taskKeys []string) (tasks []serializers.Task, er
 	return tasks, nil
 }
 
-// GetTaskList ...
+// GetTaskDetails ...
 func GetTaskDetails(config []byte, taskKey string) (*serializers.Task, error) {
 
 	connection := GetConnection(config)
@@ -207,7 +207,7 @@ func GetTaskTypeMappings(config []byte) (map[string]string, error) {
 		for _, taskType := range TaskTypes {
 			typeUpper, ok := data[taskType].(string)
 			if !ok {
-				return nil, errors.New("	failed to read from retrospective config")
+				return nil, errors.New("failed to read from retrospective config")
 			}
 
 			types[taskType] = strings.ToLower(typeUpper)

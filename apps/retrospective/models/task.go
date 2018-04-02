@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 // Task represents the tasks for retrospectives
 type Task struct {
 	gorm.Model
-	Key            string `gorm:"type:varchar(30); not null"`
+	Key               string `gorm:"type:varchar(30); not null"`
 	TrackerUniqueID   string `gorm:"type:varchar(255); not null"`
 	Retrospective     Retrospective
 	RetrospectiveID   uint         `gorm:"not null"`
@@ -34,6 +35,19 @@ type Task struct {
 // Stringify ...
 func (task Task) Stringify() string {
 	return fmt.Sprintf("%v", task.Key)
+}
+
+// BeforeSave ...
+func (task Task) BeforeSave(db *gorm.DB) (err error) {
+	if task.TrackerUniqueID == "" {
+		return errors.New("tracker_unique_id cannot be empty")
+	}
+	return nil
+}
+
+// BeforeUpdate ...
+func (task *Task) BeforeUpdate(db *gorm.DB) (err error) {
+	return task.BeforeSave(db)
 }
 
 // RegisterTaskToAdmin ...
