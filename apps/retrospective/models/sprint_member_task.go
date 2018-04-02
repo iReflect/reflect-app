@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/jinzhu/gorm"
-	"github.com/qor/admin"
 	"github.com/qor/qor"
-	"github.com/qor/qor/resource"
+	"github.com/qor/admin"
+	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+	"github.com/qor/qor/resource"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 )
@@ -100,13 +100,50 @@ func (sprintMemberTask *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) 
 // RegisterSprintMemberTaskToAdmin ...
 func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMemberTask := Admin.AddResource(&SprintMemberTask{}, &config)
-	roleMeta := getMemberTaskRoleFieldMeta()
+
 	taskMeta := getTaskMeta()
+	roleMeta := getMemberTaskRoleFieldMeta()
 	sprintMembersMeta := getSprintMemberMeta()
-	sprintMemberTask.Meta(&roleMeta)
+	ratingMeta := getSprintMemberTaskRatingMeta()
+
 	sprintMemberTask.Meta(&taskMeta)
+	sprintMemberTask.Meta(&roleMeta)
+	sprintMemberTask.Meta(&ratingMeta)
 	sprintMemberTask.Meta(&sprintMembersMeta)
 }
+
+
+// getSprintMemberTaskRatingMeta ...
+func getSprintMemberTaskRatingMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Rating",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			sprintMemberTask := value.(*SprintMemberTask)
+			return strconv.Itoa(int(sprintMemberTask.Rating))
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			sprintMemberTask := resource.(*SprintMemberTask)
+			value, err := strconv.Atoi(metaValue.Value.([]string)[0])
+			if err != nil {
+				logrus.Error("Cannot convert string to int")
+				return
+			}
+			sprintMemberTask.Rating = retrospective.Rating(value)
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for index, value := range retrospective.RatingValues {
+				results = append(results, []string{strconv.Itoa(index), value})
+			}
+			return
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			sprintMemberTask := value.(*SprintMemberTask)
+			return sprintMemberTask.Rating.GetStringValue()
+		},
+	}
+}
+
 
 // getSprintMemberMeta ...
 func getSprintMemberMeta() admin.Meta {

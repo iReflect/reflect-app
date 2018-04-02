@@ -1,6 +1,15 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	"errors"
+	"strconv"
+
+	"github.com/qor/qor"
+	"github.com/qor/admin"
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+	"github.com/qor/qor/resource"
+)
 
 // SyncStatusValues ...
 var SyncStatusValues = [...]string{
@@ -32,4 +41,51 @@ type SprintSyncStatus struct {
 	SprintID uint `gorm:"not null"`
 	Sprint   Sprint
 	Status   SyncStatus `gorm:"default:0; not null"`
+}
+
+// BeforeSave ...
+func (syncStatus *SprintSyncStatus) BeforeSave(db *gorm.DB) (err error) {
+	if syncStatus.Status < 0 || syncStatus.Status > 3 {
+		err = errors.New("please select a valid sync status")
+		return err
+	}
+	return
+}
+
+// RegisterUserTeamToAdmin ...
+func RegisterSprintSyncStatusToAdmin(Admin *admin.Admin, config admin.Config) {
+	userTeam := Admin.AddResource(&SprintSyncStatus{}, &config)
+	roleMeta := getSprintSyncStatusMeta()
+	userTeam.Meta(&roleMeta)
+}
+
+// getSprintSyncStatusMeta ...
+func getSprintSyncStatusMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Status",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			syncStatus := value.(*SprintSyncStatus)
+			return strconv.Itoa(int(syncStatus.Status))
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			syncStatus := resource.(*SprintSyncStatus)
+			value, err := strconv.Atoi(metaValue.Value.([]string)[0])
+			if err != nil {
+				logrus.Error("Cannot convert string to int")
+				return
+			}
+			syncStatus.Status = SyncStatus(value)
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for index, value := range SyncStatusValues {
+				results = append(results, []string{strconv.Itoa(index), value})
+			}
+			return
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			syncStatus := value.(*SprintSyncStatus)
+			return syncStatus.Status.GetStringValue()
+		},
+	}
 }
