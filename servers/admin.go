@@ -1,12 +1,14 @@
 package server
 
 import (
+	"net/http"
+
+	"github.com/qor/admin"
+	"github.com/jinzhu/gorm"
+
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	retrospectiveModels "github.com/iReflect/reflect-app/apps/retrospective/models"
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
-	"github.com/jinzhu/gorm"
-	"github.com/qor/admin"
-	"net/http"
 )
 
 type Admin struct {
@@ -18,14 +20,14 @@ func (a *Admin) Router() *http.ServeMux {
 	adminRouter := http.NewServeMux()
 
 	Admin := admin.New(&admin.AdminConfig{
-		SiteName: "Reflect Web",
+		SiteName: "Reflect App",
 		DB:       a.DB,
 	})
 
 	// User Management
 	userModels.RegisterUserToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 	Admin.AddResource(&userModels.Role{}, &admin.Config{Menu: []string{"User Management"}})
-	Admin.AddResource(&userModels.UserProfile{}, &admin.Config{Menu: []string{"User Management"}})
+	userModels.RegisterUserProfileToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 	userModels.RegisterTeamToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 	userModels.RegisterUserTeamToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 
@@ -34,7 +36,7 @@ func (a *Admin) Router() *http.ServeMux {
 	retrospectiveModels.RegisterTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	Admin.AddResource(&retrospectiveModels.TaskKeyMap{}, &admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
-	Admin.AddResource(&retrospectiveModels.SprintSyncStatus{}, &admin.Config{Menu: []string{"Retrospective Management"}})
+	retrospectiveModels.RegisterSprintSyncStatusToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintMemberToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintMemberTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterRetrospectiveFeedbackToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
