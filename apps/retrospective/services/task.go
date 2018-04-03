@@ -29,11 +29,11 @@ func (service TaskService) List(
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
 		Select(`
             tasks.*,
-            sm.sprint_id,
-            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id)               AS total_time,
-            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id, sm.sprint_id) AS sprint_time,
-            SUM(smt.points_earned) OVER (PARTITION BY tasks.id)                    AS total_points_earned, 
-            SUM(smt.points_earned) OVER (PARTITION BY tasks.id, sm.sprint_id )     AS points_earned
+            sprint_members.sprint_id,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned
 		`).
 		QueryExpr()
 
@@ -65,9 +65,9 @@ func (service TaskService) Get(
 		Where("tasks.id = ?", taskID).
 		Select(`
             tasks.*,
-            sm.sprint_id,
-            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id) AS total_time,
-            SUM(smt.time_spent_minutes) OVER (PARTITION BY tasks.id, sm.sprint_id) AS sprint_time`).
+            sprint_members.sprint_id,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id) AS total_time,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
 	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) AS t WHERE t.sprint_id = ?", dbs, sprintID).
@@ -152,11 +152,11 @@ func (service TaskService) GetMembers(
 		Select(`
             sprint_member_tasks.*,
             users.*,
-            sm.sprint_id,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sm.member_id) AS total_points,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sm.member_id, sm.sprint_id) AS sprint_points,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sm.member_id) AS total_time,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sm.member_id, sm.sprint_id) AS sprint_time`).
+            sprint_members.sprint_id,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id) AS total_points,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id) AS sprint_points,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id) AS total_time,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
 	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) AS smt WHERE smt.sprint_id = ?", dbs, sprintID).
@@ -179,15 +179,15 @@ func (service TaskService) GetMember(
 	member = new(retroSerializers.TaskMember)
 
 	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.TaskID), sprintID).
-		Where("sm.member_id = ?", memberID).
+		Where("sprint_members.member_id = ?", memberID).
 		Select(`
             sprint_member_tasks.*,
             users.*, 
-            sm.sprint_id, 
+            sprint_members.sprint_id, 
             SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id) AS total_points, 
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) AS sprint_points, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id, sprint_members.sprint_id) AS sprint_points, 
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_member_tasks.task_id) AS total_time, 
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id) AS sprint_time`).
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_member_tasks.task_id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
 	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_member_id = ?",
@@ -306,9 +306,7 @@ func (service TaskService) tasksForActiveAndCurrentSprint(retroID string, sprint
 
 	return db.Model(retroModels.Task{}).
 		Where("tasks.retrospective_id = ?", retroID).
-		Joins("JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id").
-		Joins("JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id").
-		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Scopes(retroModels.TaskJoinSMT, retroModels.SMTJoinSM, retroModels.SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint)
 }
@@ -319,9 +317,7 @@ func (service TaskService) smtForActiveAndCurrentSprint(taskID string, sprintID 
 
 	return db.Model(retroModels.SprintMemberTask{}).
 		Where("task_id = ?", taskID).
-		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
-		Joins("JOIN users ON sm.member_id = users.id").
-		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Scopes(retroModels.SMTJoinSM, retroModels.SMJoinSprint, retroModels.SMJoinMember).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint)
 }

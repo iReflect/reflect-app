@@ -51,7 +51,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	}
 
 	err = db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams on retrospectives.team_id = user_teams.team_id").
+		Scopes(retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id = ?", userID).
 		Preload("Team").
 		Preload("CreatedBy").

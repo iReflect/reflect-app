@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/qor/qor"
-	"github.com/qor/admin"
 	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"github.com/sirupsen/logrus"
 )
 
 // SyncStatusValues ...
@@ -43,13 +43,23 @@ type SprintSyncStatus struct {
 	Status   SyncStatus `gorm:"default:0; not null"`
 }
 
-// BeforeSave ...
-func (syncStatus *SprintSyncStatus) BeforeSave(db *gorm.DB) (err error) {
+// Validate ...
+func (syncStatus *SprintSyncStatus) Validate(db *gorm.DB) (err error) {
 	if syncStatus.Status < 0 || syncStatus.Status > 3 {
 		err = errors.New("please select a valid sync status")
 		return err
 	}
 	return
+}
+
+// BeforeSave ...
+func (syncStatus *SprintSyncStatus) BeforeSave(db *gorm.DB) (err error) {
+	return syncStatus.Validate(db)
+}
+
+// BeforeUpdate ...
+func (syncStatus *SprintSyncStatus) BeforeUpdate(db *gorm.DB) (err error) {
+	return syncStatus.Validate(db)
 }
 
 // RegisterUserTeamToAdmin ...

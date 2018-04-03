@@ -16,7 +16,7 @@ type PermissionService struct {
 func (service PermissionService) UserCanAccessRetro(retroID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
+		Scopes(retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
 		Find(&retroSerializers.Retrospective{}).
@@ -28,8 +28,7 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
-		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
+		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
@@ -44,8 +43,7 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 func (service PermissionService) UserCanEditSprint(retroID string, sprintID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
-		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
+		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
@@ -61,9 +59,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 func (service PermissionService) UserCanAccessTask(retroID string, sprintID string, taskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
-		Joins("JOIN tasks ON retrospectives.id=tasks.retrospective_id").
-		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
+		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinTasks, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("tasks.id=?", taskID).
 		Where("retrospectives.id=?", retroID).
@@ -79,9 +75,7 @@ func (service PermissionService) UserCanAccessTask(retroID string, sprintID stri
 func (service PermissionService) UserCanEditTask(retroID string, sprintID string, taskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
-		Joins("JOIN tasks ON retrospectives.id=tasks.retrospective_id").
-		Joins("JOIN sprints ON retrospectives.id=sprints.retrospective_id").
+		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinTasks, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("tasks.id=?", taskID).
 		Where("retrospectives.id=?", retroID).

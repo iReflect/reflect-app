@@ -74,8 +74,8 @@ type RetrospectiveFeedback struct {
 	CreatedBy       userModels.User
 }
 
-// BeforeSave ...
-func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
+// Validate ...
+func (feedback *RetrospectiveFeedback) Validate(db *gorm.DB) (err error) {
 	if feedback.ExpectedAt != nil && feedback.ExpectedAt.Before(*feedback.AddedAt) {
 		err = errors.New("expected_at can not be before added at")
 		return err
@@ -101,9 +101,14 @@ func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// BeforeSave ...
+func (feedback *RetrospectiveFeedback) BeforeSave(db *gorm.DB) (err error) {
+	return feedback.Validate(db)
+}
+
 // BeforeUpdate ...
 func (feedback *RetrospectiveFeedback) BeforeUpdate(db *gorm.DB) (err error) {
-	return feedback.BeforeSave(db)
+	return feedback.Validate(db)
 }
 
 // RegisterRetrospectiveFeedbackToAdmin ...
