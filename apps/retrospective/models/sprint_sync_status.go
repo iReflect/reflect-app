@@ -17,6 +17,7 @@ var SyncStatusValues = [...]string{
 	"Syncing",
 	"Synced",
 	"Sync Failed",
+	"Queued",
 }
 
 // SyncStatus ...
@@ -33,6 +34,7 @@ const (
 	Syncing
 	Synced
 	SyncFailed
+	Queued
 )
 
 // SprintSyncStatus stores the sync history of a sprint
@@ -45,7 +47,7 @@ type SprintSyncStatus struct {
 
 // Validate ...
 func (syncStatus *SprintSyncStatus) Validate(db *gorm.DB) (err error) {
-	if syncStatus.Status < 0 || syncStatus.Status > 3 {
+	if syncStatus.Status < 0 || int(syncStatus.Status) > len(SyncStatusValues) {
 		err = errors.New("please select a valid sync status")
 		return err
 	}
