@@ -1082,9 +1082,11 @@ func (service SprintService) insertTimeTrackerTask(ticketKey string, retroID uin
 }
 
 // changeTaskEstimates ...
-func (service SprintService) changeTaskEstimates(task retroModels.Task, estimate float64) (err error) {
-	tx := service.DB.Begin()
-
+func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.Task, estimate float64) (err error) {
+	txNotProvided := true
+	if txNotProvided := tx == nil; txNotProvided {
+		tx = service.DB.Begin()
+	}
 	switch {
 	case task.Estimate > estimate:
 		tx.Model(&task).UpdateColumn("estimate", estimate)
@@ -1162,7 +1164,10 @@ func (service SprintService) changeTaskEstimates(task retroModels.Task, estimate
 		utils.LogToSentry(err)
 		return err
 	}
-	tx.Commit()
+	
+	if txNotProvided {
+		tx.Commit()
+	}
 	return nil
 }
 
@@ -1214,9 +1219,9 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 
 	}
 	if ticket.Estimate == nil {
-		err = service.changeTaskEstimates(task, 0)
+		err = service.changeTaskEstimates(tx, task, 0)
 	} else {
-		err = service.changeTaskEstimates(task, *ticket.Estimate)
+		err = service.changeTaskEstimates(tx, task, *ticket.Estimate)
 	}
 	if err != nil {
 		tx.Rollback()
