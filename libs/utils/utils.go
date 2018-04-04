@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"github.com/getsentry/raven-go"
 	"github.com/sirupsen/logrus"
+	"math"
 	"os"
 	"time"
 )
@@ -46,38 +47,31 @@ func EncryptionKey() []byte {
 // i.e., number of days between two dates excluding weekends
 func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time, includeBoth bool) int {
 	if endDate.Before(startDate) {
-		return -1
+		return 0
 	}
 	workingDays := 0
-	startDay := startDate.Weekday()
-	endDay := endDate.Weekday()
+	start := startDate
+	end := endDate
+	for start.Weekday() != time.Monday && start.Before(end) {
+		if start.Weekday() != time.Sunday && start.Weekday() != time.Saturday {
+			workingDays++
+		}
+		start.Add(time.Hour * 24)
+	}
 
-	// normalize dates to calculate time difference
-	startDate = startDate.AddDate(0, 0, int(-startDay))
-	endDate = endDate.AddDate(0, 0, int(-endDay))
-
-	diffDays := endDate.Sub(startDate).Hours() / 24
-	daysWithoutWeekendDays := int(diffDays - (diffDays * 2 / 7))
-
-	if includeBoth && ((startDay != time.Saturday && startDay != time.Sunday) || (endDay != time.Saturday && endDay != time.Sunday)) {
+	for end.Weekday() != time.Sunday && end.After(start) {
+		if end.Weekday() != time.Saturday {
+			workingDays++
+		}
+		end.Add(-time.Hour * 24)
+	}
+	duration := end.Sub(start)
+	if duration.Hours() > 24 {
+		weeks := int(math.Ceil(duration.Hours() / (24*7)))
+		workingDays += weeks*5
+	}  else {
 		workingDays++
 	}
-
-	// normalize start day to account for saturday/sunday
-	if startDay == time.Sunday && endDay != time.Saturday {
-		startDay = time.Monday
-	} else if startDay == time.Saturday && endDay != time.Sunday {
-		startDay = time.Friday
-	}
-
-	// normalize end day to account for saturday/sunday
-	if endDay == time.Sunday {
-		endDay = time.Monday
-	} else if endDay == time.Saturday {
-		endDay = time.Friday
-	}
-
-	workingDays += daysWithoutWeekendDays - int(startDay) + int(endDay)
 
 	return workingDays
 }
