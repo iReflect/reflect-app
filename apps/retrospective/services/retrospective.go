@@ -12,13 +12,13 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 )
 
 // RetrospectiveService ...
 type RetrospectiveService struct {
-	DB          *gorm.DB
 	TeamService userServices.TeamService
 }
 
@@ -27,7 +27,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	retrospectiveList *retroSerializers.RetrospectiveListSerializer,
 	status int,
 	err error) {
-	db := service.DB
+	db := db.DB
 
 	retrospectiveList = &retroSerializers.RetrospectiveListSerializer{}
 	retrospectiveList.Retrospectives = []retroSerializers.Retrospective{}
@@ -71,7 +71,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 
 // Get the details of the given Retrospective.
 func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (retro *retroSerializers.Retrospective, status int, err error) {
-	db := service.DB
+	db := db.DB
 
 	retro = new(retroSerializers.Retrospective)
 
@@ -113,7 +113,7 @@ func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userI
 
 // GetLatestSprint returns the latest sprint for the retro
 func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSerializers.Sprint, int, error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroSerializers.Sprint
 
 	err := db.Model(&retroModels.Sprint{}).
@@ -136,7 +136,7 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSeria
 // Create the Retrospective with the given values (provided the user is a member of the retrospective's team.
 func (service RetrospectiveService) Create(userID uint,
 	retrospectiveData *retroSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, int, error) {
-	db := service.DB
+	db := db.DB
 	var err error
 
 	// Check if the user has the permission to create the retro

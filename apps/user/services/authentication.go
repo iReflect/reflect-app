@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
@@ -31,7 +32,6 @@ func init() {
 
 //AuthenticationService ...
 type AuthenticationService struct {
-	DB *gorm.DB
 }
 
 // Login ...
@@ -53,7 +53,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 	userResponse *userSerializers.UserAuthSerializer,
 	status int,
 	err error) {
-	db := service.DB
+	db := db.DB
 
 	oAuthContext := context.TODO()
 
@@ -114,7 +114,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 
 // AuthenticateSession ...
 func (service AuthenticationService) AuthenticateSession(c *gin.Context) bool {
-	db := service.DB
+	db := db.DB
 
 	session := sessions.Default(c)
 	userID := session.Get("user")

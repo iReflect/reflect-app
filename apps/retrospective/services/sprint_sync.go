@@ -15,6 +15,7 @@ import (
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"github.com/jinzhu/gorm"
@@ -22,7 +23,7 @@ import (
 
 // SyncSprintData ...
 func (service SprintService) SyncSprintData(sprintID string) (err error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
 		Scopes(retroModels.NotDeletedSprint).
@@ -118,39 +119,37 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 
 // QueueSprint ...
 func (service SprintService) QueueSprint(sprintID uint, assignPoints bool) {
-	db := service.DB
+	db := db.DB
 	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": fmt.Sprint(sprintID), "assignPoints": assignPoints})
 	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Queued})
 }
 
 // QueueSprintMember ...
 func (service SprintService) QueueSprintMember(sprintID uint, sprintMemberID string) {
-	db := service.DB
 	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": sprintMemberID})
-	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Queued})
+	db.DB.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Queued})
 }
 
 // SetNotSynced ...
 func (service SprintService) SetNotSynced(sprintID uint) {
-	db := service.DB
-	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.NotSynced})
+	db.DB.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.NotSynced})
 }
 
 // SetSyncing ...
 func (service SprintService) SetSyncing(sprintID uint) {
-	db := service.DB
+	db := db.DB
 	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Syncing})
 }
 
 // SetSyncFailed ...
 func (service SprintService) SetSyncFailed(sprintID uint) {
-	db := service.DB
+	db := db.DB
 	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.SyncFailed})
 }
 
 // SetSynced ...
 func (service SprintService) SetSynced(sprintID uint) {
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 	db.Model(&retroModels.Sprint{}).
 		Scopes(retroModels.NotDeletedSprint).
@@ -168,7 +167,7 @@ func (service SprintService) SetSynced(sprintID uint) {
 
 // SyncSprintMemberData ...
 func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err error) {
-	db := service.DB
+	db := db.DB
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
 		Where("id = ?", sprintMemberID).
@@ -258,7 +257,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 // AssignPoints ...
 func (service SprintService) AssignPoints(sprintID string) (err error) {
 	fmt.Println("Assigning Points")
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
 		Scopes(retroModels.NotDeletedSprint).
@@ -336,7 +335,7 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 }
 
 func (service SprintService) insertTimeTrackerTask(ticketKey string, retroID uint) (err error) {
-	tx := service.DB.Begin()
+	tx := db.DB.Begin()
 	var task retroModels.Task
 	err = tx.Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticketKey}).
 		Attrs(retroModels.Task{
@@ -368,7 +367,7 @@ func (service SprintService) insertTimeTrackerTask(ticketKey string, retroID uin
 func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.Task, estimate float64) (err error) {
 	txNotProvided := true
 	if txNotProvided = tx == nil; txNotProvided {
-		tx = service.DB.Begin()
+		tx = db.DB.Begin()
 	}
 
 	switch {
@@ -459,7 +458,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	ticket taskTrackerSerializers.Task,
 	retroID uint,
 	alternateTaskKey string) (err error) {
-	tx := service.DB.Begin()
+	tx := db.DB.Begin()
 
 	var task retroModels.Task
 	err = tx.Model(&retroModels.Task{}).
@@ -607,7 +606,7 @@ func (service SprintService) updateSprintMemberTimeLog(
 	sprintMemberID uint,
 	timeLogs []timeTrackerSerializers.TimeLog) error {
 
-	db := service.DB
+	db := db.DB
 	// Reset existing time_spent
 	err := db.Model(&retroModels.SprintMemberTask{}).
 		Where("sprint_member_id = ?", sprintMemberID).

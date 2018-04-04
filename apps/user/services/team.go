@@ -2,22 +2,21 @@ package services
 
 import (
 	"errors"
-	"github.com/jinzhu/gorm"
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 )
 
 //TeamService ...
 type TeamService struct {
-	DB *gorm.DB
 }
 
 // UserTeamList ...
 func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, status int, err error) {
-	db := service.DB
+	db := db.DB
 	teams = new(userSerializers.TeamsSerializer)
 
 	filterQuery := db.Model(&userModels.Team{}).
@@ -39,7 +38,7 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 
 // MemberList ...
 func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (members *userSerializers.MembersSerializer, status int, err error) {
-	db := service.DB
+	db := db.DB
 	members = new(userSerializers.MembersSerializer)
 	activeMemberIDs := service.getTeamMemberIDs(teamID, true)
 	var memberIDs []uint
@@ -64,7 +63,7 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 }
 
 func (service TeamService) getTeamMemberIDs(teamID string, onlyActive bool) []uint {
-	db := service.DB
+	db := db.DB
 	var memberIds []uint
 
 	filterQuery := db.Model(&userModels.UserTeam{}).Where("team_id = ?", teamID)

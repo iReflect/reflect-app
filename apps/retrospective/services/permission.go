@@ -1,20 +1,18 @@
 package services
 
 import (
-	"github.com/jinzhu/gorm"
-
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/db"
 )
 
 // PermissionService ...
 type PermissionService struct {
-	DB *gorm.DB
 }
 
 // UserCanAccessRetro ...
 func (service PermissionService) UserCanAccessRetro(retroID string, userID uint) bool {
-	db := service.DB
+	db := db.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Scopes(retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
@@ -26,7 +24,7 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 
 // UserCanAccessSprint ...
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
-	db := service.DB
+	db := db.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
@@ -41,7 +39,7 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 
 // UserCanEditSprint ...
 func (service PermissionService) UserCanEditSprint(retroID string, sprintID string, userID uint) bool {
-	db := service.DB
+	db := db.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
@@ -57,7 +55,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 
 // UserCanAccessTask ...
 func (service PermissionService) UserCanAccessTask(retroID string, sprintID string, taskID string, userID uint) bool {
-	db := service.DB
+	db := db.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinTasks, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
@@ -73,7 +71,7 @@ func (service PermissionService) UserCanAccessTask(retroID string, sprintID stri
 
 // UserCanEditTask ...
 func (service PermissionService) UserCanEditTask(retroID string, sprintID string, taskID string, userID uint) bool {
-	db := service.DB
+	db := db.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinTasks, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
@@ -90,7 +88,7 @@ func (service PermissionService) UserCanEditTask(retroID string, sprintID string
 
 // CanAccessRetrospectiveFeedback ...
 func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string) bool {
-	db := service.DB
+	db := db.DB
 	err := db.Model(&retroModels.Sprint{}).
 		Where("sprints.id=?", sprintID).
 		Where("sprints.status in (?)",
