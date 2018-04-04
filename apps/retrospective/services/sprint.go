@@ -1341,7 +1341,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 
 	sprintMemberTask.SprintMemberID = sprintMemberID
 	sprintMemberTask.TaskID = task.ID
-	sprintMemberTask.TimeSpentMinutes = timeLog.Minutes
+	sprintMemberTask.TimeSpentMinutes += timeLog.Minutes
 
 	return db.Save(&sprintMemberTask).Error
 }
