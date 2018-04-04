@@ -21,8 +21,8 @@ func main() {
 	configuration := config.GetConfig()
 
 	//Run migrations - Need to see how this would be possible with new goose.
-	gormDB := db.Initialize(configuration)
-	db.Migrate(configuration, gormDB)
+	db.Initialize(configuration)
+	db.Migrate(configuration)
 
 	app := &server.App{}
 	app.Initialize(configuration)

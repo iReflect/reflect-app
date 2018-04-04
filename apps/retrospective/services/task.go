@@ -10,20 +10,20 @@ import (
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 )
 
 // TaskService ...
 type TaskService struct {
-	DB *gorm.DB
 }
 
 // List ...
 func (service TaskService) List(
 	retroID string,
 	sprintID string) (taskList *retroSerializers.TasksSerializer, status int, err error) {
-	db := service.DB
+	db := db.DB
 	taskList = new(retroSerializers.TasksSerializer)
 
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
@@ -58,7 +58,7 @@ func (service TaskService) Get(
 	taskID string,
 	retroID string,
 	sprintID string) (task *retroSerializers.Task, status int, err error) {
-	db := service.DB
+	db := db.DB
 	var tasks []retroSerializers.Task
 
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
@@ -86,7 +86,7 @@ func (service TaskService) MarkDone(
 	taskID string,
 	retroID string,
 	sprintID string) (task *retroSerializers.Task, status int, err error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
 		Where("id = ?", sprintID).
@@ -122,7 +122,7 @@ func (service TaskService) MarkUndone(
 	taskID string,
 	retroID string,
 	sprintID string) (task *retroSerializers.Task, status int, err error) {
-	db := service.DB
+	db := db.DB
 	err = db.Model(&retroModels.Task{}).
 		Where("tasks.id = ?", taskID).
 		Where("done_at is not NULL").
@@ -145,7 +145,7 @@ func (service TaskService) GetMembers(
 	taskID string,
 	retroID string,
 	sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, err error) {
-	db := service.DB
+	db := db.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
 	dbs := service.smtForActiveAndCurrentSprint(taskID, sprintID).
@@ -175,7 +175,7 @@ func (service TaskService) GetMembers(
 func (service TaskService) GetMember(
 	sprintMemberTask retroModels.SprintMemberTask,
 	memberID uint, sprintID string) (member *retroSerializers.TaskMember, status int, err error) {
-	db := service.DB
+	db := db.DB
 	member = new(retroSerializers.TaskMember)
 
 	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.TaskID), sprintID).
@@ -208,7 +208,7 @@ func (service TaskService) AddMember(
 	retroID string,
 	sprintID string,
 	memberID uint) (member *retroSerializers.TaskMember, status int, err error) {
-	db := service.DB
+	db := db.DB
 
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
@@ -264,7 +264,7 @@ func (service TaskService) UpdateTaskMember(
 	retroID string,
 	sprintID string,
 	taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, int, error) {
-	db := service.DB
+	db := db.DB
 
 	sprintMemberTask := retroModels.SprintMemberTask{}
 	err := db.Model(&retroModels.SprintMemberTask{}).
@@ -302,7 +302,7 @@ func (service TaskService) UpdateTaskMember(
 
 // tasksForActiveAndCurrentSprint ...
 func (service TaskService) tasksForActiveAndCurrentSprint(retroID string, sprintID string) *gorm.DB {
-	db := service.DB
+	db := db.DB
 
 	return db.Model(retroModels.Task{}).
 		Where("tasks.retrospective_id = ?", retroID).
@@ -313,7 +313,7 @@ func (service TaskService) tasksForActiveAndCurrentSprint(retroID string, sprint
 
 // smtForActiveAndCurrentSprint ...
 func (service TaskService) smtForActiveAndCurrentSprint(taskID string, sprintID string) *gorm.DB {
-	db := service.DB
+	db := db.DB
 
 	return db.Model(retroModels.SprintMemberTask{}).
 		Where("task_id = ?", taskID).

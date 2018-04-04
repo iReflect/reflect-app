@@ -13,21 +13,24 @@ import (
 	"github.com/iReflect/reflect-app/config"
 )
 
+// DB is the Database instance to be used across the project
+var DB *gorm.DB
+
 // Initialize GORM DB instance
 func Initialize(config *config.Config) *gorm.DB {
-
-	db, err := gorm.Open(config.DB.Driver, config.DB.DSN)
+	var err error
+	DB, err = gorm.Open(config.DB.Driver, config.DB.DSN)
 	if err != nil {
 		log.Fatal("Could not connect database", err)
 	}
-	db.LogMode(config.DB.LogEnabled)
-	return db
+	DB.LogMode(config.DB.LogEnabled)
+	return DB
 }
 
 // Migrate to latest version
-func Migrate(config *config.Config, db *gorm.DB) error {
+func Migrate(config *config.Config) error {
 
-	goose.Up(db.DB(), config.DB.MigrationsDir)
+	goose.Up(DB.DB(), config.DB.MigrationsDir)
 
 	return nil
 }

@@ -3,7 +3,6 @@ package retrospective
 import (
 	"errors"
 	"github.com/gocraft/work"
-	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/workers"
 	"log"
 
@@ -16,7 +15,7 @@ func init() {
 
 // SyncSprintMemberData ...
 func SyncSprintMemberData(job *work.Job) error {
-	sprintService := retroServices.SprintService{DB: db.Initialize(workers.Config)}
+	sprintService := retroServices.SprintService{}
 
 	sprintMemberID := job.ArgString("sprintMemberID")
 	if sprintMemberID == "" {

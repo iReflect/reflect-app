@@ -14,6 +14,7 @@ import (
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 )
@@ -22,7 +23,7 @@ import (
 func (service SprintService) AddSprintMember(
 	sprintID string,
 	memberID uint) (*retroSerializers.SprintMemberSummary, int, error) {
-	db := service.DB
+	db := db.DB
 	var sprintMember retroModels.SprintMember
 	var sprint retroModels.Sprint
 
@@ -96,7 +97,7 @@ func (service SprintService) AddSprintMember(
 
 // RemoveSprintMember ...
 func (service SprintService) RemoveSprintMember(sprintID string, memberID string) (int, error) {
-	db := service.DB
+	db := db.DB
 	var sprintMember retroModels.SprintMember
 
 	err := db.Model(&retroModels.SprintMember{}).
@@ -144,7 +145,7 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 // GetSprintMembersSummary returns the sprint member summary list
 func (service SprintService) GetSprintMembersSummary(
 	sprintID string) (*retroSerializers.SprintMemberSummaryListSerializer, int, error) {
-	db := service.DB
+	db := db.DB
 	sprintMemberSummaryList := new(retroSerializers.SprintMemberSummaryListSerializer)
 
 	var sprint retroModels.Sprint
@@ -183,7 +184,7 @@ func (service SprintService) GetSprintMembersSummary(
 // GetSprintMemberList returns the sprint member list
 func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberList *userSerializers.MembersSerializer,
 	status int, err error) {
-	db := service.DB
+	db := db.DB
 	sprintMemberList = new(userSerializers.MembersSerializer)
 
 	if err = db.Model(&retroModels.SprintMember{}).
@@ -202,7 +203,7 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 // UpdateSprintMember update the sprint member summary
 func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID string,
 	memberData retroSerializers.SprintMemberSummary) (*retroSerializers.SprintMemberSummary, int, error) {
-	db := service.DB
+	db := db.DB
 
 	var sprintMember retroModels.SprintMember
 	if err := db.Model(&retroModels.SprintMember{}).
@@ -250,7 +251,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog,
 	sprintMemberID uint,
 	retroID uint) (err error) {
-	db := service.DB
+	db := db.DB
 	var sprintMemberTask retroModels.SprintMemberTask
 	var task retroModels.Task
 	err = db.Model(&retroModels.SprintMemberTask{}).

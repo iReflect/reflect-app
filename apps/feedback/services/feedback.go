@@ -10,17 +10,17 @@ import (
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	feedbackSerializers "github.com/iReflect/reflect-app/apps/feedback/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/db"
 )
 
 //FeedbackService ...
 type FeedbackService struct {
-	DB *gorm.DB
 }
 
 // Get feedback by id
 func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {
-	db := service.DB
+	db := db.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
 
 	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
@@ -38,7 +38,7 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 func (service FeedbackService) TeamGet(feedbackID string, userID uint) (
 	feedback *feedbackSerializers.FeedbackDetailSerializer,
 	err error) {
-	db := service.DB
+	db := db.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
 	feedbackIds := service.getTeamFeedbackIDs(userID)
 
@@ -56,7 +56,7 @@ func (service FeedbackService) TeamGet(feedbackID string, userID uint) (
 func (service FeedbackService) List(userID uint, statuses []string, perPage int) (
 	feedbacks *feedbackSerializers.FeedbackListSerializer,
 	err error) {
-	db := service.DB
+	db := db.DB
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr())
@@ -68,7 +68,7 @@ func (service FeedbackService) List(userID uint, statuses []string, perPage int)
 func (service FeedbackService) TeamList(userID uint, statuses []string, perPage int) (
 	feedbacks *feedbackSerializers.FeedbackListSerializer,
 	err error) {
-	db := service.DB
+	db := db.DB
 	feedbackIds := service.getTeamFeedbackIDs(userID)
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
 		Where("id in (?)", feedbackIds)
@@ -108,7 +108,7 @@ func (service FeedbackService) getFeedbackList(baseQuery *gorm.DB, statuses []st
 func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.FeedbackDetailSerializer) (
 	*feedbackSerializers.FeedbackDetailSerializer,
 	error) {
-	db := service.DB
+	db := db.DB
 	var feedBackFormContents []feedbackModels.FeedbackFormContent
 
 	if err := db.Model(&feedbackModels.FeedbackFormContent{}).
@@ -185,7 +185,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 // Put feedback data
 func (service FeedbackService) Put(feedbackID string, userID uint,
 	feedBackResponseData feedbackSerializers.FeedbackResponseSerializer) (code int, err error) {
-	db := service.DB
+	db := db.DB
 	feedback := feedbackModels.Feedback{}
 	// Find a feedback with the given ID which hasn't been submitted before
 	if err := db.Model(&feedbackModels.Feedback{}).
@@ -240,7 +240,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 }
 
 func (service FeedbackService) getTeamFeedbackIDs(userID uint) []uint {
-	db := service.DB
+	db := db.DB
 	filterQuery := `
         SELECT id
         FROM feedbacks

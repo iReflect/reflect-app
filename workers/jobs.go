@@ -22,7 +22,6 @@ type Workers struct{}
 var redisNamespace = "ireflect_worker"
 
 var Enqueuer = work.NewEnqueuer(redisNamespace, redisPool)
-var Config *config.Config
 var Pool *work.WorkerPool
 
 type job struct {
@@ -34,8 +33,6 @@ var jobs []job
 
 // Initialize ...
 func (w *Workers) Initialize(config *config.Config) {
-	Config = config
-
 	// Make a new pool. Arguments:
 	// Context{} is a struct that will be the context for the request.
 	// 10 is the max concurrency
