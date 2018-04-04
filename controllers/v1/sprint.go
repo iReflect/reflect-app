@@ -4,10 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gocraft/work"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
-	"github.com/iReflect/reflect-app/workers"
 	"strconv"
 )
 
@@ -197,7 +195,12 @@ func (ctrl SprintController) Process(c *gin.Context) {
 		return
 	}
 
-	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": sprintID})
+	sprintIDInt, err := strconv.Atoi(sprintID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid sprint"})
+	}
+
+	ctrl.SprintService.QueueSprint(uint(sprintIDInt), false)
 
 	ctrl.TrailService.Add("Triggered Sprint Refresh", "Sprint", sprintID, userID.(uint))
 
