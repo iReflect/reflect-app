@@ -4,15 +4,15 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/qor/qor"
-	"github.com/qor/admin"
 	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"github.com/sirupsen/logrus"
 
-	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // SprintMember represents a member of a particular sprint
@@ -30,8 +30,8 @@ type SprintMember struct {
 	Comment            string               `gorm:"type:text"`
 }
 
-// BeforeSave ...
-func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
+// Validate ...
+func (sprintMember *SprintMember) Validate(db *gorm.DB) (err error) {
 	var sprint Sprint
 	if sprintMember.Sprint.ID == 0 {
 		if err = db.Where("id = ?", sprintMember.SprintID).Find(&sprint).Error; err != nil {
@@ -63,14 +63,14 @@ func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
-// BeforeUpdate ...
-func (sprintMember *SprintMember) BeforeUpdate(db *gorm.DB) (err error) {
-	return sprintMember.BeforeSave(db)
+// BeforeSave ...
+func (sprintMember *SprintMember) BeforeSave(db *gorm.DB) (err error) {
+	return sprintMember.Validate(db)
 }
 
-// SMJoinSMT ...
-func SMJoinSMT(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+// BeforeUpdate ...
+func (sprintMember *SprintMember) BeforeUpdate(db *gorm.DB) (err error) {
+	return sprintMember.Validate(db)
 }
 
 // RegisterSprintMemberToAdmin ...
@@ -118,4 +118,24 @@ func getSprintMemberRatingMeta() admin.Meta {
 			return sprintMember.Rating.GetStringValue()
 		},
 	}
+}
+
+// SMJoinSMT ...
+func SMJoinSMT(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+}
+
+// SMLeftJoinSMT ...
+func SMLeftJoinSMT(db *gorm.DB) *gorm.DB {
+	return db.Joins("LEFT JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+}
+
+// SMJoinSprint ...
+func SMJoinSprint(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprints ON sprint_members.sprint_id = sprints.id").Where("sprints.deleted_at IS NULL")
+}
+
+// SMJoinMember ...
+func SMJoinMember(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN users ON sprint_members.member_id = users.id").Where("users.deleted_at IS NULL")
 }

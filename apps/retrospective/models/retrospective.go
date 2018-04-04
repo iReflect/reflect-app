@@ -3,13 +3,13 @@ package models
 import (
 	"errors"
 
-	"github.com/qor/qor"
-	"github.com/qor/admin"
 	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
-	"github.com/iReflect/reflect-app/db/models/fields"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
 // Retrospective represents a retrospective of a team
@@ -26,13 +26,23 @@ type Retrospective struct {
 	CreatedByID        uint `gorm:"not null"`
 }
 
-// BeforeSave ...
-func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
+// Validate ...
+func (retrospective *Retrospective) Validate(db *gorm.DB) (err error) {
 	if retrospective.StoryPointPerWeek < 0 {
 		err = errors.New("story points per week cannot be negative")
 		return err
 	}
 	return
+}
+
+// BeforeSave ...
+func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
+	return retrospective.Validate(db)
+}
+
+// BeforeUpdate ...
+func (retrospective *Retrospective) BeforeUpdate(db *gorm.DB) (err error) {
+	return retrospective.Validate(db)
 }
 
 // RegisterRetrospectiveToAdmin ...
@@ -64,4 +74,19 @@ func getTaskProviderConfigMetaFieldMeta() admin.Meta {
 			value := metaValue.Value.([]string)[0]
 			retrospective.TaskProviderConfig = fields.JSONB(value)
 		}}
+}
+
+// RetroJoinSprints ...
+func RetroJoinSprints(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprints ON retrospectives.id = sprints.retrospective_id").Where("sprints.deleted_at IS NULL")
+}
+
+// RetroJoinTasks ...
+func RetroJoinTasks(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN tasks ON retrospectives.id = tasks.retrospective_id").Where("tasks.deleted_at IS NULL")
+}
+
+// RetroJoinUserTeams ...
+func RetroJoinUserTeams(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN user_teams ON retrospectives.team_id = user_teams.team_id").Where("user_teams.deleted_at IS NULL")
 }

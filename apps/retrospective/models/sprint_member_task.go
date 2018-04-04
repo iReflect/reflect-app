@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/qor/qor"
-	"github.com/qor/admin"
 	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
+	"github.com/qor/admin"
+	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"github.com/sirupsen/logrus"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 )
@@ -50,8 +50,8 @@ type SprintMemberTask struct {
 	Role             MemberTaskRole       `gorm:"default:0; not null"`
 }
 
-// BeforeSave ...
-func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
+// Validate ...
+func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	var pointSum float64
 	var task Task
 	var sprintMember SprintMember
@@ -76,8 +76,7 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	db.Model(SprintMemberTask{}).
 		Where("task_id = ?", task.ID).
 		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
-		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
-		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Scopes(SMTJoinSM, SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", DraftSprint, sprintMember.SprintID).
 		Scopes(NotDeletedSprint).
 		Select("SUM(points_earned)").Row().Scan(&pointSum)
@@ -92,9 +91,14 @@ func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// BeforeSave ...
+func (sprintMemberTask *SprintMemberTask) BeforeSave(db *gorm.DB) (err error) {
+	return sprintMemberTask.Validate(db)
+}
+
 // BeforeUpdate ...
 func (sprintMemberTask *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) {
-	return sprintMemberTask.BeforeSave(db)
+	return sprintMemberTask.Validate(db)
 }
 
 // RegisterSprintMemberTaskToAdmin ...
@@ -111,7 +115,6 @@ func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMemberTask.Meta(&ratingMeta)
 	sprintMemberTask.Meta(&sprintMembersMeta)
 }
-
 
 // getSprintMemberTaskRatingMeta ...
 func getSprintMemberTaskRatingMeta() admin.Meta {
@@ -143,7 +146,6 @@ func getSprintMemberTaskRatingMeta() admin.Meta {
 		},
 	}
 }
-
 
 // getSprintMemberMeta ...
 func getSprintMemberMeta() admin.Meta {
@@ -217,4 +219,9 @@ func getMemberTaskRoleFieldMeta() admin.Meta {
 // SMTJoinTask ...
 func SMTJoinTask(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN tasks ON sprint_member_tasks.task_id = tasks.id").Where("tasks.deleted_at IS NULL")
+}
+
+// SMTJoinSM ...
+func SMTJoinSM(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_members ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_members.deleted_at IS NULL")
 }

@@ -3,12 +3,12 @@ package server
 import (
 	"net/http"
 
-	"github.com/qor/admin"
 	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
 
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	feedbackModels "github.com/iReflect/reflect-app/apps/feedback/models"
 	retrospectiveModels "github.com/iReflect/reflect-app/apps/retrospective/models"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 type Admin struct {

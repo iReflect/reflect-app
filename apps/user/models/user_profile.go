@@ -1,8 +1,8 @@
 package models
 
 import (
-	"github.com/qor/admin"
 	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
 )
 
 // UserProfile associated to app users

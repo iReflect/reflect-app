@@ -271,11 +271,11 @@ func (service SprintService) getSprintTaskTypeSummary(
 
 	doneTaskQuery := taskList.Where("sprints.start_date <= tasks.done_at").
 		Where("sprints.end_date >= tasks.done_at").
-		Select("COUNT(*) AS count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS points_earned").
+		Select("COUNT(DISTINCT(tasks.id)) AS count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS points_earned").
 		QueryExpr()
 
 	taskQuery := taskList.Select(
-		"COUNT(*) AS total_count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS total_points_earned").
+		"COUNT(DISTINCT(tasks.id)) AS total_count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS total_points_earned").
 		QueryExpr()
 	err := db.Raw("SELECT * FROM (?) AS total CROSS JOIN (?) AS done", taskQuery, doneTaskQuery).
 		Scan(&summary).Error
@@ -307,8 +307,7 @@ func (service SprintService) AddSprintMember(
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
-		Joins("JOIN retrospectives ON retrospectives.id=sprints.retrospective_id").
-		Joins("JOIN user_teams ON retrospectives.team_id=user_teams.team_id").
+		Scopes(retroModels.SprintJoinRetro, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", memberID).
 		Where("sprints.id=?", sprintID).
 		Preload("Retrospective").
@@ -349,7 +348,7 @@ func (service SprintService) AddSprintMember(
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
 		Where("sprint_members.id = ?", sprintMember.ID).
-		Joins("LEFT JOIN users ON users.id = sprint_members.member_id").
+		Scopes(retroModels.SMJoinMember).
 		Select("DISTINCT sprint_members.*, users.*").
 		Scan(&sprintMemberSummary).
 		Error; err != nil {
@@ -676,13 +675,12 @@ func (service SprintService) GetSprintMembersSummary(
 	}
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprint.ID).
-		Joins("JOIN users ON users.id = sprint_members.member_id").
-		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
+		Scopes(retroModels.SMJoinMember, retroModels.SMLeftJoinSMT).
 		Select(`
             DISTINCT sprint_members.*,
             users.*,
-			SUM(smt.points_earned) OVER (PARTITION BY sprint_members.id) AS actual_story_point,
-			SUM(smt.time_spent_minutes) OVER (PARTITION BY sprint_members.id) AS total_time_spent_in_min
+			SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.id) AS actual_story_point,
+			SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.id) AS total_time_spent_in_min
 		`).
 		Order("users.first_name, users.last_name, users.id").
 		Scan(&sprintMemberSummaryList.Members).
@@ -704,7 +702,7 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_id = ?", sprintID).
-		Joins("JOIN users ON users.id = sprint_members.member_id").
+		Scopes(retroModels.SMJoinMember).
 		Select("sprint_members.id, users.email, users.first_name, users.last_name, users.active").
 		Order("users.first_name, users.last_name, users.id").
 		Scan(&sprintMemberList.Members).
@@ -747,10 +745,10 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.id = ?", sprintMemberID).
-		Joins("LEFT JOIN sprint_member_tasks AS smt ON smt.sprint_member_id = sprint_members.id").
+		Scopes(retroModels.SMLeftJoinSMT).
 		Select(`
-            COALESCE(SUM(smt.points_earned), 0) AS actual_story_point,
-            COALESCE(SUM(smt.time_spent_minutes), 0) AS total_time_spent_in_min`).
+            COALESCE(SUM(sprint_member_tasks.points_earned), 0) AS actual_story_point,
+            COALESCE(SUM(sprint_member_tasks.time_spent_minutes), 0) AS total_time_spent_in_min`).
 		Group("sprint_members.id").
 		Row().
 		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
@@ -840,9 +838,7 @@ func (service SprintService) Create(retroID string,
 		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
 	} else if err == nil {
 		if err = db.Model(&retroModels.SprintMember{}).
-			Joins("join sprints on sprint_members.sprint_id = sprints.id").
-			Joins("join retrospectives on sprints.retrospective_id = retrospectives.id").
-			Joins("join user_teams on user_teams.team_id = retrospectives.team_id").
+			Scopes(retroModels.SMJoinSprint, retroModels.SprintJoinRetro, retroModels.RetroJoinUserTeams).
 			Where("sprint_members.sprint_id = ?", previousSprint.ID).
 			Where("leaved_at IS NULL OR leaved_at >= ?", sprint.EndDate).
 			Select("DISTINCT(sprint_members.*)").
@@ -996,17 +992,15 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	service.SetSyncing(sprint.ID)
 
 	dbs := db.Model(retroModels.SprintMemberTask{}).
-		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
-		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
-		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinTask, retroModels.SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select(`
             sprint_member_tasks.*, 
-            row_number() OVER (PARTITION BY sprint_member_tasks.task_id, sm.sprint_id
+            row_number() OVER (PARTITION BY sprint_member_tasks.task_id, sprint_members.sprint_id
                 ORDER BY sprint_member_tasks.time_spent_minutes desc) AS time_spent_rank,
-            sm.sprint_id,
+            sprint_members.sprint_id,
             (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id)))
                 AS remaining_points
         `).
@@ -1103,9 +1097,7 @@ func (service SprintService) changeTaskEstimates(task retroModels.Task, estimate
 
 	fmt.Println("Rebalancing Points")
 	activeAndFrozenSprintSMT := tx.Model(retroModels.SprintMemberTask{}).
-		Joins("JOIN sprint_members AS sm ON sprint_member_tasks.sprint_member_id = sm.id").
-		Joins("JOIN tasks ON tasks.id = sprint_member_tasks.task_id").
-		Joins("JOIN sprints ON sm.sprint_id = sprints.id").
+		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinTask, retroModels.SMJoinSprint).
 		Where("sprints.status <> ?", retroModels.DraftSprint).
 		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.id = ?", task.ID)
@@ -1114,7 +1106,7 @@ func (service SprintService) changeTaskEstimates(task retroModels.Task, estimate
 		Where("sprint_member_tasks.points_earned != 0").
 		Select(`
             sprint_member_tasks.*,
-            sm.sprint_id, 
+            sprint_members.sprint_id, 
 			(tasks.estimate / (SUM(sprint_member_tasks.points_earned) 
                 OVER (PARTITION BY sprint_member_tasks.task_id))) AS estimate_ratio`).
 		QueryExpr()
@@ -1155,9 +1147,9 @@ func (service SprintService) changeTaskEstimates(task retroModels.Task, estimate
                 AS smt 
             JOIN sprint_members 
                 AS sm 
-                ON sm.id=smt.sprint_member_id 
+                ON sm.id=smt.sprint_member_id AND sm.deleted_at IS NULL
             JOIN sprints 
-                ON sprints.id=sm.sprint_id 
+                ON sprints.id=sm.sprint_id AND sprints.deleted_at IS NULL
             JOIN (?) AS s1 
                 ON smt.task_id=s1.id 
             WHERE sprints.status = ? AND points_earned != 0
@@ -1328,8 +1320,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	var task retroModels.Task
 	err = db.Model(&retroModels.SprintMemberTask{}).
 		Where("sprint_member_id = ?", sprintMemberID).
-		Joins("JOIN tasks ON tasks.id=sprint_member_tasks.task_id").
-		Joins("JOIN task_key_maps ON tasks.id=task_key_maps.task_id").
+		Scopes(retroModels.SMTJoinTask, retroModels.TaskJoinTaskKeyMaps).
 		Where("task_key_maps.key = ?", timeLog.TaskKey).
 		Where("tasks.retrospective_id = ?", retroID).
 		FirstOrInit(&sprintMemberTask).Error
@@ -1339,7 +1330,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	}
 
 	err = db.Model(&retroModels.Task{}).
-		Joins("JOIN task_key_maps ON tasks.id=task_key_maps.task_id").
+		Scopes(retroModels.TaskJoinTaskKeyMaps).
 		Where("task_key_maps.key = ?", timeLog.TaskKey).
 		Where("tasks.retrospective_id = ?", retroID).
 		First(&task).Error

@@ -55,8 +55,8 @@ type Sprint struct {
 	CreatedByID     uint `gorm:"not null"`
 }
 
-// BeforeSave ...
-func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
+// Validate ...
+func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 	// end date should be after start date
 	if sprint.StartDate != nil && sprint.EndDate != nil && sprint.EndDate.Before(*sprint.StartDate) {
 		err = errors.New("end date can not be before start date")
@@ -95,9 +95,14 @@ func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// BeforeSave ...
+func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
+	return sprint.Validate(db)
+}
+
 // BeforeUpdate ...
 func (sprint *Sprint) BeforeUpdate(db *gorm.DB) (err error) {
-	return sprint.BeforeSave(db)
+	return sprint.Validate(db)
 }
 
 // RegisterSprintToAdmin ...
@@ -154,4 +159,9 @@ func NotDeletedSprint(db *gorm.DB) *gorm.DB {
 // SprintJoinSM ...
 func SprintJoinSM(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN sprint_members ON sprint_members.sprint_id = sprints.id").Where("sprint_members.deleted_at IS NULL")
+}
+
+// SprintJoinRetro ...
+func SprintJoinRetro(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN retrospectives ON sprints.retrospective_id = retrospectives.id").Where("retrospectives.deleted_at IS NULL")
 }

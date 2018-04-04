@@ -37,17 +37,22 @@ func (task Task) Stringify() string {
 	return fmt.Sprintf("%v", task.Key)
 }
 
-// BeforeSave ...
-func (task Task) BeforeSave(db *gorm.DB) (err error) {
-	if task.TrackerUniqueID == "" {
+// Validate ...
+func (task Task) Validate(db *gorm.DB) (err error) {
+	if task.ID != 0 && task.TrackerUniqueID == "" {
 		return errors.New("tracker_unique_id cannot be empty")
 	}
 	return nil
 }
 
+// BeforeSave ...
+func (task *Task) BeforeSave(db *gorm.DB) (err error) {
+	return task.Validate(db)
+}
+
 // BeforeUpdate ...
 func (task *Task) BeforeUpdate(db *gorm.DB) (err error) {
-	return task.BeforeSave(db)
+	return task.Validate(db)
 }
 
 // RegisterTaskToAdmin ...
@@ -76,4 +81,14 @@ func getFieldsMetaFieldMeta() admin.Meta {
 			value := metaValue.Value.([]string)[0]
 			task.Fields = fields.JSONB(value)
 		}}
+}
+
+// TaskJoinSMT ...
+func TaskJoinSMT(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.task_id = tasks.id").Where("sprint_member_tasks.deleted_at IS NULL")
+}
+
+// TaskJoinTaskKeyMaps ...
+func TaskJoinTaskKeyMaps(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN task_key_maps ON task_key_maps.task_id = tasks.id").Where("task_key_maps.deleted_at IS NULL")
 }
