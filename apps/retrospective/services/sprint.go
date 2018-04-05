@@ -193,7 +193,7 @@ func (service SprintService) GetSprintSummary(
             SUM((? - vacations) * expectation_percent / 100.0 * allocation_percent / 100.0 * ?) AS target_sp,
             SUM(vacations) AS total_vacations,
             0 AS holidays`,
-			utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true),
+			utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate),
 			sprint.Retrospective.StoryPointPerWeek/5).
 		Scan(&summary).Error
 
