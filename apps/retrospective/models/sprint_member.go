@@ -42,7 +42,7 @@ func (sprintMember *SprintMember) Validate(db *gorm.DB) (err error) {
 	}
 	// Vacations should not be longer than sprint duration
 	if sprint.StartDate != nil && sprint.EndDate != nil {
-		sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate, true)
+		sprintWorkingDays := utils.GetWorkingDaysBetweenTwoDates(*sprint.StartDate, *sprint.EndDate)
 		if sprintMember.Vacations > float64(sprintWorkingDays) {
 			err = errors.New("vacations cannot be longer than sprint duration")
 			return err

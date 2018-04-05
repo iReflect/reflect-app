@@ -45,7 +45,7 @@ func EncryptionKey() []byte {
 
 // GetWorkingDaysBetweenTwoDates calculates the working days between two dates,
 // i.e., number of days between two dates excluding weekends
-func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time, includeBoth bool) int {
+func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time) int {
 	if endDate.Before(startDate) {
 		return 0
 	}
@@ -56,14 +56,14 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time, inclu
 		if start.Weekday() != time.Sunday && start.Weekday() != time.Saturday {
 			workingDays++
 		}
-		start.Add(time.Hour * 24)
+		start = start.Add(time.Hour * 24)
 	}
 
 	for end.Weekday() != time.Sunday && end.After(start) {
 		if end.Weekday() != time.Saturday {
 			workingDays++
 		}
-		end.Add(-time.Hour * 24)
+		end = end.Add(-time.Hour * 24)
 	}
 	duration := end.Sub(start)
 	if duration.Hours() > 24 {
@@ -78,7 +78,7 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time, inclu
 
 // CalculateExpectedSP ...
 func CalculateExpectedSP(startDate time.Time, endDate time.Time, vacations float64, expectationPercent float64, allocationPercent float64, spPerWeek float64) float64 {
-	sprintWorkingDays := GetWorkingDaysBetweenTwoDates(startDate, endDate, true)
+	sprintWorkingDays := GetWorkingDaysBetweenTwoDates(startDate, endDate)
 	workingDays := float64(sprintWorkingDays) - vacations
 	expectationCoefficient := expectationPercent / 100.00
 	allocationCoefficient := allocationPercent / 100.00
