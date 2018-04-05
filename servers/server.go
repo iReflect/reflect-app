@@ -139,9 +139,9 @@ func (a *App) SetRoutes() {
 		TrailService:                 trailService}
 	sprintNoteController.Routes(sprintNoteRoute)
 
-	taskService := retrospectiveServices.TaskService{DB: a.DB}
+	taskService := retrospectiveServices.SprintTaskService{DB: a.DB}
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
-	tasksController := apiControllers.TaskController{TaskService: taskService, PermissionService: permissionService, TrailService: trailService}
+	tasksController := apiControllers.SprinTaskController{SprintTaskService: taskService, PermissionService: permissionService, TrailService: trailService}
 	tasksController.Routes(taskRoute)
 
 	taskTrackerService := taskTrackerServices.TaskTrackerService{}

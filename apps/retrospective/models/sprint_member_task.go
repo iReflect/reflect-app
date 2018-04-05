@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -40,8 +41,8 @@ type SprintMemberTask struct {
 	gorm.Model
 	SprintMember     SprintMember
 	SprintMemberID   uint `gorm:"not null"`
-	Task             Task
-	TaskID           uint                 `gorm:"not null"`
+	SprintTask       SprintTask
+	SprintTaskID     uint                 `gorm:"not null"`
 	TimeSpentMinutes uint                 `gorm:"not null"`
 	PointsEarned     float64              `gorm:"default:0; not null"`
 	PointsAssigned   float64              `gorm:"default:0; not null"`
@@ -52,40 +53,25 @@ type SprintMemberTask struct {
 
 // Validate ...
 func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
-	var pointSum float64
-	var task Task
-	var sprintMember SprintMember
-	// TaskID is set when we use gorm and Task.ID is set when we use QOR admin,
-	// so we need to add checks for both the cases.
-	if sprintMemberTask.Task.ID == 0 {
-		if err = db.Where("id = ?", sprintMemberTask.TaskID).Find(&task).Error; err != nil {
-			return err
-		}
-	} else {
-		task = sprintMemberTask.Task
-	}
+	var isInvalidPointSum bool
+	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintMemberTask.SprintTaskID).
+		Select("task_id")
+	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberTask.SprintMemberID).
+		Select("sprint_id").QueryExpr()
 
-	if sprintMemberTask.SprintMember.ID == 0 {
-		if err = db.Where("id = ?", sprintMemberTask.SprintMemberID).Find(&sprintMember).Error; err != nil {
-			return err
-		}
-	} else {
-		sprintMember = sprintMemberTask.SprintMember
-	}
-
-	db.Model(SprintMemberTask{}).
-		Where("task_id = ?", task.ID).
-		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
-		Scopes(SMTJoinSM, SMJoinSprint).
-		Where("(sprints.status <> ? OR sprints.id = ?)", DraftSprint, sprintMember.SprintID).
-		Scopes(NotDeletedSprint).
-		Select("SUM(points_earned)").Row().Scan(&pointSum)
-
-	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate. Adding a 0.05 buffer for rounding errors
+	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate.
+	// Adding a 0.05 buffer for rounding errors
 	// ToDo: Revisit to see if we can improve this.
-	if pointSum+sprintMemberTask.PointsEarned > task.Estimate+0.05 {
-		err = errors.New("cannot earn more than estimate")
-		return err
+	db.Model(SprintMemberTask{}).
+		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
+		Where("sprint_task.task_id = (?)", sprintTaskFilter).
+		Scopes(SMTJoinST, STJoinTask, SMTJoinSM, SMJoinSprint).
+		Where("(sprints.status <> ? OR sprints.id = (?))", DraftSprint, sprintFilter).
+		Scopes(NotDeletedSprint).
+		Select("(SUM(points_earned) > ( tasks.Estimate + 0.05))").Row().Scan(&isInvalidPointSum)
+
+	if isInvalidPointSum {
+		return errors.New("cannot earn more than estimate")
 	}
 
 	return
@@ -105,12 +91,12 @@ func (sprintMemberTask *SprintMemberTask) BeforeUpdate(db *gorm.DB) (err error) 
 func RegisterSprintMemberTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintMemberTask := Admin.AddResource(&SprintMemberTask{}, &config)
 
-	taskMeta := getTaskMeta()
+	sprintTaskMeta := getSprintTaskMeta()
 	roleMeta := getMemberTaskRoleFieldMeta()
 	sprintMembersMeta := getSprintMemberMeta()
 	ratingMeta := getSprintMemberTaskRatingMeta()
 
-	sprintMemberTask.Meta(&taskMeta)
+	sprintMemberTask.Meta(&sprintTaskMeta)
 	sprintMemberTask.Meta(&roleMeta)
 	sprintMemberTask.Meta(&ratingMeta)
 	sprintMemberTask.Meta(&sprintMembersMeta)
@@ -160,25 +146,30 @@ func getSprintMemberMeta() admin.Meta {
 				Find(&members)
 
 			for _, value := range members {
-				results = append(results, []string{strconv.Itoa(int(value.ID)), "Sprint: " + strconv.Itoa(int(value.SprintID)) + " & Member: " + value.Member.FirstName + " " + value.Member.LastName})
+				results = append(results, []string{
+					strconv.Itoa(int(value.ID)),
+					fmt.Sprintf("Sprint: %s & Member: %s %s",
+						strconv.Itoa(int(value.SprintID)),
+						value.Member.FirstName,
+						value.Member.LastName)})
 			}
 			return
 		},
 	}
 }
 
-// getTaskMeta ...
-func getTaskMeta() admin.Meta {
+// getSprintTaskMeta ...
+func getSprintTaskMeta() admin.Meta {
 	return admin.Meta{
-		Name: "Task",
+		Name: "SprintTask",
 		Type: "select_one",
 		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
 			db := context.GetDB()
-			var taskList []Task
-			db.Model(&Task{}).Scan(&taskList)
+			var sprintTaskList []SprintTask
+			db.Model(&SprintTask{}).Preload("Task").Scan(&sprintTaskList)
 
-			for _, value := range taskList {
-				results = append(results, []string{strconv.Itoa(int(value.ID)), value.Key})
+			for _, value := range sprintTaskList {
+				results = append(results, []string{strconv.Itoa(int(value.ID)), value.Task.Key})
 			}
 			return
 		},
@@ -216,12 +207,14 @@ func getMemberTaskRoleFieldMeta() admin.Meta {
 	}
 }
 
-// SMTJoinTask ...
-func SMTJoinTask(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN tasks ON sprint_member_tasks.task_id = tasks.id").Where("tasks.deleted_at IS NULL")
+// SMTJoinST ...
+func SMTJoinST(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_tasks ON sprint_member_tasks.sprint_task_id = sprint_tasks.id").
+		Where("sprint_tasks.deleted_at IS NULL")
 }
 
 // SMTJoinSM ...
 func SMTJoinSM(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_members ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_members.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_members ON sprint_member_tasks.sprint_member_id = sprint_members.id").
+		Where("sprint_members.deleted_at IS NULL")
 }

@@ -58,7 +58,9 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 		}
 	}
 	sprint.Status = retroModels.DeletedSprint
-	err = tx.Exec("UPDATE sprints SET status = ? WHERE id = ?", retroModels.DeletedSprint, sprintID).Error
+	err = tx.Exec("UPDATE sprints SET status = ?, updated_at = NOW() WHERE id = ?",
+		retroModels.DeletedSprint,
+		sprintID).Error
 	if err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
@@ -255,7 +257,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 	var summary retroSerializers.SprintTaskSummary
 
 	taskList := db.Model(&retroModels.Sprint{}).
-		Scopes(retroModels.SprintJoinSM, retroModels.SMJoinSMT, retroModels.SMTJoinTask).
+		Scopes(retroModels.SprintJoinSM, retroModels.SMJoinSMT, retroModels.SMTJoinST, retroModels.STJoinTask).
 		Where("sprints.id = ?", sprintID).
 		Where("LOWER(tasks.type) IN (?)", taskTypes)
 
@@ -464,8 +466,9 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
                        SUM(smt.points_earned)
                        OVER (
                          PARTITION BY tasks.id, sm.sprint_id ) AS points_earned
-                     FROM constants, tasks
-                       JOIN sprint_member_tasks AS smt ON smt.task_id = tasks.id
+                     FROM constants, sprint_tasks AS st
+                       JOIN sprint_member_tasks AS smt ON smt.sprint_task_id = st.id
+                       JOIN tasks ON st.task_id = tasks.id
                        JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id
                        JOIN sprints ON sm.sprint_id = sprints.id
                      WHERE tasks.deleted_at IS NULL AND smt.deleted_at IS NULL AND sm."deleted_at" IS NULL AND
