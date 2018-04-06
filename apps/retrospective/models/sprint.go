@@ -49,6 +49,7 @@ type Sprint struct {
 	StartDate       *time.Time
 	EndDate         *time.Time
 	SprintMembers   []SprintMember
+	SprintTasks     []SprintTask
 	LastSyncedAt    *time.Time
 	SyncStatus      []SprintSyncStatus
 	CreatedBy       userModels.User

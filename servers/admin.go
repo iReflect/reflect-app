@@ -37,6 +37,7 @@ func (a *Admin) Router() *http.ServeMux {
 	Admin.AddResource(&retrospectiveModels.TaskKeyMap{}, &admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintSyncStatusToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
+	Admin.AddResource(&retrospectiveModels.SprintTask{}, &admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintMemberToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterSprintMemberTaskToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
 	retrospectiveModels.RegisterRetrospectiveFeedbackToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})

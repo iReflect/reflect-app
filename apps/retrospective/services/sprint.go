@@ -32,6 +32,7 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 		Where("status in (?)",
 			[]retroModels.SprintStatus{retroModels.DraftSprint, retroModels.ActiveSprint}).
 		Preload("SprintMembers.Tasks").
+		Preload("SprintTasks").
 		Find(&sprint).Error
 
 	if err != nil {
@@ -57,6 +58,16 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 			return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
 		}
 	}
+	
+	for _, sprintTask := range sprint.SprintTasks {
+		if err := tx.Delete(&sprintTask).Error; err != nil {
+			tx.Rollback()
+			utils.LogToSentry(err)
+			return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
+		}
+		
+	}
+
 	sprint.Status = retroModels.DeletedSprint
 	err = tx.Exec("UPDATE sprints SET status = ?, updated_at = NOW() WHERE id = ?",
 		retroModels.DeletedSprint,

@@ -55,7 +55,7 @@ type SprintMemberTask struct {
 func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	var isInvalidPointSum bool
 	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintMemberTask.SprintTaskID).
-		Select("task_id")
+		Select("task_id").QueryExpr()
 	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberTask.SprintMemberID).
 		Select("sprint_id").QueryExpr()
 
