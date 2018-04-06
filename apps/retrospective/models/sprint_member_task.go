@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"github.com/iReflect/reflect-app/libs/utils"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -32,15 +33,15 @@ func (role MemberTaskRole) GetStringValue() string {
 // MemberTaskRole
 const (
 	Implementor MemberTaskRole = iota
-	Reviewer
-	Validator
+	Reviewer    
+	Validator   
 )
 
 // SprintMemberTask represents a task for a member for a particular sprint
 type SprintMemberTask struct {
 	gorm.Model
 	SprintMember     SprintMember
-	SprintMemberID   uint `gorm:"not null"`
+	SprintMemberID   uint                 `gorm:"not null"`
 	SprintTask       SprintTask
 	SprintTaskID     uint                 `gorm:"not null"`
 	TimeSpentMinutes uint                 `gorm:"not null"`
@@ -53,24 +54,31 @@ type SprintMemberTask struct {
 
 // Validate ...
 func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
-	var isInvalidPointSum bool
+	var pointSum float64
+	var task Task
 	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintMemberTask.SprintTaskID).
 		Select("task_id").QueryExpr()
 	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberTask.SprintMemberID).
 		Select("sprint_id").QueryExpr()
 
+	err = db.Model(&Task{}).Scopes(TaskJoinST).Where("sprint_tasks.id = ?", sprintMemberTask.SprintTaskID).
+		First(&task).Error
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}	
 	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate.
 	// Adding a 0.05 buffer for rounding errors
 	// ToDo: Revisit to see if we can improve this.
 	db.Model(SprintMemberTask{}).
 		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
-		Where("sprint_task.task_id = (?)", sprintTaskFilter).
-		Scopes(SMTJoinST, STJoinTask, SMTJoinSM, SMJoinSprint).
+		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
+		Scopes(SMTJoinST, SMTJoinSM, SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = (?))", DraftSprint, sprintFilter).
 		Scopes(NotDeletedSprint).
-		Select("(SUM(points_earned) > ( tasks.Estimate + 0.05))").Row().Scan(&isInvalidPointSum)
+		Select("SUM(points_earned)").Row().Scan(&pointSum)
 
-	if isInvalidPointSum {
+	if pointSum+sprintMemberTask.PointsEarned > task.Estimate+0.05 {
 		return errors.New("cannot earn more than estimate")
 	}
 
