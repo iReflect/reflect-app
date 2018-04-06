@@ -309,7 +309,7 @@ func (service SprintTaskService) UpdateTaskMember(
 	if taskMemberData.Role != nil {
 		sprintMemberTask.Role = retroModels.MemberTaskRole(*taskMemberData.Role)
 	}
-	if err = db.Save(&sprintMemberTask).Error; err != nil {
+	if err = db.Set("gorm:save_associations", false).Save(&sprintMemberTask).Error; err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to update task member")
 	}
