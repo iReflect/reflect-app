@@ -284,7 +284,7 @@ func (service SprintTaskService) UpdateTaskMember(
 
 	sprintMemberTask := retroModels.SprintMemberTask{}
 	err := db.Model(&retroModels.SprintMemberTask{}).
-		Where("task_id = ?", sprintTaskID).
+		Where("sprint_task_id = ?", sprintTaskID).
 		Where("id = ?", taskMemberData.ID).
 		Preload("SprintMember").
 		Find(&sprintMemberTask).Error
