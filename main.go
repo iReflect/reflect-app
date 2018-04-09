@@ -21,8 +21,8 @@ func main() {
 	configuration := config.GetConfig()
 
 	//Run migrations - Need to see how this would be possible with new goose.
-	gormDB := db.Initialize(configuration)
-	db.Migrate(configuration, gormDB)
+	db.Initialize(configuration)
+	db.Migrate(configuration)
 
 	app := &server.App{}
 	app.Initialize(configuration)
@@ -38,7 +38,7 @@ func main() {
 	}()
 
 	asyncWorkers := &workers.Workers{}
-	asyncWorkers.Initialize(configuration)
+	asyncWorkers.Initialize()
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.

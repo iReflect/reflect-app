@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -12,7 +13,6 @@ import (
 
 // RetrospectiveFeedbackService ...
 type RetrospectiveFeedbackService struct {
-	DB *gorm.DB
 }
 
 // Add ...
@@ -22,7 +22,7 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
 	error) {
-	db := service.DB
+	db := db.DB
 
 	retroIDInt, err := strconv.Atoi(retroID)
 	if err != nil {
@@ -71,7 +71,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
 	error) {
-	db := service.DB
+	db := db.DB
 
 	retroFeedback := models.RetrospectiveFeedback{}
 
@@ -123,7 +123,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
 	error) {
-	db := service.DB
+	db := db.DB
 
 	retroFeedback := models.RetrospectiveFeedback{}
 
@@ -177,7 +177,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	feedbackList *retrospectiveSerializers.RetrospectiveFeedbackListSerializer,
 	status int,
 	err error) {
-	db := service.DB
+	db := db.DB
 	feedbackList = new(retrospectiveSerializers.RetrospectiveFeedbackListSerializer)
 	sprint := models.Sprint{}
 
@@ -211,7 +211,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	feedbackList *retrospectiveSerializers.RetrospectiveFeedbackListSerializer,
 	status int,
 	err error) {
-	db := service.DB
+	db := db.DB
 
 	sprint := models.Sprint{}
 	feedbackList = new(retrospectiveSerializers.RetrospectiveFeedbackListSerializer)
@@ -260,7 +260,7 @@ func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedba
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
 	error) {
-	db := service.DB
+	db := db.DB
 	feedback := retrospectiveSerializers.RetrospectiveFeedback{}
 	err := db.Model(&models.RetrospectiveFeedback{}).
 		Where("id = ?", retroFeedbackID).

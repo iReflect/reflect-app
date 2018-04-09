@@ -13,18 +13,18 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/db"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"net/http"
 )
 
 // SprintService ...
 type SprintService struct {
-	DB *gorm.DB
 }
 
 // DeleteSprint deletes the given sprint
 func (service SprintService) DeleteSprint(sprintID string) (int, error) {
-	db := service.DB
+	db := db.DB
 
 	// ToDo: Use batch deletes
 	var sprint retroModels.Sprint
@@ -74,7 +74,7 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 
 // ActivateSprint activates the given sprint
 func (service SprintService) ActivateSprint(sprintID string, retroID string) (int, error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 
 	if err := db.Where("id = ?", sprintID).
@@ -99,7 +99,7 @@ func (service SprintService) ActivateSprint(sprintID string, retroID string) (in
 
 // FreezeSprint freezes the given sprint
 func (service SprintService) FreezeSprint(sprintID string, retroID string) (int, error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 
 	if err := db.Where("id = ?", sprintID).
@@ -123,7 +123,7 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 
 // Get return details of the given sprint
 func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int, error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroSerializers.Sprint
 
 	err := db.Model(&retroModels.Sprint{}).Where("id = ?", sprintID).
@@ -166,7 +166,7 @@ func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int
 func (service SprintService) GetSprintSummary(
 	sprintID string,
 	retroID uint) (*retroSerializers.SprintSummary, int, error) {
-	db := service.DB
+	db := db.DB
 
 	var sprint retroModels.Sprint
 	var summary retroSerializers.SprintSummary
@@ -216,7 +216,7 @@ func (service SprintService) GetSprintSummary(
 func (service SprintService) GetSprintTaskSummary(
 	sprintID string,
 	retroID uint) (summary map[string]retroSerializers.SprintTaskSummary, status int, err error) {
-	db := service.DB
+	db := db.DB
 	var retro retroModels.Retrospective
 
 	err = db.Model(&retroModels.Retrospective{}).Where("id = ?", retroID).First(&retro).Error
@@ -250,7 +250,7 @@ func (service SprintService) GetSprintTaskSummary(
 func (service SprintService) getSprintTaskTypeSummary(
 	sprintID string,
 	taskTypes string) (*retroSerializers.SprintTaskSummary, int, error) {
-	db := service.DB
+	db := db.DB
 
 	var summary retroSerializers.SprintTaskSummary
 
@@ -282,7 +282,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 func (service SprintService) GetSprintsList(
 	retrospectiveID string,
 	userID uint) (sprints *retroSerializers.SprintsSerializer, status int, err error) {
-	db := service.DB
+	db := db.DB
 	sprints = new(retroSerializers.SprintsSerializer)
 
 	err = db.Model(&retroModels.Sprint{}).
@@ -303,7 +303,7 @@ func (service SprintService) GetSprintsList(
 // Create creates a new sprint for the retro
 func (service SprintService) Create(retroID string,
 	sprintData retroSerializers.CreateSprintSerializer) (*retroSerializers.Sprint, int, error) {
-	db := service.DB
+	db := db.DB
 	var err error
 	var previousSprint retroModels.Sprint
 	var sprint retroModels.Sprint
@@ -448,7 +448,7 @@ func (service SprintService) Create(retroID string,
 
 // ValidateSprint validate the given sprint
 func (service SprintService) ValidateSprint(sprintID string, retroID string) (bool, error) {
-	db := service.DB
+	db := db.DB
 	query := `
 		WITH constants (retro_id, sprint_id) AS (
 		  VALUES (CAST (? AS INTEGER), CAST (? AS INTEGER))
@@ -491,7 +491,7 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
 // UpdateSprint updates the given sprint
 func (service SprintService) UpdateSprint(sprintID string,
 	sprintData retroSerializers.UpdateSprintSerializer) (*retroSerializers.Sprint, int, error) {
-	db := service.DB
+	db := db.DB
 	var sprint retroModels.Sprint
 
 	if err := db.Where("id = ?", sprintID).

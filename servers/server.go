@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
 	feedbackValidators "github.com/iReflect/reflect-app/apps/feedback/serializers/validators"
@@ -30,15 +29,11 @@ import (
 
 // App ...
 type App struct {
-	DB     *gorm.DB
 	Router *gin.Engine
 }
 
 // Initialize initializes the app with predefined configuration
 func (a *App) Initialize(config *config.Config) {
-
-	a.DB = db.Initialize(config)
-
 	// Creates a router without any middleware by default
 	r := gin.New()
 
@@ -63,25 +58,25 @@ func (a *App) Initialize(config *config.Config) {
 	r.Use(cors.New(corsConfig))
 
 	// Middleware
-	r.Use(dbMiddlewares.DBMiddleware(a.DB))
+	r.Use(dbMiddlewares.DBMiddleware(db.DB))
 }
 
 // SetRoutes ...
 func (a *App) SetRoutes() {
 	r := a.Router
 
-	authenticationService := userServices.AuthenticationService{DB: a.DB}
+	authenticationService := userServices.AuthenticationService{}
 
 	v1 := r.Group("/api/v1")
 	v1.Use(oauth.CookieAuthenticationMiddleware(authenticationService))
 
-	feedbackValidator := feedbackValidators.FeedbackValidators{DB: a.DB}
+	feedbackValidator := feedbackValidators.FeedbackValidators{}
 	feedbackValidator.Register()
 
-	retrospectiveValidator := retrospectiveValidators.RetrospectiveValidators{DB: a.DB}
+	retrospectiveValidator := retrospectiveValidators.RetrospectiveValidators{}
 	retrospectiveValidator.Register()
 
-	feedbackService := feedbackServices.FeedbackService{DB: a.DB}
+	feedbackService := feedbackServices.FeedbackService{}
 	feedbackController := apiControllers.FeedbackController{FeedbackService: feedbackService}
 	feedbackController.Routes(v1.Group("feedbacks"))
 
@@ -91,7 +86,7 @@ func (a *App) SetRoutes() {
 	userController := apiControllers.UserController{}
 	userController.Routes(v1.Group("users"))
 
-	teamService := userServices.TeamService{DB: a.DB}
+	teamService := userServices.TeamService{}
 	teamControllerRoute := v1.Group("teams")
 	teamController := apiControllers.TeamController{TeamService: teamService}
 	teamController.Routes(teamControllerRoute)
@@ -99,18 +94,18 @@ func (a *App) SetRoutes() {
 	authController := controllers.UserAuthController{AuthService: authenticationService}
 	authController.Routes(r.Group("/"))
 
-	permissionService := retrospectiveServices.PermissionService{DB: a.DB}
-	trailService := retrospectiveServices.TrailService{DB: a.DB}
-	retrospectiveService := retrospectiveServices.RetrospectiveService{DB: a.DB, TeamService: teamService}
+	permissionService := retrospectiveServices.PermissionService{}
+	trailService := retrospectiveServices.TrailService{}
+	retrospectiveService := retrospectiveServices.RetrospectiveService{TeamService: teamService}
 	retrospectiveRoute := v1.Group("retrospectives")
 
 	retrospectiveController := apiControllers.RetrospectiveController{RetrospectiveService: retrospectiveService, PermissionService: permissionService, TrailService: trailService}
 	retrospectiveController.Routes(retrospectiveRoute)
 
-	retrospectiveFeedbackService := retrospectiveServices.RetrospectiveFeedbackService{DB: a.DB}
+	retrospectiveFeedbackService := retrospectiveServices.RetrospectiveFeedbackService{}
 
 	sprintRoute := retrospectiveRoute.Group(":retroID/sprints")
-	sprintService := retrospectiveServices.SprintService{DB: a.DB}
+	sprintService := retrospectiveServices.SprintService{}
 	sprintController := apiControllers.SprintController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}
 	sprintController.Routes(sprintRoute)
 
@@ -139,7 +134,7 @@ func (a *App) SetRoutes() {
 		TrailService:                 trailService}
 	sprintNoteController.Routes(sprintNoteRoute)
 
-	taskService := retrospectiveServices.TaskService{DB: a.DB}
+	taskService := retrospectiveServices.TaskService{}
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
 	tasksController := apiControllers.TaskController{TaskService: taskService, PermissionService: permissionService, TrailService: trailService}
 	tasksController.Routes(taskRoute)
@@ -152,10 +147,10 @@ func (a *App) SetRoutes() {
 // SetAdminRoutes ...
 func (a *App) SetAdminRoutes() {
 	r := a.Router
-	admin := &Admin{DB: a.DB}
+	admin := &Admin{DB: db.DB}
 	adminRouter := admin.Router()
 
-	authenticationService := userServices.AuthenticationService{DB: a.DB}
+	authenticationService := userServices.AuthenticationService{}
 
 	adminRouterGroup := r.Group("/admin")
 	adminRouterGroup.Use(oauth.AdminCookieAuthenticationMiddleware(authenticationService))
