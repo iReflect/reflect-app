@@ -27,7 +27,7 @@ func (service SprintTaskService) List(
 	taskList = new(retroSerializers.SprintTasksSerializer)
 
 	// TODO Update to include non-timesheet sprint tasks too
-	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID, nil).
+	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
 		Select(`
             sprint_tasks.id,
             tasks.key,       
@@ -66,12 +66,15 @@ func (service SprintTaskService) List(
 func (service SprintTaskService) Get(
 	sprintTaskID string,
 	retroID string,
-	sprintID string) (task *retroSerializers.SprintTask, status int, err error) {
+	sprintID string) (*retroSerializers.SprintTask, int, error) {
 	db := service.DB
-	var tasks []retroSerializers.SprintTask
+	var task retroSerializers.SprintTask
 
-	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID, &sprintTaskID).
-		Where("sprint_tasks.id = ?", sprintTaskID).
+	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
+		Select("task_id").QueryExpr()
+
+	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
+		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
 		Select(`
             sprint_tasks.id,
             tasks.key,       
@@ -87,15 +90,15 @@ func (service SprintTaskService) Get(
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(t.*) FROM (?) AS t WHERE t.sprint_id = ?", dbs, sprintID).
-		Scan(&tasks).Error
+	err := db.Raw("SELECT DISTINCT(t.*) FROM (?) AS t WHERE t.sprint_id = ? AND t.id = ?", dbs, sprintID, sprintTaskID).
+		Scan(&task).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to get task")
 	}
 
-	return &tasks[0], http.StatusOK, nil
+	return &task, http.StatusOK, nil
 }
 
 // MarkDone ...
@@ -318,20 +321,14 @@ func (service SprintTaskService) UpdateTaskMember(
 }
 
 // tasksForActiveAndCurrentSprint ...
-func (service SprintTaskService) tasksForActiveAndCurrentSprint(retroID string, sprintID string, sprintTaskID *string) *gorm.DB {
+func (service SprintTaskService) tasksForActiveAndCurrentSprint(retroID string, sprintID string) *gorm.DB {
 	db := service.DB
 
-	query := db.Model(retroModels.Task{}).
+	return db.Model(retroModels.Task{}).
 		Where("tasks.retrospective_id = ?", retroID).
 		Scopes(retroModels.TaskJoinST, retroModels.STJoinSMT, retroModels.SMTJoinSM, retroModels.SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint)
-	if sprintTaskID != nil {
-		sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
-			Select("task_id").QueryExpr()
-		query = query.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
-	}
-	return query
 }
 
 // smtForActiveAndCurrentSprint ...

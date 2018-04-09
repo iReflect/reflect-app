@@ -33,15 +33,15 @@ func (role MemberTaskRole) GetStringValue() string {
 // MemberTaskRole
 const (
 	Implementor MemberTaskRole = iota
-	Reviewer    
-	Validator   
+	Reviewer
+	Validator
 )
 
 // SprintMemberTask represents a task for a member for a particular sprint
 type SprintMemberTask struct {
 	gorm.Model
 	SprintMember     SprintMember
-	SprintMemberID   uint                 `gorm:"not null"`
+	SprintMemberID   uint `gorm:"not null"`
 	SprintTask       SprintTask
 	SprintTaskID     uint                 `gorm:"not null"`
 	TimeSpentMinutes uint                 `gorm:"not null"`
@@ -66,7 +66,7 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	if sprintMemberID == 0 {
 		sprintMemberID = sprintMemberTask.SprintMember.ID
 	}
-	
+
 	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
 	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberID).
