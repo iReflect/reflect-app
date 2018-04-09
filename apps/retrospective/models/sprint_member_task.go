@@ -56,17 +56,28 @@ type SprintMemberTask struct {
 func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	var pointSum float64
 	var task Task
-	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintMemberTask.SprintTaskID).
+
+	sprintTaskID := sprintMemberTask.SprintTaskID
+	if sprintTaskID == 0 {
+		sprintTaskID = sprintMemberTask.SprintTask.ID
+	}
+
+	sprintMemberID := sprintMemberTask.SprintMemberID
+	if sprintMemberID == 0 {
+		sprintMemberID = sprintMemberTask.SprintMember.ID
+	}
+	
+	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
-	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberTask.SprintMemberID).
+	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberID).
 		Select("sprint_id").QueryExpr()
 
-	err = db.Model(&Task{}).Scopes(TaskJoinST).Where("sprint_tasks.id = ?", sprintMemberTask.SprintTaskID).
+	err = db.Model(&Task{}).Scopes(TaskJoinST).Where("sprint_tasks.id = ?", sprintTaskID).
 		First(&task).Error
 	if err != nil {
 		utils.LogToSentry(err)
 		return err
-	}	
+	}
 	// Sum of points earned for a task across all sprintMembers should not exceed the task's estimate.
 	// Adding a 0.05 buffer for rounding errors
 	// ToDo: Revisit to see if we can improve this.

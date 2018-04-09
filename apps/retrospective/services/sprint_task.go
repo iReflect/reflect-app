@@ -26,6 +26,7 @@ func (service SprintTaskService) List(
 	db := service.DB
 	taskList = new(retroSerializers.SprintTasksSerializer)
 
+	// TODO Update to include non-timesheet sprint tasks too
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID, nil).
 		Select(`
             sprint_tasks.id,
@@ -70,7 +71,7 @@ func (service SprintTaskService) Get(
 	var tasks []retroSerializers.SprintTask
 
 	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID, &sprintTaskID).
-		Where("tasks.id = ?", sprintTaskID).
+		Where("sprint_tasks.id = ?", sprintTaskID).
 		Select(`
             sprint_tasks.id,
             tasks.key,       
@@ -116,7 +117,7 @@ func (service SprintTaskService) MarkDone(
 		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
 	}
 
-	query := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Select("id").QueryExpr()
+	query := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Select("task_id").QueryExpr()
 	err = db.Model(&retroModels.Task{}).
 		Where("id = (?)", query).
 		Update("done_at", gorm.Expr("COALESCE(done_at, ?)", *sprint.EndDate)).
@@ -139,7 +140,7 @@ func (service SprintTaskService) MarkUndone(
 	retroID string,
 	sprintID string) (task *retroSerializers.SprintTask, status int, err error) {
 	db := service.DB
-	query := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Select("id").QueryExpr()
+	query := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Select("task_id").QueryExpr()
 	err = db.Model(&retroModels.Task{}).
 		Where("id = (?)", query).
 		Update("done_at", nil).
