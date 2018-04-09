@@ -9,26 +9,26 @@ import (
 	"strconv"
 )
 
-// TaskController ...
-type TaskController struct {
-	TaskService       retroServices.TaskService
+// SprinTaskController ...
+type SprinTaskController struct {
+	SprintTaskService retroServices.SprintTaskService
 	PermissionService retroServices.PermissionService
 	TrailService      retroServices.TrailService
 }
 
 // Routes for Tasks
-func (ctrl TaskController) Routes(r *gin.RouterGroup) {
+func (ctrl SprinTaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
-	r.GET("/:taskID/", ctrl.Get)
-	r.POST("/:taskID/done/", ctrl.MarkDone)
-	r.DELETE("/:taskID/done/", ctrl.MarkUndone)
-	r.GET("/:taskID/members/", ctrl.GetMembers)
-	r.POST("/:taskID/members/", ctrl.AddMember)
-	r.PUT("/:taskID/members/:smtID/", ctrl.UpdateTaskMember)
+	r.GET("/:sprintTaskID/", ctrl.Get)
+	r.POST("/:sprintTaskID/done/", ctrl.MarkDone)
+	r.DELETE("/:sprintTaskID/done/", ctrl.MarkUndone)
+	r.GET("/:sprintTaskID/members/", ctrl.GetMembers)
+	r.POST("/:sprintTaskID/members/", ctrl.AddMember)
+	r.PUT("/:sprintTaskID/members/:smtID/", ctrl.UpdateTaskMember)
 }
 
 // List ...
-func (ctrl TaskController) List(c *gin.Context) {
+func (ctrl SprinTaskController) List(c *gin.Context) {
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
@@ -38,7 +38,7 @@ func (ctrl TaskController) List(c *gin.Context) {
 		return
 	}
 
-	tasks, status, err := ctrl.TaskService.List(retroID, sprintID)
+	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -49,18 +49,18 @@ func (ctrl TaskController) List(c *gin.Context) {
 }
 
 // Get ...
-func (ctrl TaskController) Get(c *gin.Context) {
-	id := c.Param("taskID")
+func (ctrl SprinTaskController) Get(c *gin.Context) {
+	id := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessTask(retroID, sprintID, id, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanAccessSprintTask(retroID, sprintID, id, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	task, status, err := ctrl.TaskService.Get(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.Get(id, retroID, sprintID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -71,18 +71,18 @@ func (ctrl TaskController) Get(c *gin.Context) {
 }
 
 // MarkDone ...
-func (ctrl TaskController) MarkDone(c *gin.Context) {
-	id := c.Param("taskID")
+func (ctrl SprinTaskController) MarkDone(c *gin.Context) {
+	id := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, id, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, id, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	task, status, err := ctrl.TaskService.MarkDone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -93,18 +93,18 @@ func (ctrl TaskController) MarkDone(c *gin.Context) {
 }
 
 // MarkUndone ...
-func (ctrl TaskController) MarkUndone(c *gin.Context) {
-	id := c.Param("taskID")
+func (ctrl SprinTaskController) MarkUndone(c *gin.Context) {
+	id := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, id, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, id, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	task, status, err := ctrl.TaskService.MarkUndone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -115,18 +115,18 @@ func (ctrl TaskController) MarkUndone(c *gin.Context) {
 }
 
 // GetMembers ...
-func (ctrl TaskController) GetMembers(c *gin.Context) {
-	id := c.Param("taskID")
+func (ctrl SprinTaskController) GetMembers(c *gin.Context) {
+	id := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanAccessTask(retroID, sprintID, id, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanAccessSprintTask(retroID, sprintID, id, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	members, status, err := ctrl.TaskService.GetMembers(id, retroID, sprintID)
+	members, status, err := ctrl.SprintTaskService.GetMembers(id, retroID, sprintID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -137,43 +137,43 @@ func (ctrl TaskController) GetMembers(c *gin.Context) {
 }
 
 // AddMember adds a member for a task in a particular sprint of a retro
-func (ctrl TaskController) AddMember(c *gin.Context) {
-	taskID := c.Param("taskID")
+func (ctrl SprinTaskController) AddMember(c *gin.Context) {
+	sprintTaskID := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, taskID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	addTaskMemberData := retroSerializers.AddTaskMemberSerializer{}
+	addTaskMemberData := retroSerializers.AddSprintTaskMemberSerializer{}
 	if err := c.BindJSON(&addTaskMemberData); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
 
-	members, status, err := ctrl.TaskService.AddMember(taskID, retroID, sprintID, addTaskMemberData.MemberID)
+	members, status, err := ctrl.SprintTaskService.AddMember(sprintTaskID, retroID, sprintID, addTaskMemberData.MemberID)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctrl.TrailService.Add("Added Task Member", "Sprint Member Task", taskID, userID.(uint))
+	ctrl.TrailService.Add("Added SprintTask Member", "Sprint Member SprintTask", sprintTaskID, userID.(uint))
 
 	c.JSON(status, members)
 }
 
 // UpdateTaskMember updates a member for a task in a particular sprint of a retro
-func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
-	taskID := c.Param("taskID")
+func (ctrl SprinTaskController) UpdateTaskMember(c *gin.Context) {
+	sprintTaskID := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
 	userID, _ := c.Get("userID")
 
-	if !ctrl.PermissionService.UserCanEditTask(retroID, sprintID, taskID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -184,14 +184,14 @@ func (ctrl TaskController) UpdateTaskMember(c *gin.Context) {
 		return
 	}
 
-	taskMember, status, err := ctrl.TaskService.UpdateTaskMember(taskID, retroID, sprintID, &taskMemberData)
+	taskMember, status, err := ctrl.SprintTaskService.UpdateTaskMember(sprintTaskID, retroID, sprintID, &taskMemberData)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Task Member", "Sprint Member Task", strconv.Itoa(int(taskMember.ID)), userID.(uint))
+	ctrl.TrailService.Add("Updated SprintTask Member", "Sprint Member SprintTask", strconv.Itoa(int(taskMember.ID)), userID.(uint))
 
 	c.JSON(status, taskMember)
 }

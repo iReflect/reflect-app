@@ -55,13 +55,17 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 	return err == nil
 }
 
-// UserCanAccessTask ...
-func (service PermissionService) UserCanAccessTask(retroID string, sprintID string, taskID string, userID uint) bool {
+// UserCanAccessSprintTask ...
+func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinTasks, retroModels.RetroJoinUserTeams).
+		Scopes(
+			retroModels.RetroJoinSprints,
+			retroModels.RetroJoinUserTeams,
+			retroModels.SprintJoinST,
+			retroModels.STJoinTask).
 		Where("user_teams.user_id=?", userID).
-		Where("tasks.id=?", taskID).
+		Where("sprint_tasks.id=?", sprintTaskID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
@@ -71,13 +75,17 @@ func (service PermissionService) UserCanAccessTask(retroID string, sprintID stri
 	return err == nil
 }
 
-// UserCanEditTask ...
-func (service PermissionService) UserCanEditTask(retroID string, sprintID string, taskID string, userID uint) bool {
+// UserCanEditSprintTask ...
+func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
-		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinTasks, retroModels.RetroJoinUserTeams).
+		Scopes(
+			retroModels.RetroJoinSprints,
+			retroModels.RetroJoinUserTeams,
+			retroModels.SprintJoinST,
+			retroModels.STJoinTask).
 		Where("user_teams.user_id=?", userID).
-		Where("tasks.id=?", taskID).
+		Where("sprint_tasks.id=?", sprintTaskID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).

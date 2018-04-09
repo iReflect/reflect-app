@@ -67,9 +67,9 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time) int {
 	}
 	duration := end.Sub(start)
 	if duration.Hours() > 24 {
-		weeks := int(math.Ceil(duration.Hours() / (24*7)))
-		workingDays += weeks*5
-	}  else {
+		weeks := int(math.Ceil(duration.Hours() / (24 * 7)))
+		workingDays += weeks * 5
+	} else {
 		workingDays++
 	}
 

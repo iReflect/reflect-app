@@ -49,6 +49,7 @@ type Sprint struct {
 	StartDate       *time.Time
 	EndDate         *time.Time
 	SprintMembers   []SprintMember
+	SprintTasks     []SprintTask
 	LastSyncedAt    *time.Time
 	SyncStatus      []SprintSyncStatus
 	CreatedBy       userModels.User
@@ -164,4 +165,10 @@ func SprintJoinSM(db *gorm.DB) *gorm.DB {
 // SprintJoinRetro ...
 func SprintJoinRetro(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN retrospectives ON sprints.retrospective_id = retrospectives.id").Where("retrospectives.deleted_at IS NULL")
+}
+
+// SprintJoinST ...
+func SprintJoinST(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_tasks ON sprints.id = sprint_tasks.sprint_id").
+		Where("sprint_tasks.deleted_at IS NULL")
 }

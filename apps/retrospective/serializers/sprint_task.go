@@ -2,8 +2,8 @@ package serializers
 
 import "time"
 
-// Task ...
-type Task struct {
+// SprintTask ...
+type SprintTask struct {
 	ID         uint
 	Key        string
 	Summary    string
@@ -18,9 +18,9 @@ type Task struct {
 	IsInvalid  bool
 }
 
-// TasksSerializer ...
-type TasksSerializer struct {
-	Tasks []Task
+// SprintTasksSerializer ...
+type SprintTasksSerializer struct {
+	Tasks []SprintTask
 }
 
 // TaskMember ...
@@ -42,8 +42,8 @@ type TaskMembersSerializer struct {
 	Members []TaskMember
 }
 
-// AddTaskMemberSerializer ...
-type AddTaskMemberSerializer struct {
+// AddSprintTaskMemberSerializer ...
+type AddSprintTaskMemberSerializer struct {
 	MemberID uint `json:"memberID" binding:"required"`
 }
 

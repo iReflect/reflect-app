@@ -74,6 +74,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	}
 
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
+		sprint.ID,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
 		taskTrackerTaskKeySet,
@@ -215,6 +216,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 	}
 
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
+		sprint.ID,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
 		taskTrackerTaskKeySet,
@@ -275,16 +277,16 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	service.SetSyncing(sprint.ID)
 
 	dbs := db.Model(retroModels.SprintMemberTask{}).
-		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinTask, retroModels.SMJoinSprint).
+		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select(`
             sprint_member_tasks.*, 
-            row_number() OVER (PARTITION BY sprint_member_tasks.task_id, sprint_members.sprint_id
+            row_number() OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id
                 ORDER BY sprint_member_tasks.time_spent_minutes desc) AS time_spent_rank,
             sprint_members.sprint_id,
-            (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id)))
+            (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id)))
                 AS remaining_points
         `).
 		QueryExpr()
@@ -292,7 +294,8 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	err = db.Exec(`
     UPDATE sprint_member_tasks 
 	    SET points_assigned = COALESCE(s1.remaining_points,0), 
-            points_earned = COALESCE(s1.remaining_points, 0) 
+            points_earned = COALESCE(s1.remaining_points, 0),
+            updated_at = NOW()
         FROM (?) AS s1 
         WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id
     `, dbs, sprintID).Error
@@ -335,7 +338,7 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 	return ticketKeys, timeLogs, nil
 }
 
-func (service SprintService) insertTimeTrackerTask(ticketKey string, retroID uint) (err error) {
+func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey string, retroID uint) (err error) {
 	tx := service.DB.Begin()
 	var task retroModels.Task
 	err = tx.Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticketKey}).
@@ -360,6 +363,15 @@ func (service SprintService) insertTimeTrackerTask(ticketKey string, retroID uin
 		utils.LogToSentry(err)
 		return err
 	}
+
+	err = tx.Where(retroModels.SprintTask{SprintID: sprintID, TaskID: task.ID}).
+		FirstOrCreate(&retroModels.SprintTask{}).Error
+	if err != nil {
+		tx.Rollback()
+		utils.LogToSentry(err)
+		return err
+	}
+
 	tx.Commit()
 	return nil
 }
@@ -383,7 +395,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
 
 	fmt.Println("Rebalancing Points")
 	activeAndFrozenSprintSMT := tx.Model(retroModels.SprintMemberTask{}).
-		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinTask, retroModels.SMJoinSprint).
+		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.SMJoinSprint).
 		Where("sprints.status <> ?", retroModels.DraftSprint).
 		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.id = ?", task.ID)
@@ -394,7 +406,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
             sprint_member_tasks.*,
             sprint_members.sprint_id, 
 			(tasks.estimate / (SUM(sprint_member_tasks.points_earned) 
-                OVER (PARTITION BY sprint_member_tasks.task_id))) AS estimate_ratio`).
+                OVER (PARTITION BY sprint_tasks.task_id))) AS estimate_ratio`).
 		QueryExpr()
 
 	err = tx.Exec(`
@@ -402,6 +414,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
             sprint_member_tasks
         SET
             points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2)
+            updated_at = NOW()
 		FROM
             (?) AS s1
 		WHERE
@@ -415,14 +428,15 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
 
 	dbs = activeAndFrozenSprintSMT.
 		Select(`
-            DISTINCT(tasks.id)," +
-            (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_member_tasks.task_id)))
+            DISTINCT(tasks.id),
+            (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id)))
                 AS remaining_points`).
 		QueryExpr()
 
 	err = tx.Exec(`
         UPDATE sprint_member_tasks 
-            SET points_earned = round(s2.target_earned::numeric,2)
+            SET points_earned = round(s2.target_earned::numeric,2),
+            updated_at = NOW()
         FROM (
             SELECT 
                 DISTINCT(smt.id),
@@ -431,13 +445,16 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
                 (s1.remaining_points * (points_earned / (SUM(smt.points_earned) OVER (PARTITION BY sm.sprint_id)))) AS target_earned
             FROM sprint_member_tasks 
                 AS smt 
+            JOIN sprint_tasks
+                AS st 
+                ON st.id=smt.sprint_task_id AND st.deleted_at IS NULL
             JOIN sprint_members 
                 AS sm 
                 ON sm.id=smt.sprint_member_id AND sm.deleted_at IS NULL
             JOIN sprints 
                 ON sprints.id=sm.sprint_id AND sprints.deleted_at IS NULL
             JOIN (?) AS s1 
-                ON smt.task_id=s1.id 
+                ON st.task_id=s1.id 
             WHERE sprints.status = ? AND points_earned != 0
         ) AS s2 
         WHERE sprint_member_tasks.id = s2.id AND s2.current_total > s2.remaining_points
@@ -456,6 +473,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
 }
 
 func (service SprintService) addOrUpdateTaskTrackerTask(
+	sprintID uint,
 	ticket taskTrackerSerializers.Task,
 	retroID uint,
 	alternateTaskKey string) (err error) {
@@ -502,6 +520,16 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 		}
 
 	}
+
+	err = tx.Where(retroModels.SprintTask{SprintID: sprintID, TaskID: task.ID}).
+		FirstOrCreate(&retroModels.SprintTask{}).Error
+
+	if err != nil {
+		tx.Rollback()
+		utils.LogToSentry(err)
+		return err
+	}
+
 	if ticket.Estimate == nil {
 		err = service.changeTaskEstimates(tx, task, 0)
 	} else {
@@ -530,7 +558,7 @@ func (service SprintService) fetchAndUpdateTaskTrackerTask(
 		}
 
 		for _, ticket := range tickets {
-			err = service.addOrUpdateTaskTrackerTask(ticket, sprint.RetrospectiveID, "")
+			err = service.addOrUpdateTaskTrackerTask(sprint.ID, ticket, sprint.RetrospectiveID, "")
 			if err != nil {
 				utils.LogToSentry(err)
 				return nil, err
@@ -543,6 +571,7 @@ func (service SprintService) fetchAndUpdateTaskTrackerTask(
 
 // fetchAndUpdateTimeTrackerTask ...
 func (service SprintService) fetchAndUpdateTimeTrackerTask(
+	sprintID uint,
 	retroID uint,
 	taskProviderConfig []byte,
 	taskTrackerTaskKeySet mapset.Set,
@@ -559,7 +588,7 @@ func (service SprintService) fetchAndUpdateTimeTrackerTask(
 
 	timeTrackerTaskKeySet.Clear()
 	for _, ticket := range tickets {
-		err = service.addOrUpdateTaskTrackerTask(ticket, retroID, "")
+		err = service.addOrUpdateTaskTrackerTask(sprintID, ticket, retroID, "")
 		if err != nil {
 			utils.LogToSentry(err)
 			return nil, err
@@ -589,9 +618,9 @@ func (service SprintService) updateMissingTimeTrackerTask(
 		}
 
 		if task != nil {
-			err = service.addOrUpdateTaskTrackerTask(*task, retroID, taskKey.(string))
+			err = service.addOrUpdateTaskTrackerTask(sprintID, *task, retroID, taskKey.(string))
 		} else {
-			err = service.insertTimeTrackerTask(taskKey.(string), retroID)
+			err = service.insertTimeTrackerTask(sprintID, taskKey.(string), retroID)
 		}
 		if err != nil {
 			utils.LogToSentry(err)
@@ -618,7 +647,7 @@ func (service SprintService) updateSprintMemberTimeLog(
 		return err
 	}
 	for _, timeLog := range timeLogs {
-		err = service.addOrUpdateSMT(timeLog, sprintMemberID, retroID)
+		err = service.addOrUpdateSMT(timeLog, sprintMemberID, sprintID, retroID)
 		if err != nil {
 			utils.LogToSentry(err)
 			return err

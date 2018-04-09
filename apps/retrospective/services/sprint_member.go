@@ -249,13 +249,14 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog,
 	sprintMemberID uint,
+	sprintID uint,
 	retroID uint) (err error) {
 	db := service.DB
 	var sprintMemberTask retroModels.SprintMemberTask
-	var task retroModels.Task
+	var sprintTask retroModels.SprintTask
 	err = db.Model(&retroModels.SprintMemberTask{}).
 		Where("sprint_member_id = ?", sprintMemberID).
-		Scopes(retroModels.SMTJoinTask, retroModels.TaskJoinTaskKeyMaps).
+		Scopes(retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.TaskJoinTaskKeyMaps).
 		Where("task_key_maps.key = ?", timeLog.TaskKey).
 		Where("tasks.retrospective_id = ?", retroID).
 		FirstOrInit(&sprintMemberTask).Error
@@ -264,18 +265,19 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 		return nil
 	}
 
-	err = db.Model(&retroModels.Task{}).
-		Scopes(retroModels.TaskJoinTaskKeyMaps).
+	err = db.Model(&retroModels.SprintTask{}).
+		Scopes(retroModels.STJoinTask, retroModels.TaskJoinTaskKeyMaps).
+		Where("sprint_tasks.sprint_id = ?", sprintID).
 		Where("task_key_maps.key = ?", timeLog.TaskKey).
 		Where("tasks.retrospective_id = ?", retroID).
-		First(&task).Error
+		First(&sprintTask).Error
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil
 	}
 
 	sprintMemberTask.SprintMemberID = sprintMemberID
-	sprintMemberTask.TaskID = task.ID
+	sprintMemberTask.SprintTaskID = sprintTask.ID
 	sprintMemberTask.TimeSpentMinutes = timeLog.Minutes
 
 	return db.Save(&sprintMemberTask).Error
