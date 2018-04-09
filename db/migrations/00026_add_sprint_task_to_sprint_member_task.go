@@ -26,6 +26,7 @@ func Up00026(tx *sql.Tx) error {
 	gormdb.Model(&sprintMemberTask{}).AddForeignKey("sprint_task_id", "sprint_tasks(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&sprintMemberTask{}).RemoveForeignKey("task_id", "tasks(id)")
 	gormdb.Model(&sprintMemberTask{}).DropColumn("task_id")
+	gormdb.Model(&sprintMemberTask{}).AddIndex("idx_smt__sprint_task_id", "sprint_task_id")
 
 	return nil
 }
@@ -44,6 +45,7 @@ func Down00026(tx *sql.Tx) error {
 	}
 
 	gormdb.AutoMigrate(&sprintMemberTask{})
+	gormdb.Model(&sprintMemberTask{}).RemoveIndex("idx_smt__sprint_task_id")
 	gormdb.Model(&sprintMemberTask{}).AddForeignKey("task_id", "tasks(id)", "RESTRICT", "RESTRICT")
 	gormdb.Model(&sprintMemberTask{}).RemoveForeignKey("sprint_task_id", "sprint_tasks(id)")
 	gormdb.Model(&sprintMemberTask{}).DropColumn("sprint_task_id")
