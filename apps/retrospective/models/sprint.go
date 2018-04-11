@@ -64,17 +64,38 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		return err
 	}
 
-	if sprint.Status == ActiveSprint {
-		sprints := []Sprint{}
+	var sprints []Sprint
 
-		// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
-		// so we need to add checks for both the cases.
-		retroID := sprint.RetrospectiveID
-		if retroID == 0 {
-			retroID = sprint.Retrospective.ID
+	// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
+	// so we need to add checks for both the cases.
+	retroID := sprint.RetrospectiveID
+	if retroID == 0 {
+		retroID = sprint.Retrospective.ID
+	}
+	baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
+
+	if sprint.Status == DraftSprint {
+
+		// More than one entries with status draft for given retro should not be allowed
+		baseQuery.Where("status = ? AND id <> ?", DraftSprint, sprint.ID).Find(&sprints)
+		if len(sprints) > 0 {
+			err = errors.New("another sprint is currently in draft")
+			return err
 		}
-		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
 
+		// Draft sprint must begin exactly 1 day after last frozen/active sprint
+		lastSprint := Sprint{}
+		if err := baseQuery.Where("status IN (?)", []SprintStatus{CompletedSprint, ActiveSprint}).
+			Order("end_date desc").First(&lastSprint).Error; err == nil {
+			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
+			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
+				err = errors.New("sprint must begin the day after the last completed/activated sprint ended")
+				return err
+			}
+		}
+	}
+
+	if sprint.Status == ActiveSprint {
 		// More than one entries with status active for given retro should not be allowed
 		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints)
 		if len(sprints) > 0 {
@@ -84,7 +105,8 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 
 		// Active sprint must begin exactly 1 day after last completed sprint
 		lastSprint := Sprint{}
-		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").First(&lastSprint).Error; err == nil {
+		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").
+			First(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
 			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
 				err = errors.New("sprint must begin the day after the last completed sprint ended")

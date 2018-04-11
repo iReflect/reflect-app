@@ -168,7 +168,7 @@ func (service SprintTaskService) GetMembers(
 	db := service.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
-	dbs := service.smtForActiveAndCurrentSprint(sprintTaskID, sprintID).
+	dbs := service.smtForActiveAndCurrentSprint(sprintTaskID, retroID, sprintID).
 		Select(`
             sprint_member_tasks.*,
             users.*,
@@ -194,11 +194,13 @@ func (service SprintTaskService) GetMembers(
 // GetMember returns the task member summary of a task for a particular sprint member
 func (service SprintTaskService) GetMember(
 	sprintMemberTask retroModels.SprintMemberTask,
-	memberID uint, sprintID string) (member *retroSerializers.TaskMember, status int, err error) {
+	memberID uint,
+	retroID string,
+	sprintID string) (member *retroSerializers.TaskMember, status int, err error) {
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
-	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.SprintTaskID), sprintID).
+	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.SprintTaskID), retroID, sprintID).
 		Where("sprint_members.member_id = ?", memberID).
 		Select(`
             sprint_member_tasks.*,
@@ -275,7 +277,7 @@ func (service SprintTaskService) AddMember(
 		return nil, http.StatusInternalServerError, errors.New("failed to get member summary")
 	}
 
-	return service.GetMember(sprintMemberTask, sprintMember.MemberID, sprintID)
+	return service.GetMember(sprintMemberTask, sprintMember.MemberID, retroID, sprintID)
 }
 
 // UpdateTaskMember ...
@@ -317,26 +319,47 @@ func (service SprintTaskService) UpdateTaskMember(
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to update task member")
 	}
-	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID, sprintID)
+	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID, retroID, sprintID)
 }
 
 // tasksForActiveAndCurrentSprint ...
 func (service SprintTaskService) tasksForActiveAndCurrentSprint(retroID string, sprintID string) *gorm.DB {
 	db := service.DB
 
+	currentSprintFilter := db.Model(&retroModels.Sprint{}).
+		Where("id = ?", sprintID).
+		Scopes(retroModels.NotDeletedSprint).
+		Select("end_date").QueryExpr()
+
+	sprintFilter := db.Model(&retroModels.Sprint{}).Where("retrospective_id = ? AND start_date < (?)",
+		retroID, currentSprintFilter).
+		Select("id").QueryExpr()
+
 	return db.Model(retroModels.Task{}).
 		Where("tasks.retrospective_id = ?", retroID).
 		Scopes(retroModels.TaskJoinST, retroModels.STJoinSMT, retroModels.SMTJoinSM, retroModels.SMJoinSprint).
-		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Where("sprints.id in (?)", sprintFilter).
 		Scopes(retroModels.NotDeletedSprint)
 }
 
 // smtForActiveAndCurrentSprint ...
-func (service SprintTaskService) smtForActiveAndCurrentSprint(sprintTaskID string, sprintID string) *gorm.DB {
+func (service SprintTaskService) smtForActiveAndCurrentSprint(
+	sprintTaskID string,
+	retroID string,
+	sprintID string) *gorm.DB {
 	db := service.DB
 
 	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
+
+	currentSprintFilter := db.Model(&retroModels.Sprint{}).
+		Where("id = ?", sprintID).
+		Scopes(retroModels.NotDeletedSprint).
+		Select("end_date").QueryExpr()
+
+	sprintFilter := db.Model(&retroModels.Sprint{}).Where("retrospective_id = ? AND start_date < (?)",
+		retroID, currentSprintFilter).
+		Select("id").QueryExpr()
 
 	return db.Model(retroModels.SprintMemberTask{}).
 		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
@@ -346,6 +369,6 @@ func (service SprintTaskService) smtForActiveAndCurrentSprint(sprintTaskID strin
 			retroModels.SMTJoinSM,
 			retroModels.SMJoinSprint,
 			retroModels.SMJoinMember).
-		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Where("sprints.id in (?))", sprintFilter).
 		Scopes(retroModels.NotDeletedSprint)
 }

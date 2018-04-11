@@ -32,7 +32,6 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
-		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
@@ -68,7 +67,6 @@ func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintI
 		Where("sprint_tasks.id=?", sprintTaskID).
 		Where("retrospectives.id=?", retroID).
 		Where("sprints.id=?", sprintID).
-		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error

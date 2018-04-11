@@ -67,10 +67,16 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 		sprintMemberID = sprintMemberTask.SprintMember.ID
 	}
 
-	sprintTaskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).
+	taskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
-	sprintFilter := db.Model(&SprintMember{}).Where("id = ?", sprintMemberID).
-		Select("sprint_id").QueryExpr()
+	
+	currentSprintFilter := db.Model(&Sprint{}).Scopes(SprintJoinST).
+		Where("sprint_tasks.id = ?", sprintTaskID).
+		Scopes(NotDeletedSprint)
+	sprintFilter := db.Model(&Sprint{}).Where("retrospective_id = (?) AND start_date < (?)", 
+		currentSprintFilter.Select("retrospective_id").QueryExpr(),
+		currentSprintFilter.Select("end_date").QueryExpr()).
+		Select("id").QueryExpr()
 
 	err = db.Model(&Task{}).Scopes(TaskJoinST).Where("sprint_tasks.id = ?", sprintTaskID).
 		First(&task).Error
@@ -83,9 +89,9 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	// ToDo: Revisit to see if we can improve this.
 	db.Model(SprintMemberTask{}).
 		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
-		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
+		Where("sprint_tasks.task_id = (?)", taskFilter).
 		Scopes(SMTJoinST, SMTJoinSM, SMJoinSprint).
-		Where("(sprints.status <> ? OR sprints.id = (?))", DraftSprint, sprintFilter).
+		Where("sprints.id in (?)", sprintFilter).
 		Scopes(NotDeletedSprint).
 		Select("SUM(points_earned)").Row().Scan(&pointSum)
 
