@@ -23,7 +23,7 @@ Q = $(if $(filter 1,$V),,@)
 M = $(shell printf "\033[34;1m▶\033[0m")
 
 .PHONY: all
-all: clean | $(BASE) ; $(info $(M) building executable…) @ ## Build program binary
+all: clean vendor | $(BASE) ; $(info $(M) building executable…) @ ## Build program binary
 	mkdir -p $(BUILD_DIR)
 	
 	$Q cd $(BASE) && GOOS=linux GOARCH=amd64 $(GO) build \
@@ -87,7 +87,7 @@ COVERAGE_HTML = $(COVERAGE_DIR)/index.html
 .PHONY: test-coverage test-coverage-tools
 test-coverage-tools: | $(GOCOVMERGE) $(GOCOV) $(GOCOVXML)
 test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage.$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-test-coverage: fmt vendor test-coverage-tools | $(BASE) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
+test-coverage: fmt test-coverage-tools | $(BASE) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)/coverage
 	$Q cd $(BASE) && for pkg in $(TESTPKGS); do \
 		$(GO) test -v \
@@ -102,7 +102,7 @@ test-coverage: fmt vendor test-coverage-tools | $(BASE) ; $(info $(M) running co
 	$Q $(GOCOV) convert $(COVERAGE_PROFILE) | $(GOCOVXML) > $(COVERAGE_XML)
 
 .PHONY: lint
-lint: vendor | $(BASE) $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
+lint: $(BASE) $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
 	$Q cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
 		test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	 done ; exit $$ret

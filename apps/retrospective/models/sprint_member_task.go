@@ -69,11 +69,11 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 
 	taskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
-	
+
 	currentSprintFilter := db.Model(&Sprint{}).Scopes(SprintJoinST).
 		Where("sprint_tasks.id = ?", sprintTaskID).
 		Scopes(NotDeletedSprint)
-	sprintFilter := db.Model(&Sprint{}).Where("retrospective_id = (?) AND start_date < (?)", 
+	sprintFilter := db.Model(&Sprint{}).Where("retrospective_id = (?) AND start_date < (?)",
 		currentSprintFilter.Select("retrospective_id").QueryExpr(),
 		currentSprintFilter.Select("end_date").QueryExpr()).
 		Select("id").QueryExpr()

@@ -29,7 +29,7 @@ func (sprint *Sprint) SetEditable(userID uint) {
 	if sprint.Editable == nil {
 		sprint.Editable = new(bool)
 	}
-	 *sprint.Editable = sprint.Status == retroModels.ActiveSprint ||
+	*sprint.Editable = sprint.Status == retroModels.ActiveSprint ||
 		(sprint.Status == retroModels.DraftSprint && sprint.CreatedByID == userID)
 }
 
