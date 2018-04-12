@@ -280,5 +280,5 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	sprintMemberTask.SprintTaskID = sprintTask.ID
 	sprintMemberTask.TimeSpentMinutes = timeLog.Minutes
 
-	return db.Save(&sprintMemberTask).Error
+	return db.Set("smt:disable_validate", true).Save(&sprintMemberTask).Error
 }
