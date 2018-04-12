@@ -135,7 +135,7 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 }
 
 // Get return details of the given sprint
-func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int, error) {
+func (service SprintService) Get(sprintID string, userID uint) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
 
@@ -172,6 +172,7 @@ func (service SprintService) Get(sprintID string) (*retroSerializers.Sprint, int
 		sprint.SyncStatus = int8(retroModels.NotSynced)
 	}
 
+	sprint.SetEditable(userID)
 	return &sprint, http.StatusOK, nil
 }
 
@@ -298,9 +299,9 @@ func (service SprintService) GetSprintsList(
 	db := service.DB
 	sprints = new(retroSerializers.SprintsSerializer)
 
+
 	err = db.Model(&retroModels.Sprint{}).
 		Where("retrospective_id = ?", retrospectiveID).
-		Where("(sprints.status <> ? OR created_by_id = ?)", retroModels.DraftSprint, userID).
 		Scopes(retroModels.NotDeletedSprint).
 		Preload("CreatedBy").
 		Order("end_date DESC, status, title, id").
@@ -314,7 +315,9 @@ func (service SprintService) GetSprintsList(
 }
 
 // Create creates a new sprint for the retro
-func (service SprintService) Create(retroID string,
+func (service SprintService) Create(
+	retroID string,
+	userID uint,
 	sprintData retroSerializers.CreateSprintSerializer) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var err error
@@ -456,7 +459,7 @@ func (service SprintService) Create(retroID string,
 	service.SetNotSynced(sprint.ID)
 	service.QueueSprint(sprint.ID, true)
 
-	return service.Get(fmt.Sprint(sprint.ID))
+	return service.Get(fmt.Sprint(sprint.ID), userID)
 }
 
 // ValidateSprint validate the given sprint
@@ -503,7 +506,9 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
 }
 
 // UpdateSprint updates the given sprint
-func (service SprintService) UpdateSprint(sprintID string,
+func (service SprintService) UpdateSprint(
+	sprintID string,
+	userID uint,
 	sprintData retroSerializers.UpdateSprintSerializer) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var sprint retroModels.Sprint
@@ -521,5 +526,5 @@ func (service SprintService) UpdateSprint(sprintID string,
 		return nil, http.StatusInternalServerError, errors.New("sprint couldn't be updated")
 	}
 
-	return service.Get(sprintID)
+	return service.Get(sprintID, userID)
 }

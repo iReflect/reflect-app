@@ -1,6 +1,7 @@
 package serializers
 
 import (
+	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	"time"
 
 	userSerializer "github.com/iReflect/reflect-app/apps/user/serializers"
@@ -11,7 +12,7 @@ type Sprint struct {
 	ID              uint
 	Title           string
 	SprintID        string
-	Status          int8
+	Status          retroModels.SprintStatus
 	StartDate       time.Time
 	EndDate         time.Time
 	LastSyncedAt    *time.Time
@@ -20,6 +21,13 @@ type Sprint struct {
 	CreatedByID     uint
 	RetrospectiveID uint
 	Summary         SprintSummary
+	Editable        *bool
+}
+
+// SetEditable ...
+func (sprint *Sprint) SetEditable(userID uint) {
+	 *sprint.Editable = sprint.Status == retroModels.ActiveSprint ||
+		(sprint.Status == retroModels.DraftSprint && sprint.CreatedByID == userID)
 }
 
 // SprintSummary ...

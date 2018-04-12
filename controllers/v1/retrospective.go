@@ -89,7 +89,7 @@ func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
 		return
 	}
 
-	sprint, status, err := ctrl.RetrospectiveService.GetLatestSprint(retroID)
+	sprint, status, err := ctrl.RetrospectiveService.GetLatestSprint(retroID, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

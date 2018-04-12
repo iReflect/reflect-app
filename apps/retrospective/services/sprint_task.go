@@ -27,7 +27,7 @@ func (service SprintTaskService) List(
 	taskList = new(retroSerializers.SprintTasksSerializer)
 
 	// TODO Update to include non-timesheet sprint tasks too
-	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
+	dbs := service.tasksForCurrentSprint(retroID, sprintID).
 		Select(`
             sprint_tasks.id,
             tasks.key,       
@@ -73,7 +73,7 @@ func (service SprintTaskService) Get(
 	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
 
-	dbs := service.tasksForActiveAndCurrentSprint(retroID, sprintID).
+	dbs := service.tasksForCurrentSprint(retroID, sprintID).
 		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
 		Select(`
             sprint_tasks.id,
@@ -168,7 +168,7 @@ func (service SprintTaskService) GetMembers(
 	db := service.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
-	dbs := service.smtForActiveAndCurrentSprint(sprintTaskID, retroID, sprintID).
+	dbs := service.smtForCurrentSprint(sprintTaskID, retroID, sprintID).
 		Select(`
             sprint_member_tasks.*,
             users.*,
@@ -200,7 +200,7 @@ func (service SprintTaskService) GetMember(
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
-	tempDB := service.smtForActiveAndCurrentSprint(fmt.Sprint(sprintMemberTask.SprintTaskID), retroID, sprintID).
+	tempDB := service.smtForCurrentSprint(fmt.Sprint(sprintMemberTask.SprintTaskID), retroID, sprintID).
 		Where("sprint_members.member_id = ?", memberID).
 		Select(`
             sprint_member_tasks.*,
@@ -322,8 +322,8 @@ func (service SprintTaskService) UpdateTaskMember(
 	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID, retroID, sprintID)
 }
 
-// tasksForActiveAndCurrentSprint ...
-func (service SprintTaskService) tasksForActiveAndCurrentSprint(retroID string, sprintID string) *gorm.DB {
+// tasksForCurrentSprint ...
+func (service SprintTaskService) tasksForCurrentSprint(retroID string, sprintID string) *gorm.DB {
 	db := service.DB
 
 	currentSprintFilter := db.Model(&retroModels.Sprint{}).
@@ -342,8 +342,8 @@ func (service SprintTaskService) tasksForActiveAndCurrentSprint(retroID string, 
 		Scopes(retroModels.NotDeletedSprint)
 }
 
-// smtForActiveAndCurrentSprint ...
-func (service SprintTaskService) smtForActiveAndCurrentSprint(
+// smtForCurrentSprint ...
+func (service SprintTaskService) smtForCurrentSprint(
 	sprintTaskID string,
 	retroID string,
 	sprintID string) *gorm.DB {
@@ -369,6 +369,6 @@ func (service SprintTaskService) smtForActiveAndCurrentSprint(
 			retroModels.SMTJoinSM,
 			retroModels.SMJoinSprint,
 			retroModels.SMJoinMember).
-		Where("sprints.id in (?))", sprintFilter).
+		Where("sprints.id in (?)", sprintFilter).
 		Scopes(retroModels.NotDeletedSprint)
 }
