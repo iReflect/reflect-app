@@ -7,6 +7,8 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"database/sql"
+	customErrors "github.com/iReflect/reflect-app/libs"
+
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -420,6 +422,9 @@ func (service SprintService) Create(
 
 	if err = tx.Create(&sprint).Error; err != nil {
 		tx.Rollback()
+		if customErrors.IsModelError(err) {
+			return nil, http.StatusBadRequest, err
+		}
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
 	}

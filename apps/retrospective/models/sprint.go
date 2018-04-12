@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	customErrors "github.com/iReflect/reflect-app/libs"
 	"strconv"
 	"time"
 
@@ -79,8 +80,7 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		// More than one entries with status draft for given retro should not be allowed
 		baseQuery.Where("status = ? AND id <> ?", DraftSprint, sprint.ID).Find(&sprints)
 		if len(sprints) > 0 {
-			err = errors.New("another sprint is currently in draft")
-			return err
+			return &customErrors.ModelError{Message:"another sprint is currently in draft"}
 		}
 
 		// Draft sprint must begin exactly 1 day after last frozen/active sprint
@@ -89,8 +89,7 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 			Order("end_date desc").First(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
 			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
-				err = errors.New("sprint must begin the day after the last completed/activated sprint ended")
-				return err
+				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed/activated sprint ended"}
 			}
 		}
 	}
@@ -109,8 +108,7 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 			First(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
 			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
-				err = errors.New("sprint must begin the day after the last completed sprint ended")
-				return err
+				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed sprint ended"}
 			}
 		}
 	}
