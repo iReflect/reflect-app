@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	customErrors "github.com/iReflect/reflect-app/libs"
 	"strconv"
 	"time"
 
@@ -64,17 +65,37 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		return err
 	}
 
-	if sprint.Status == ActiveSprint {
-		sprints := []Sprint{}
+	var sprints []Sprint
 
-		// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
-		// so we need to add checks for both the cases.
-		retroID := sprint.RetrospectiveID
-		if retroID == 0 {
-			retroID = sprint.Retrospective.ID
+	// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
+	// so we need to add checks for both the cases.
+	retroID := sprint.RetrospectiveID
+	if retroID == 0 {
+		retroID = sprint.Retrospective.ID
+	}
+	baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID).Scopes(NotDeletedSprint)
+	lastSprint := Sprint{}
+
+	if sprint.Status == DraftSprint {
+
+		// More than one entries with status draft for given retro should not be allowed
+		baseQuery.Where("status = ? AND id <> ?", DraftSprint, sprint.ID).Find(&sprints)
+		if len(sprints) > 0 {
+			return &customErrors.ModelError{Message:"another sprint is currently in draft"}
 		}
-		baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
 
+		// Draft sprint must begin exactly 1 day after last frozen/active sprint
+		if err := baseQuery.Where("status IN (?)", []SprintStatus{CompletedSprint, ActiveSprint}).
+			Order("end_date desc").First(&lastSprint).Error; err == nil {
+			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
+			startDate := sprint.StartDate.UTC()
+			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
+				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed/activated sprint ended"}
+			}
+		}
+	}
+
+	if sprint.Status == ActiveSprint {
 		// More than one entries with status active for given retro should not be allowed
 		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints)
 		if len(sprints) > 0 {
@@ -83,12 +104,12 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		}
 
 		// Active sprint must begin exactly 1 day after last completed sprint
-		lastSprint := Sprint{}
-		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").First(&lastSprint).Error; err == nil {
-			expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
-			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
-				err = errors.New("sprint must begin the day after the last completed sprint ended")
-				return err
+		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").
+			First(&lastSprint).Error; err == nil {
+			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
+			startDate := sprint.StartDate.UTC()
+			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
+				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed sprint ended"}
 			}
 		}
 	}
@@ -115,10 +136,10 @@ func RegisterSprintToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprint.Meta(&statusMeta)
 	sprint.Meta(&createdByMeta)
 
-	sprint.IndexAttrs("-SprintMembers", "-SyncStatus")
-	sprint.NewAttrs("-SprintMembers", "-SyncStatus")
-	sprint.EditAttrs("-SprintMembers", "-SyncStatus")
-	sprint.ShowAttrs("-SprintMembers", "-SyncStatus")
+	sprint.IndexAttrs("-SprintTasks", "-SprintMembers", "-SyncStatus")
+	sprint.NewAttrs("-SprintTasks", "-SprintMembers", "-SyncStatus")
+	sprint.EditAttrs("-SprintTasks", "-SprintMembers", "-SyncStatus")
+	sprint.ShowAttrs("-SprintTasks", "-SprintMembers", "-SyncStatus")
 }
 
 // getSprintStatusFieldMeta is the meta config for the sprint status field

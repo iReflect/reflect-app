@@ -64,7 +64,7 @@ func (ctrl SprintController) Create(c *gin.Context) {
 		return
 	}
 
-	sprint, status, err := ctrl.SprintService.Create(retroID, sprintData)
+	sprint, status, err := ctrl.SprintService.Create(retroID, userID.(uint), sprintData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -85,7 +85,7 @@ func (ctrl SprintController) Get(c *gin.Context) {
 		return
 	}
 
-	sprint, status, err := ctrl.SprintService.Get(sprintID)
+	sprint, status, err := ctrl.SprintService.Get(sprintID, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -129,7 +129,7 @@ func (ctrl SprintController) Update(c *gin.Context) {
 		return
 	}
 
-	response, status, err := ctrl.SprintService.UpdateSprint(sprintID, sprintData)
+	response, status, err := ctrl.SprintService.UpdateSprint(sprintID, userID.(uint), sprintData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

@@ -93,7 +93,7 @@ func getConfigObject(config interface{}) (JIRAConfig, error) {
 	case JIRAConfig:
 		c = config.(JIRAConfig)
 	default:
-		return c, errors.New("Invalid type")
+		return c, errors.New("invalid type")
 	}
 	return c, nil
 }

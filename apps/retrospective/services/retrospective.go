@@ -112,7 +112,7 @@ func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userI
 }
 
 // GetLatestSprint returns the latest sprint for the retro
-func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSerializers.Sprint, int, error) {
+func (service RetrospectiveService) GetLatestSprint(retroID string, userID uint) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
 
@@ -129,7 +129,7 @@ func (service RetrospectiveService) GetLatestSprint(retroID string) (*retroSeria
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, err
 	}
-
+	sprint.SetEditable(userID)
 	return &sprint, http.StatusOK, nil
 }
 
