@@ -23,7 +23,7 @@ Q = $(if $(filter 1,$V),,@)
 M = $(shell printf "\033[34;1m▶\033[0m")
 
 .PHONY: all
-all: clean vendor | $(BASE) ; $(info $(M) building executable…) @ ## Build program binary
+all: clean | $(BASE) ; $(info $(M) building executable…) @ ## Build program binary
 	mkdir -p $(BUILD_DIR)
 	
 	$Q cd $(BASE) && GOOS=linux GOARCH=amd64 $(GO) build \
