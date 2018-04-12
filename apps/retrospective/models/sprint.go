@@ -73,7 +73,8 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 	if retroID == 0 {
 		retroID = sprint.Retrospective.ID
 	}
-	baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID)
+	baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID).Scopes(NotDeletedSprint)
+	lastSprint := Sprint{}
 
 	if sprint.Status == DraftSprint {
 
@@ -84,11 +85,11 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		}
 
 		// Draft sprint must begin exactly 1 day after last frozen/active sprint
-		lastSprint := Sprint{}
 		if err := baseQuery.Where("status IN (?)", []SprintStatus{CompletedSprint, ActiveSprint}).
 			Order("end_date desc").First(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
-			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
+			startDate := sprint.StartDate.UTC()
+			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
 				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed/activated sprint ended"}
 			}
 		}
@@ -103,11 +104,11 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		}
 
 		// Active sprint must begin exactly 1 day after last completed sprint
-		lastSprint := Sprint{}
 		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").
 			First(&lastSprint).Error; err == nil {
 			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
-			if expectedDate.Year() != sprint.StartDate.Year() || expectedDate.YearDay() != sprint.StartDate.YearDay() {
+			startDate := sprint.StartDate.UTC()
+			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
 				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed sprint ended"}
 			}
 		}
