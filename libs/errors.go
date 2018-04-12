@@ -9,7 +9,7 @@ func (e *ModelError) Error() string {
 }
 
 // IsModelError ..
-func IsModelError(err interface{}) (bool) {
+func IsModelError(err interface{}) bool {
 	_, ok := err.(*ModelError)
 	return ok
 }

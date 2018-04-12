@@ -81,7 +81,7 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		// More than one entries with status draft for given retro should not be allowed
 		baseQuery.Where("status = ? AND id <> ?", DraftSprint, sprint.ID).Find(&sprints)
 		if len(sprints) > 0 {
-			return &customErrors.ModelError{Message:"another sprint is currently in draft"}
+			return &customErrors.ModelError{Message: "another sprint is currently in draft"}
 		}
 
 		// Draft sprint must begin exactly 1 day after last frozen/active sprint
@@ -90,7 +90,7 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
 			startDate := sprint.StartDate.UTC()
 			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
-				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed/activated sprint ended"}
+				return &customErrors.ModelError{Message: "sprint must begin the day after the last completed/activated sprint ended"}
 			}
 		}
 	}
@@ -109,7 +109,7 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
 			startDate := sprint.StartDate.UTC()
 			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
-				return &customErrors.ModelError{Message:"sprint must begin the day after the last completed sprint ended"}
+				return &customErrors.ModelError{Message: "sprint must begin the day after the last completed sprint ended"}
 			}
 		}
 	}

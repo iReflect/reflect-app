@@ -301,7 +301,6 @@ func (service SprintService) GetSprintsList(
 	db := service.DB
 	sprints = new(retroSerializers.SprintsSerializer)
 
-
 	err = db.Model(&retroModels.Sprint{}).
 		Where("retrospective_id = ?", retrospectiveID).
 		Scopes(retroModels.NotDeletedSprint).
