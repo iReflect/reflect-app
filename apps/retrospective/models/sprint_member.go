@@ -120,6 +120,11 @@ func getSprintMemberRatingMeta() admin.Meta {
 	}
 }
 
+// SMJoinUT ...
+func SMJoinUT(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN user_teams ON sprint_members.member_id = user_teams.user_id").Where("user_teams.deleted_at IS NULL")
+}
+
 // SMJoinSMT ...
 func SMJoinSMT(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")

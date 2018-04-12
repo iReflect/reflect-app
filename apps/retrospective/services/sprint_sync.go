@@ -638,9 +638,7 @@ func (service SprintService) updateSprintMemberTimeLog(
 
 	db := service.DB
 	// Reset existing time_spent
-	err := db.Model(&retroModels.SprintMemberTask{}).
-		Where("sprint_member_id = ?", sprintMemberID).
-		UpdateColumn("time_spent_minutes", 0).Error
+	err := db.Exec("UPDATE sprint_member_tasks SET time_spent_minutes=0 WHERE sprint_member_id = ?", sprintMemberID).Error	
 
 	if err != nil {
 		utils.LogToSentry(err)

@@ -393,12 +393,16 @@ func (service SprintService) Create(
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
 	} else if err == nil {
-		if err = db.Model(&retroModels.SprintMember{}).
-			Scopes(retroModels.SMJoinSprint, retroModels.SprintJoinRetro, retroModels.RetroJoinUserTeams).
-			Where("sprint_members.sprint_id = ?", previousSprint.ID).
-			Where("leaved_at IS NULL OR leaved_at >= ?", sprint.EndDate).
-			Select("DISTINCT(sprint_members.*)").
-			Find(&previousSprintMembers).Error; err != nil {
+		query := `SELECT DISTINCT (sprint_members.*)
+            FROM "sprint_members"
+            JOIN sprints ON sprint_members.sprint_id = sprints.id
+            JOIN retrospectives ON sprints.retrospective_id = retrospectives.id
+            JOIN user_teams ON retrospectives.team_id = user_teams.team_id
+            WHERE "sprint_members"."deleted_at" IS NULL AND "sprint_members".member_id = user_teams.user_id AND (
+            (sprints.deleted_at IS NULL) AND (retrospectives.deleted_at IS NULL) AND (user_teams.deleted_at IS NULL) AND
+            (sprint_members.sprint_id = ?) AND
+            ((leaved_at IS NULL OR leaved_at >= ?) AND joined_at <= ?))`
+		if err = db.Raw(query, previousSprint.ID, sprint.StartDate, sprint.EndDate).Scan(&previousSprintMembers).Error; err != nil {
 			return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
 		}
 		iteratorLen = len(previousSprintMembers)
@@ -407,7 +411,7 @@ func (service SprintService) Create(
 	if iteratorLen < 1 {
 		if err = db.Model(&userModels.UserTeam{}).
 			Where("team_id = ?", retro.TeamID).
-			Where("leaved_at IS NULL OR leaved_at >= ?", sprint.EndDate).
+			Where("(leaved_at IS NULL OR leaved_at >= ?) AND joined_at <= ? ", sprint.StartDate, sprint.EndDate).
 			Pluck("DISTINCT user_id", &teamMemberIDs).
 			Error; err != nil {
 			return nil, http.StatusInternalServerError, errors.New("failed to create sprint")

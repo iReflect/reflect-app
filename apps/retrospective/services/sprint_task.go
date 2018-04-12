@@ -87,10 +87,19 @@ func (service SprintTaskService) Get(
             tasks.done_at,    
             sprint_members.sprint_id,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id) AS total_time,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time`).
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned`).
 		QueryExpr()
 
-	err := db.Raw("SELECT DISTINCT(t.*) FROM (?) AS t WHERE t.sprint_id = ? AND t.id = ?", dbs, sprintID, sprintTaskID).
+	query := `
+		SELECT 
+			DISTINCT(t.*),
+			CASE WHEN (t.total_points_earned > t.estimate + 0.05) THEN TRUE ELSE FALSE END AS is_invalid
+		FROM (?) AS t WHERE t.sprint_id = ? AND t.id = ? 
+	`
+
+	err := db.Raw(query, dbs, sprintID, sprintTaskID).
 		Scan(&task).Error
 
 	if err != nil {
