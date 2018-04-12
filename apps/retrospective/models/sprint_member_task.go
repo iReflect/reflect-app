@@ -173,7 +173,7 @@ func getSprintMemberMeta() admin.Meta {
 			for _, value := range members {
 				results = append(results, []string{
 					strconv.Itoa(int(value.ID)),
-					fmt.Sprintf("Sprint: %s & Member: %s %s",
+					fmt.Sprintf("Sprint ID: %s & Member: %s %s",
 						strconv.Itoa(int(value.SprintID)),
 						value.Member.FirstName,
 						value.Member.LastName)})
@@ -191,10 +191,14 @@ func getSprintTaskMeta() admin.Meta {
 		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
 			db := context.GetDB()
 			var sprintTaskList []SprintTask
-			db.Model(&SprintTask{}).Preload("Task").Scan(&sprintTaskList)
+			db.Model(&SprintTask{}).Preload("Task").Find(&sprintTaskList)
 
 			for _, value := range sprintTaskList {
-				results = append(results, []string{strconv.Itoa(int(value.ID)), value.Task.Key})
+				results = append(results, []string{
+					strconv.Itoa(int(value.ID)),
+					fmt.Sprintf("Sprint ID: %s & Task: %s",
+						strconv.Itoa(int(value.SprintID)),
+						value.Task.Key)})
 			}
 			return
 		},
