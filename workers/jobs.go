@@ -21,8 +21,13 @@ type Workers struct{}
 
 var redisNamespace = "ireflect_worker"
 
+// Enqueuer ...
 var Enqueuer = work.NewEnqueuer(redisNamespace, redisPool)
+
+// Config ...
 var Config *config.Config
+
+// Pool ...
 var Pool *work.WorkerPool
 
 type job struct {
@@ -75,6 +80,7 @@ func assignJobs() {
 	}
 }
 
+// RegisterJob ...
 func RegisterJob(name string, function func(*work.Job) error) {
 	jobs = append(jobs, job{name: name, function: function})
 }

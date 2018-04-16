@@ -57,7 +57,7 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	var pointSum float64
 	var task Task
 	disableValidate, ok := db.Get("smt:disable_validate")
-	
+
 	if ok && disableValidate.(bool) == true {
 		return nil
 	}
@@ -65,11 +65,6 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	sprintTaskID := sprintMemberTask.SprintTaskID
 	if sprintTaskID == 0 {
 		sprintTaskID = sprintMemberTask.SprintTask.ID
-	}
-
-	sprintMemberID := sprintMemberTask.SprintMemberID
-	if sprintMemberID == 0 {
-		sprintMemberID = sprintMemberTask.SprintMember.ID
 	}
 
 	taskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).

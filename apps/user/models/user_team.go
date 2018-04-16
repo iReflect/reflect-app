@@ -12,18 +12,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TeamRoleValues ...
 var TeamRoleValues = [...]string{
 	"Member",
 	"Manager",
 	"Admin",
 }
 
+// TeamRole ...
 type TeamRole int8
 
 func (teamRole TeamRole) String() string {
 	return TeamRoleValues[teamRole]
 }
 
+// TeamRole ...
 const (
 	MemberRole TeamRole = iota
 	ManagerRole

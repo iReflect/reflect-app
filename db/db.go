@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	// Postgres DB wrapper for GORM
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 
 	"github.com/iReflect/reflect-app/config"

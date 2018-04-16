@@ -1,5 +1,6 @@
 package errors
 
+// ModelError ...
 type ModelError struct {
 	Message string // description of the error
 }

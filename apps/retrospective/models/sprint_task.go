@@ -8,7 +8,7 @@ import (
 	"github.com/qor/qor"
 )
 
-// SprintTask
+// SprintTask ...
 type SprintTask struct {
 	gorm.Model
 	Sprint   Sprint
@@ -17,14 +17,13 @@ type SprintTask struct {
 	TaskID   uint `gorm:"not null"`
 }
 
-// RegisterSprintMemberTaskToAdmin ...
+// RegisterSprintTaskToAdmin ...
 func RegisterSprintTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	sprintTask := Admin.AddResource(&SprintTask{}, &config)
 	taskMeta := getTaskMeta()
 	sprintTask.Meta(&taskMeta)
 }
 
-// getTaskMeta ...
 func getTaskMeta() admin.Meta {
 	return admin.Meta{
 		Name: "Task",

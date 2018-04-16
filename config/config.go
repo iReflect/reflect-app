@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// Config ...
 type Config struct {
 	DB          *dbConfig
 	Server      *serverConfig
