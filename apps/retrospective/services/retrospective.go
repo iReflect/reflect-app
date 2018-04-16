@@ -58,6 +58,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		Order("created_at DESC, title, id").
 		Limit(perPage).
 		Offset(offset).
+		Select("DISTINCT(retrospectives.*)").
 		Find(&retrospectiveList.Retrospectives).
 		Error
 
