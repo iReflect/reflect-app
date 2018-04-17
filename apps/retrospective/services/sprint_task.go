@@ -30,14 +30,15 @@ func (service SprintTaskService) List(
 	dbs := service.tasksForCurrentSprint(retroID, sprintID).
 		Select(`
             sprint_tasks.id,
-            tasks.key,       
+            tasks.key,
             tasks.summary,   
             tasks.type,      
             tasks.status,    
             tasks.priority,  
             tasks.assignee,  
             tasks.estimate,  
-            tasks.done_at,    
+            tasks.done_at,
+            tasks.is_tracker_task,
             sprint_members.sprint_id,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
@@ -86,7 +87,7 @@ func (service SprintTaskService) Get(
             tasks.estimate,  
             tasks.done_at,    
             sprint_members.sprint_id,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id) AS total_time,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
             SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned,
             SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned`).
@@ -182,9 +183,9 @@ func (service SprintTaskService) GetMembers(
             sprint_member_tasks.*,
             users.*,
             sprint_members.sprint_id,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id) AS total_points,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id) AS sprint_points,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id) AS total_time,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id)                                AS total_points,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id)      AS sprint_points,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id)                           AS total_time,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
@@ -215,9 +216,9 @@ func (service SprintTaskService) GetMember(
             sprint_member_tasks.*,
             users.*, 
             sprint_members.sprint_id, 
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id) AS total_points, 
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id) AS sprint_points, 
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_tasks.task_id) AS total_time, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id)                                AS total_points, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id)      AS sprint_points, 
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_tasks.task_id)                           AS total_time, 
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
