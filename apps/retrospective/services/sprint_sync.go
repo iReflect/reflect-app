@@ -492,6 +492,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 			Priority:        ticket.Priority,
 			Assignee:        ticket.Assignee,
 			Status:          ticket.Status,
+			IsTrackerTask:   true,
 		}).
 		FirstOrCreate(&task).Error
 
