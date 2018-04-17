@@ -413,7 +413,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
         UPDATE 
             sprint_member_tasks
         SET
-            points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2)
+            points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2),
             updated_at = NOW()
 		FROM
             (?) AS s1
@@ -638,7 +638,7 @@ func (service SprintService) updateSprintMemberTimeLog(
 
 	db := service.DB
 	// Reset existing time_spent
-	err := db.Exec("UPDATE sprint_member_tasks SET time_spent_minutes=0 WHERE sprint_member_id = ?", sprintMemberID).Error	
+	err := db.Exec("UPDATE sprint_member_tasks SET time_spent_minutes=0 WHERE sprint_member_id = ?", sprintMemberID).Error
 
 	if err != nil {
 		utils.LogToSentry(err)

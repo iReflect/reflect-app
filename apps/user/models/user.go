@@ -27,7 +27,7 @@ type User struct {
 
 // Stringify ...
 func (user User) Stringify() string {
-	return fmt.Sprintf("%v, %v", user.FirstName, user.LastName)
+	return fmt.Sprintf("%v %v", user.FirstName, user.LastName)
 }
 
 // DisplayName ...

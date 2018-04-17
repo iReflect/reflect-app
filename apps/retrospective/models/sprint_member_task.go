@@ -57,7 +57,7 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	var pointSum float64
 	var task Task
 	disableValidate, ok := db.Get("smt:disable_validate")
-	
+
 	if ok && disableValidate.(bool) == true {
 		return nil
 	}
