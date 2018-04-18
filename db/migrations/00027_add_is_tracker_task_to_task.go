@@ -2,9 +2,9 @@ package migrations
 
 import (
 	"database/sql"
+	"github.com/iReflect/reflect-app/db/base/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pressly/goose"
-	"github.com/iReflect/reflect-app/db/base/models"
 )
 
 func init() {
