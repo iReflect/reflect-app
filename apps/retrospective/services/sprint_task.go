@@ -26,39 +26,7 @@ func (service SprintTaskService) List(
 	db := service.DB
 	taskList = new(retroSerializers.SprintTasksSerializer)
 
-	taskOwnerTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
-		Select(`
-        DISTINCT ON (tasks.id) tasks.id AS task_id,
-        users.first_name || ' ' || users.last_name          AS member_name,
-        SUM(sprint_member_tasks.time_spent_minutes)
-        OVER (
-          PARTITION BY tasks.id, sprint_members.member_id ) AS member_time`).
-		Order("tasks.id").
-		Order("member_time DESC").
-		QueryExpr()
-
-	// TODO Update to include non-timesheet sprint tasks too
-	dbs := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
-		Select(`
-            sprint_tasks.id,
-            tasks.key,
-            tasks.tracker_unique_id,
-            tasks.summary,   
-            tasks.type,      
-            tasks.status,    
-            tasks.priority,  
-            tasks.assignee, 
-            task_owners.member_name AS owner, 
-            tasks.estimate,  
-            tasks.done_at,
-            tasks.is_tracker_task,
-            sprint_members.sprint_id,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned, 
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned
-		`).
-		Joins("JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable).
+	dbs := service.tasksWithTimeDetailsForCurrentAndPrevSprint(retroID, sprintID, nil).
 		QueryExpr()
 
 	query := `
@@ -85,41 +53,7 @@ func (service SprintTaskService) Get(
 	db := service.DB
 	var task retroSerializers.SprintTask
 
-	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
-		Select("task_id").QueryExpr()
-
-	taskOwnerTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
-		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
-		Select(`
-        DISTINCT ON (tasks.id) tasks.id AS task_id,
-        users.first_name || ' ' || users.last_name          AS member_name,
-        SUM(sprint_member_tasks.time_spent_minutes)
-        OVER (
-          PARTITION BY tasks.id, sprint_members.member_id ) AS member_time`).
-		Order("tasks.id").
-		Order("member_time DESC").
-		QueryExpr()
-
-	dbs := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
-		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
-		Select(`
-            sprint_tasks.id,
-            tasks.key,       
-            tasks.summary,   
-            tasks.type,      
-            tasks.status,    
-            tasks.priority,  
-            tasks.assignee,  
-            task_owners.member_name AS owner, 
-            tasks.estimate,  
-            tasks.done_at,    
-            tasks.is_tracker_task,
-            sprint_members.sprint_id,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned`).
-		Joins("JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable).
+	dbs := service.tasksWithTimeDetailsForCurrentAndPrevSprint(retroID, sprintID, &sprintTaskID).
 		QueryExpr()
 
 	query := `
@@ -384,6 +318,58 @@ func (service SprintTaskService) tasksForCurrentAndPrevSprint(retroID string, sp
 			retroModels.SMJoinMember).
 		Where("sprints.id in (?)", sprintFilter).
 		Scopes(retroModels.NotDeletedSprint)
+}
+
+// tasksWithTimeDetailsForCurrentAndPrevSprint ...
+func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(
+	retroID string,
+	sprintID string,
+	sprintTaskID *string) *gorm.DB {
+
+	db := service.DB
+
+	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
+		Select("task_id").QueryExpr()
+
+	taskOwnerTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
+		Select(`
+        DISTINCT ON (tasks.id) tasks.id AS task_id,
+        users.first_name || ' ' || users.last_name          AS member_name,
+        SUM(sprint_member_tasks.time_spent_minutes)
+        OVER (
+          PARTITION BY tasks.id, sprint_members.member_id ) AS member_time`).
+		Order("tasks.id").
+		Order("member_time DESC")
+
+	// TODO Update to include non-timesheet sprint tasks too
+	dbs := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
+		Select(`
+            sprint_tasks.id,
+            tasks.key,
+            tasks.tracker_unique_id,
+            tasks.summary,   
+            tasks.type,      
+            tasks.status,    
+            tasks.priority,  
+            tasks.assignee, 
+            task_owners.member_name AS owner, 
+            tasks.estimate,  
+            tasks.done_at,
+            tasks.is_tracker_task,
+            sprint_members.sprint_id,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
+            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned
+		`)
+
+	if sprintTaskID != nil {
+		taskOwnerTable = taskOwnerTable.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
+		dbs = dbs.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
+	}
+	dbs = dbs.Joins("JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr())
+
+	return dbs
 }
 
 // smtForCurrentAndPrevSprint ...
