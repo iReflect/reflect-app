@@ -11,6 +11,7 @@ type SprintTask struct {
 	Status            string
 	Priority          string
 	Assignee          string
+	Owner             string
 	Estimate          float64
 	TotalTime         uint
 	SprintTime        uint
