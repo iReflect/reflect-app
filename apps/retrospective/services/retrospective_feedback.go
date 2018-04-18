@@ -76,6 +76,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	retroFeedback := models.RetrospectiveFeedback{}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
+		Where("retrospective_feedbacks.deleted_at IS NULL").
 		Where("id = ?", feedbackID).
 		First(&retroFeedback).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -130,6 +131,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	sprint := models.Sprint{}
 
 	if err := db.Model(&models.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -140,6 +142,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
+		Where("retrospective_feedbacks.deleted_at IS NULL").
 		Where("id = ?", feedbackID).
 		First(&retroFeedback).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -182,6 +185,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	sprint := models.Sprint{}
 
 	if err := db.Model(&models.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -192,6 +196,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
+		Where("retrospective_feedbacks.deleted_at IS NULL").
 		Where("retrospective_id = ? AND type = ?", retroID, feedbackType).
 		Where("added_at >= ? AND added_at <= ?", *sprint.StartDate, *sprint.EndDate).
 		Preload("Assignee").
@@ -217,6 +222,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	feedbackList = new(retrospectiveSerializers.RetrospectiveFeedbackListSerializer)
 
 	if err := db.Model(&models.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -227,6 +233,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	}
 
 	query := db.Model(&models.RetrospectiveFeedback{}).
+		Where("retrospective_feedbacks.deleted_at IS NULL").
 		Where("retrospective_id = ? AND type = ?", retroID, models.GoalType)
 
 	switch goalType {
@@ -263,6 +270,7 @@ func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedba
 	db := service.DB
 	feedback := retrospectiveSerializers.RetrospectiveFeedback{}
 	err := db.Model(&models.RetrospectiveFeedback{}).
+		Where("retrospective_feedbacks.deleted_at IS NULL").
 		Where("id = ?", retroFeedbackID).
 		Preload("CreatedBy").
 		Preload("Assignee").

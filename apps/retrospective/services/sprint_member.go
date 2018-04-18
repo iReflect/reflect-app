@@ -27,6 +27,7 @@ func (service SprintService) AddSprintMember(
 	var sprint retroModels.Sprint
 
 	err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_id = ?", sprintID).
 		Where("member_id = ?", memberID).
 		Find(&retroModels.SprintMember{}).
@@ -37,6 +38,7 @@ func (service SprintService) AddSprintMember(
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Scopes(retroModels.SprintJoinRetro, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", memberID).
 		Where("sprints.id=?", sprintID).
@@ -75,6 +77,7 @@ func (service SprintService) AddSprintMember(
 	sprintMemberSummary := new(retroSerializers.SprintMemberSummary)
 
 	if err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_id = ?", sprint.ID).
 		Where("sprint_members.id = ?", sprintMember.ID).
 		Scopes(retroModels.SMJoinMember).
@@ -100,6 +103,7 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 	var sprintMember retroModels.SprintMember
 
 	err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_id = ?", sprintID).
 		Where("id = ?", memberID).
 		Preload("Tasks").
@@ -149,6 +153,7 @@ func (service SprintService) GetSprintMembersSummary(
 
 	var sprint retroModels.Sprint
 	err := db.Where("id = ?", sprintID).
+		Where("sprints.deleted_at IS NULL").
 		Preload("Retrospective").
 		Find(&sprint).
 		Error
@@ -160,6 +165,7 @@ func (service SprintService) GetSprintMembersSummary(
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
 	}
 	if err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_id = ?", sprint.ID).
 		Scopes(retroModels.SMJoinMember, retroModels.SMLeftJoinSMT).
 		Select(`
@@ -187,6 +193,7 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 	sprintMemberList = new(userSerializers.MembersSerializer)
 
 	if err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_id = ?", sprintID).
 		Scopes(retroModels.SMJoinMember).
 		Select("sprint_members.id, users.email, users.first_name, users.last_name, users.active").
@@ -206,6 +213,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 
 	var sprintMember retroModels.SprintMember
 	if err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("id = ?", sprintMemberID).
 		Where("sprint_id = ?", sprintID).
 		Preload("Sprint.Retrospective").
@@ -230,6 +238,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	}
 
 	if err := db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_members.id = ?", sprintMemberID).
 		Scopes(retroModels.SMLeftJoinSMT).
 		Select(`
@@ -255,6 +264,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	var sprintMemberTask retroModels.SprintMemberTask
 	var sprintTask retroModels.SprintTask
 	err = db.Model(&retroModels.SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Where("sprint_member_id = ?", sprintMemberID).
 		Scopes(retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.TaskJoinTaskKeyMaps).
 		Where("task_key_maps.key = ?", timeLog.TaskKey).
@@ -266,6 +276,7 @@ func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeL
 	}
 
 	err = db.Model(&retroModels.SprintTask{}).
+		Where("sprint_tasks.deleted_at IS NULL").
 		Scopes(retroModels.STJoinTask, retroModels.TaskJoinTaskKeyMaps).
 		Where("sprint_tasks.sprint_id = ?", sprintID).
 		Where("task_key_maps.key = ?", timeLog.TaskKey).

@@ -51,6 +51,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	}
 
 	err = db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id = ?", userID).
 		Preload("Team").
@@ -76,7 +77,8 @@ func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (re
 
 	retro = new(retroSerializers.Retrospective)
 
-	baseQuery := db.Model(&retroModels.Retrospective{})
+	baseQuery := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL")
 	if isEagerLoading {
 		baseQuery = baseQuery.
 			Preload("Team").
@@ -118,6 +120,7 @@ func (service RetrospectiveService) GetLatestSprint(retroID string, userID uint)
 	var sprint retroSerializers.Sprint
 
 	err := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("retrospective_id = ?", retroID).
 		Where("status in (?)", []retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
 		Order("end_date DESC").
@@ -142,6 +145,7 @@ func (service RetrospectiveService) Create(userID uint,
 
 	// Check if the user has the permission to create the retro
 	err = db.Model(&userModels.UserTeam{}).
+		Where("user_teams.deleted_at IS NULL").
 		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
 			retrospectiveData.TeamID, userID).
 		Find(&userModels.UserTeam{}).Error
