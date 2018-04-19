@@ -17,9 +17,8 @@ import (
 
 // MemberTaskRoleValues ...
 var MemberTaskRoleValues = [...]string{
-	"Implementor",
+	"Developer",
 	"Reviewer",
-	"Validator",
 }
 
 // MemberTaskRole ...
@@ -32,9 +31,8 @@ func (role MemberTaskRole) GetStringValue() string {
 
 // MemberTaskRole
 const (
-	Implementor MemberTaskRole = iota
+	Developer MemberTaskRole = iota
 	Reviewer
-	Validator
 )
 
 // SprintMemberTask represents a task for a member for a particular sprint
