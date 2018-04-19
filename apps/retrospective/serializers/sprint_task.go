@@ -4,18 +4,22 @@ import "time"
 
 // SprintTask ...
 type SprintTask struct {
-	ID         uint
-	Key        string
-	Summary    string
-	Type       string
-	Status     string
-	Priority   string
-	Assignee   string
-	Estimate   float64
-	TotalTime  uint
-	SprintTime uint
-	DoneAt     *time.Time
-	IsInvalid  bool
+	ID                uint
+	Key               string
+	Summary           string
+	Type              string
+	Status            string
+	Priority          string
+	Assignee          string
+	Owner             string
+	Estimate          float64
+	TotalTime         uint
+	SprintTime        uint
+	TotalPointsEarned float64
+	PointsEarned      float64
+	DoneAt            *time.Time
+	IsTrackerTask     bool
+	IsInvalid         bool
 }
 
 // SprintTasksSerializer ...

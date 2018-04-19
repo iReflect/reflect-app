@@ -81,6 +81,7 @@ func IsValidTeam(db *gorm.DB) validator.Func {
 		var team userModels.Team
 		teamID := currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveCreateSerializer).TeamID
 		if err := db.Model(&userModels.Team{}).
+			Where("deleted_at IS NULL").
 			Where("id = ? and active = true", teamID).
 			First(&team).Error; err != nil {
 			return false

@@ -23,7 +23,9 @@ func (service FeedbackService) Get(feedbackID string, userID uint) (feedback *fe
 	db := service.DB
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
 
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
+	if err := db.Model(&feedbackModels.Feedback{}).
+		Where("id = ?", feedbackID).
+		Where("deleted_at IS NULL").
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr()).
 		Select("id, title, duration_start,duration_end, submitted_at, expire_at, status, feedback_form_id").
@@ -42,7 +44,9 @@ func (service FeedbackService) TeamGet(feedbackID string, userID uint) (
 	feedback = new(feedbackSerializers.FeedbackDetailSerializer)
 	feedbackIds := service.getTeamFeedbackIDs(userID)
 
-	if err := db.Model(&feedbackModels.Feedback{}).Where("id = ?", feedbackID).
+	if err := db.Model(&feedbackModels.Feedback{}).
+		Where("id = ?", feedbackID).
+		Where("deleted_at IS NULL").
 		Where("id in (?)", feedbackIds).
 		Select("id, title, duration_start,duration_end, submitted_at, expire_at, status, feedback_form_id").
 		Scan(&feedback).Error; err != nil {
@@ -58,6 +62,7 @@ func (service FeedbackService) List(userID uint, statuses []string, perPage int)
 	err error) {
 	db := service.DB
 	baseQuery := db.Model(&feedbackModels.Feedback{}).
+		Where("deleted_at IS NULL").
 		Where("by_user_profile_id in (?)",
 			db.Model(&userModels.UserProfile{}).Where("user_id = ?", userID).Select("id").QueryExpr())
 
@@ -112,6 +117,7 @@ func (service FeedbackService) getFeedbackDetail(feedback *feedbackSerializers.F
 	var feedBackFormContents []feedbackModels.FeedbackFormContent
 
 	if err := db.Model(&feedbackModels.FeedbackFormContent{}).
+		Where("deleted_at IS NULL").
 		Preload("Skill").
 		Preload("Skill.Questions").
 		Preload("Category").
@@ -189,6 +195,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 	feedback := feedbackModels.Feedback{}
 	// Find a feedback with the given ID which hasn't been submitted before
 	if err := db.Model(&feedbackModels.Feedback{}).
+		Where("deleted_at IS NULL").
 		Where("id = ? AND status != ? AND expire_at >= ?",
 			feedbackID, feedbackModels.SubmittedFeedback, time.Now()).
 		Where("by_user_profile_id in (?)",
@@ -203,6 +210,7 @@ func (service FeedbackService) Put(feedbackID string, userID uint,
 			for questionResponseID, questionResponseData := range skillData {
 				questionResponse := feedbackModels.QuestionResponse{}
 				if err := tx.Model(&feedbackModels.QuestionResponse{}).
+					Where("deleted_at IS NULL").
 					Where("id = ? AND feedback_id = ?", questionResponseID, feedbackID).
 					Find(&questionResponse).Error; err != nil {
 					// Roll back the transaction if any question response is not found
@@ -252,7 +260,9 @@ func (service FeedbackService) getTeamFeedbackIDs(userID uint) []uint {
                                                         ON ut.user_id = up.user_id
                                                 WHERE ut.role = 0 AND ut.team_id IN (SELECT team_id
                                                                                     FROM user_teams
-                                                                                    WHERE user_id = ? AND role = 1))
+                                                                                    WHERE user_id = 1 AND role = 1)
+												AND ut.deleted_at IS NULL AND up.deleted_at IS NULL)
+		AND feedbacks.deleted_at IS NULL
         UNION
         SELECT id
         FROM feedbacks
@@ -264,11 +274,13 @@ func (service FeedbackService) getTeamFeedbackIDs(userID uint) []uint {
                                                         ON ut.user_id = up.user_id
                                                 WHERE ut.team_id IN (SELECT team_id
                                                                      FROM user_teams
-                                                                     WHERE user_id = ? AND role = 2))
+                                                                     WHERE user_id = 1 AND role = 2)
+												AND ut.deleted_at IS NULL AND up.deleted_at IS NULL)
+		AND feedbacks.deleted_at IS NULL
         UNION
         SELECT id
         FROM feedbacks
-        WHERE by_user_profile_id IN (SELECT id FROM user_profiles WHERE user_id = ?)
+        WHERE by_user_profile_id IN (SELECT id FROM user_profiles WHERE user_id = 1) AND feedbacks.deleted_at IS NULL
     `
 	var feedbackIds []uint
 

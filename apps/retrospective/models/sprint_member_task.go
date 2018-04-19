@@ -17,9 +17,8 @@ import (
 
 // MemberTaskRoleValues ...
 var MemberTaskRoleValues = [...]string{
-	"Implementor",
+	"Developer",
 	"Reviewer",
-	"Validator",
 }
 
 // MemberTaskRole ...
@@ -32,9 +31,8 @@ func (role MemberTaskRole) GetStringValue() string {
 
 // MemberTaskRole
 const (
-	Implementor MemberTaskRole = iota
+	Developer MemberTaskRole = iota
 	Reviewer
-	Validator
 )
 
 // SprintMemberTask represents a task for a member for a particular sprint
@@ -78,7 +76,9 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 		currentSprintFilter.Select("end_date").QueryExpr()).
 		Select("id").QueryExpr()
 
-	err = db.Model(&Task{}).Scopes(TaskJoinST).Where("sprint_tasks.id = ?", sprintTaskID).
+	err = db.Model(&Task{}).
+		Where("tasks.deleted_at IS NULL").
+		Scopes(TaskJoinST).Where("sprint_tasks.id = ?", sprintTaskID).
 		First(&task).Error
 	if err != nil {
 		utils.LogToSentry(err)
@@ -88,6 +88,7 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 	// Adding a 0.05 buffer for rounding errors
 	// ToDo: Revisit to see if we can improve this.
 	db.Model(SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Where("sprint_member_tasks.id <> ?", sprintMemberTask.ID).
 		Where("sprint_tasks.task_id = (?)", taskFilter).
 		Scopes(SMTJoinST, SMTJoinSM, SMJoinSprint).

@@ -31,6 +31,7 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 	// ToDo: Use batch deletes
 	var sprint retroModels.Sprint
 	err := db.Where("id = ?", sprintID).
+		Where("sprints.deleted_at IS NULL").
 		Where("status in (?)",
 			[]retroModels.SprintStatus{retroModels.DraftSprint, retroModels.ActiveSprint}).
 		Preload("SprintMembers.Tasks").
@@ -93,6 +94,7 @@ func (service SprintService) ActivateSprint(sprintID string, retroID string) (in
 	var sprint retroModels.Sprint
 
 	if err := db.Where("id = ?", sprintID).
+		Where("sprints.deleted_at IS NULL").
 		Where("status = ?", retroModels.DraftSprint).
 		Find(&sprint).Error; err != nil {
 		return http.StatusNotFound, nil
@@ -118,6 +120,7 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 	var sprint retroModels.Sprint
 
 	if err := db.Where("id = ?", sprintID).
+		Where("sprints.deleted_at IS NULL").
 		Where("status = ?", retroModels.ActiveSprint).
 		Find(&sprint).Error; err != nil {
 		return http.StatusNotFound, err
@@ -141,7 +144,9 @@ func (service SprintService) Get(sprintID string, userID uint) (*retroSerializer
 	db := service.DB
 	var sprint retroSerializers.Sprint
 
-	err := db.Model(&retroModels.Sprint{}).Where("id = ?", sprintID).
+	err := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
+		Where("id = ?", sprintID).
 		Preload("CreatedBy").
 		First(&sprint).
 		Error
@@ -161,6 +166,7 @@ func (service SprintService) Get(sprintID string, userID uint) (*retroSerializer
 	sprint.Summary = *summary
 
 	err = db.Model(&retroModels.SprintSyncStatus{}).
+		Where("sprint_sync_statuses.deleted_at IS NULL").
 		Where("sprint_id = ?", sprintID).
 		Order("created_at DESC").
 		Select("status").
@@ -188,6 +194,7 @@ func (service SprintService) GetSprintSummary(
 	var summary retroSerializers.SprintSummary
 
 	err := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Preload("Retrospective").
 		First(&sprint).Error
@@ -200,6 +207,7 @@ func (service SprintService) GetSprintSummary(
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Scopes(retroModels.SprintJoinSM).
 		Where("sprints.id = ?", sprintID).
 		Select(`
@@ -235,7 +243,9 @@ func (service SprintService) GetSprintTaskSummary(
 	db := service.DB
 	var retro retroModels.Retrospective
 
-	err = db.Model(&retroModels.Retrospective{}).Where("id = ?", retroID).First(&retro).Error
+	err = db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
+		Where("id = ?", retroID).First(&retro).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("retrospective not found")
@@ -271,6 +281,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 	var summary retroSerializers.SprintTaskSummary
 
 	taskList := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Scopes(retroModels.SprintJoinSM, retroModels.SMJoinSMT, retroModels.SMTJoinST, retroModels.STJoinTask).
 		Where("sprints.id = ?", sprintID).
 		Where("LOWER(tasks.type) IN (?)", taskTypes)
@@ -302,6 +313,7 @@ func (service SprintService) GetSprintsList(
 	sprints = new(retroSerializers.SprintsSerializer)
 
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("retrospective_id = ?", retrospectiveID).
 		Scopes(retroModels.NotDeletedSprint).
 		Preload("CreatedBy").
@@ -332,6 +344,7 @@ func (service SprintService) Create(
 	iteratorType := "member"
 
 	err = db.Model(&retro).
+		Where("retrospectives.deleted_at IS NULL").
 		Where("id = ?", retroID).
 		Find(&retro).Error
 	if err != nil {
@@ -384,6 +397,7 @@ func (service SprintService) Create(
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("sprints.status in (?)",
 			[]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
 		Where("sprints.retrospective_id = ?", retro.ID).
@@ -410,6 +424,7 @@ func (service SprintService) Create(
 
 	if iteratorLen < 1 {
 		if err = db.Model(&userModels.UserTeam{}).
+			Where("user_teams.deleted_at IS NULL").
 			Where("team_id = ?", retro.TeamID).
 			Where("(leaved_at IS NULL OR leaved_at >= ?) AND joined_at <= ? ", sprint.StartDate, sprint.EndDate).
 			Pluck("DISTINCT user_id", &teamMemberIDs).
@@ -494,6 +509,7 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
                        JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id
                        JOIN sprints ON sm.sprint_id = sprints.id
                      WHERE tasks.deleted_at IS NULL AND smt.deleted_at IS NULL AND sm."deleted_at" IS NULL AND
+							sprints."deleted_at" IS NULL AND
                             ((tasks.retrospective_id = constants.retro_id) AND
                             ((sprints.status <> ? OR sprints.id = constants.sprint_id)) AND
                             NOT (sprints.status = ?))) AS t
@@ -522,6 +538,7 @@ func (service SprintService) UpdateSprint(
 	var sprint retroModels.Sprint
 
 	if err := db.Where("id = ?", sprintID).
+		Where("sprints.deleted_at IS NULL").
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, http.StatusNotFound, errors.New("sprint not found")

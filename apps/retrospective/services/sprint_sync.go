@@ -25,6 +25,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Scopes(retroModels.NotDeletedSprint).
 		Where("id = ?", sprintID).
 		Preload("SprintMembers.Member").
@@ -154,6 +155,7 @@ func (service SprintService) SetSynced(sprintID uint) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Scopes(retroModels.NotDeletedSprint).
 		Where("id = ?", sprintID).
 		Find(&sprint)
@@ -172,6 +174,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 	db := service.DB
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("id = ?", sprintMemberID).
 		Preload("Sprint").
 		Preload("Member").
@@ -263,6 +266,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Scopes(retroModels.NotDeletedSprint).
 		Where("id = ?", sprintID).
 		Preload("SprintMembers").
@@ -277,6 +281,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	service.SetSyncing(sprint.ID)
 
 	dbs := db.Model(retroModels.SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
 		Scopes(retroModels.NotDeletedSprint).
@@ -342,6 +347,7 @@ func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey stri
 	tx := service.DB.Begin()
 	var task retroModels.Task
 	err = tx.Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticketKey}).
+		Where("tasks.deleted_at IS NULL").
 		Attrs(retroModels.Task{
 			Key:         ticketKey,
 			Summary:     "",
@@ -356,6 +362,7 @@ func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey stri
 		return err
 	}
 	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: ticketKey}).
+		Where("task_key_maps.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.TaskKeyMap{}).Error
 
 	if err != nil {
@@ -365,6 +372,7 @@ func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey stri
 	}
 
 	err = tx.Where(retroModels.SprintTask{SprintID: sprintID, TaskID: task.ID}).
+		Where("sprint_tasks.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.SprintTask{}).Error
 	if err != nil {
 		tx.Rollback()
@@ -395,6 +403,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
 
 	fmt.Println("Rebalancing Points")
 	activeAndFrozenSprintSMT := tx.Model(retroModels.SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.SMJoinSprint).
 		Where("sprints.status <> ?", retroModels.DraftSprint).
 		Scopes(retroModels.NotDeletedSprint).
@@ -413,7 +422,7 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
         UPDATE 
             sprint_member_tasks
         SET
-            points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2)
+            points_earned = round((sprint_member_tasks.points_earned * estimate_ratio)::numeric,2),
             updated_at = NOW()
 		FROM
             (?) AS s1
@@ -481,6 +490,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 
 	var task retroModels.Task
 	err = tx.Model(&retroModels.Task{}).
+		Where("tasks.deleted_at IS NULL").
 		Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
 		Assign(retroModels.Task{
 			RetrospectiveID: retroID,
@@ -492,6 +502,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 			Priority:        ticket.Priority,
 			Assignee:        ticket.Assignee,
 			Status:          ticket.Status,
+			IsTrackerTask:   true,
 		}).
 		FirstOrCreate(&task).Error
 
@@ -501,6 +512,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 		return err
 	}
 	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: ticket.Key}).
+		Where("task_key_maps.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.TaskKeyMap{}).Error
 
 	if err != nil {
@@ -511,6 +523,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 
 	if alternateTaskKey != "" {
 		err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: alternateTaskKey}).
+			Where("task_key_maps.deleted_at IS NULL").
 			FirstOrCreate(&retroModels.TaskKeyMap{}).Error
 
 		if err != nil {
@@ -522,6 +535,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	}
 
 	err = tx.Where(retroModels.SprintTask{SprintID: sprintID, TaskID: task.ID}).
+		Where("sprint_tasks.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.SprintTask{}).Error
 
 	if err != nil {

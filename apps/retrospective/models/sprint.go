@@ -73,7 +73,9 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 	if retroID == 0 {
 		retroID = sprint.Retrospective.ID
 	}
-	baseQuery := db.Model(Sprint{}).Where("retrospective_id = ?", retroID).Scopes(NotDeletedSprint)
+	baseQuery := db.Model(Sprint{}).
+		Where("deleted_at IS NULL").
+		Where("retrospective_id = ?", retroID).Scopes(NotDeletedSprint)
 	lastSprint := Sprint{}
 
 	if sprint.Status == DraftSprint {
