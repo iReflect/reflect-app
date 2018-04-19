@@ -5,8 +5,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/pressly/goose"
-
-	"github.com/iReflect/reflect-app/apps/retrospective/models"
 )
 
 func init() {
@@ -21,8 +19,8 @@ func Up00028(tx *sql.Tx) error {
 		return err
 	}
 
-	memberTaskRoleValuesLength := len(models.MemberTaskRoleValues)
-	gormdb.Exec("UPDATE sprint_member_tasks SET role = ? where role >= ?", memberTaskRoleValuesLength-1, memberTaskRoleValuesLength)
+	// Changed Member Task Role from Validator to Reviewer
+	gormdb.Table("sprint_member_tasks").Where("role = 2").Update("role", 1)
 
 	return nil
 }
