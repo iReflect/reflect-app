@@ -13,18 +13,22 @@ import (
 	"strconv"
 )
 
+// FeedbackStatusValues ...
 var FeedbackStatusValues = [...]string{
 	"New",
 	"In Progress",
 	"Submitted",
 }
 
+// FeedbackStatus ...
 type FeedbackStatus int8
 
+// GetString ...
 func (status FeedbackStatus) GetString() string {
 	return FeedbackStatusValues[status]
 }
 
+// FeedbackStatus ...
 const (
 	NewFeedback FeedbackStatus = iota
 	InProgressFeedback
@@ -50,6 +54,7 @@ type Feedback struct {
 	ExpireAt         time.Time `gorm:"not null"`
 }
 
+// RegisterFeedbackToAdmin ...
 func RegisterFeedbackToAdmin(Admin *admin.Admin, config admin.Config) {
 	feedback := Admin.AddResource(&Feedback{}, &config)
 	statusMeta := getFeedbackStatusFieldMeta()

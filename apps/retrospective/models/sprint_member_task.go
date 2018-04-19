@@ -65,11 +65,6 @@ func (sprintMemberTask *SprintMemberTask) Validate(db *gorm.DB) (err error) {
 		sprintTaskID = sprintMemberTask.SprintTask.ID
 	}
 
-	sprintMemberID := sprintMemberTask.SprintMemberID
-	if sprintMemberID == 0 {
-		sprintMemberID = sprintMemberTask.SprintMember.ID
-	}
-
 	taskFilter := db.Model(&SprintTask{}).Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
 

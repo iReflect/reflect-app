@@ -16,6 +16,7 @@ type Skill struct {
 	Questions    []Question
 }
 
+// RegisterSkillToAdmin ...
 func RegisterSkillToAdmin(Admin *admin.Admin, config admin.Config) {
 	skill := Admin.AddResource(&Skill{}, &config)
 	questionsMeta := skill.Meta(&admin.Meta{Name: "Questions"})

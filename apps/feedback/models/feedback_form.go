@@ -9,18 +9,22 @@ import (
 	"strconv"
 )
 
+// FeedbackFormStatus ...
 type FeedbackFormStatus int8
 
+// FeedbackFormStatus ...
 const (
 	DraftFeedbackForm FeedbackFormStatus = iota
 	PublishedFeedbackForm
 )
 
+// FeedbackFormStatusValues ...
 var FeedbackFormStatusValues = [...]string{
 	"Draft",
 	"Published",
 }
 
+// String ...
 func (status FeedbackFormStatus) String() string {
 	return FeedbackFormStatusValues[status]
 }
@@ -35,6 +39,7 @@ type FeedbackForm struct {
 	Archive     bool               `gorm:"default:false; not null"`
 }
 
+// RegisterFeedbackFormToAdmin ...
 func RegisterFeedbackFormToAdmin(Admin *admin.Admin, config admin.Config) {
 	feedbackForm := Admin.AddResource(&FeedbackForm{}, &config)
 	statusMeta := getFeedbackFormStatusFieldMeta()

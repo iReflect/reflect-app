@@ -4,7 +4,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// SprintTask
+// SprintTask ...
 type SprintTask struct {
 	gorm.Model
 	Sprint   Sprint

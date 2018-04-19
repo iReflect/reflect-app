@@ -14,20 +14,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// QuestionType ...
 type QuestionType int8
 
+// QuestionType ...
 const (
 	MultiChoiceType QuestionType = iota
 	GradingType
 	BooleanType
 )
 
+// QuestionTypeValues ...
 var QuestionTypeValues = [...]string{
 	"Multi Choice",
 	"Grade",
 	"Boolean",
 }
 
+// String ...
 func (questionType QuestionType) String() string {
 	return QuestionTypeValues[questionType]
 }
@@ -44,6 +48,7 @@ type Question struct {
 	Weight  int          `gorm:"default:1; not null"`
 }
 
+// GetOptions ...
 func (question Question) GetOptions() (questionOptions map[string]interface{}) {
 	if err := json.Unmarshal(question.Options, &questionOptions); err != nil {
 		return map[string]interface{}{}
@@ -95,6 +100,7 @@ func (question *Question) ValidateQuestionResponse(questionResponse string) bool
 	return true
 }
 
+// BeforeSave ...
 func (question *Question) BeforeSave(db *gorm.DB) (err error) {
 
 	// Check if default question response is valid
@@ -107,6 +113,7 @@ func (question *Question) BeforeSave(db *gorm.DB) (err error) {
 	return
 }
 
+// RegisterQuestionToAdmin ...
 func RegisterQuestionToAdmin(Admin *admin.Admin, config admin.Config) {
 	question := Admin.AddResource(&Question{}, &config)
 	optionsMeta := getQuestionOptionsFieldMeta()
@@ -116,6 +123,7 @@ func RegisterQuestionToAdmin(Admin *admin.Admin, config admin.Config) {
 
 }
 
+// SetQuestionRelatedFieldMeta ...
 func SetQuestionRelatedFieldMeta(res *admin.Resource) {
 	optionsMeta := getQuestionOptionsFieldMeta()
 	typesMeta := getQuestionTypeFieldMeta()

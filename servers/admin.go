@@ -11,10 +11,12 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
+// Admin ...
 type Admin struct {
 	DB *gorm.DB
 }
 
+// Router ...
 func (a *Admin) Router() *http.ServeMux {
 
 	adminRouter := http.NewServeMux()

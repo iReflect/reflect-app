@@ -64,14 +64,13 @@ func (syncStatus *SprintSyncStatus) BeforeUpdate(db *gorm.DB) (err error) {
 	return syncStatus.Validate(db)
 }
 
-// RegisterUserTeamToAdmin ...
+// RegisterSprintSyncStatusToAdmin ...
 func RegisterSprintSyncStatusToAdmin(Admin *admin.Admin, config admin.Config) {
 	userTeam := Admin.AddResource(&SprintSyncStatus{}, &config)
 	roleMeta := getSprintSyncStatusMeta()
 	userTeam.Meta(&roleMeta)
 }
 
-// getSprintSyncStatusMeta ...
 func getSprintSyncStatusMeta() admin.Meta {
 	return admin.Meta{
 		Name: "Status",
