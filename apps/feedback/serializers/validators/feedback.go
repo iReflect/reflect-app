@@ -48,6 +48,7 @@ func IsAllQuestionPresent(db *gorm.DB) validator.Func {
 		var expectedResponseIDs, actualResponseIDs []interface{}
 		feedbackResponseData := currentStruct.Interface().(*feedbackSerializers.FeedbackResponseSerializer)
 		if err := db.Model(feedbackModels.QuestionResponse{}).
+			Where("deleted_at IS NULL").
 			Where("feedback_id = ?", feedbackResponseData.FeedbackID).
 			Pluck("id", &expectedResponseIDs).Error; err != nil {
 			return false

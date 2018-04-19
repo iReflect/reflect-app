@@ -89,7 +89,8 @@ func (feedback *RetrospectiveFeedback) Validate(db *gorm.DB) (err error) {
 		var userIds []uint
 		if err = db.Raw("SELECT user_teams.user_id FROM user_teams JOIN retrospectives "+
 			"ON retrospectives.team_id = user_teams.team_id WHERE retrospectives.id = ? "+
-			"and user_teams.user_id = ?", feedback.RetrospectiveID, feedback.AssigneeID).
+			"and user_teams.user_id = ? AND user_teams.deleted_at IS NULL AND retrospectives.deleted_at IS NULL",
+			feedback.RetrospectiveID, feedback.AssigneeID).
 			Scan(&userIds).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return errors.New("cannot assign to requested user")

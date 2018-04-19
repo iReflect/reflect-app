@@ -34,7 +34,7 @@ type SprintMember struct {
 func (sprintMember *SprintMember) Validate(db *gorm.DB) (err error) {
 	var sprint Sprint
 	if sprintMember.Sprint.ID == 0 {
-		if err = db.Where("id = ?", sprintMember.SprintID).Find(&sprint).Error; err != nil {
+		if err = db.Where("deleted_at IS NULL").Where("id = ?", sprintMember.SprintID).Find(&sprint).Error; err != nil {
 			return errors.New("cannot find sprint")
 		}
 	} else {

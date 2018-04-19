@@ -509,6 +509,7 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
                        JOIN sprint_members AS sm ON smt.sprint_member_id = sm.id
                        JOIN sprints ON sm.sprint_id = sprints.id
                      WHERE tasks.deleted_at IS NULL AND smt.deleted_at IS NULL AND sm."deleted_at" IS NULL AND
+							sprints."deleted_at" IS NULL AND
                             ((tasks.retrospective_id = constants.retro_id) AND
                             ((sprints.status <> ? OR sprints.id = constants.sprint_id)) AND
                             NOT (sprints.status = ?))) AS t

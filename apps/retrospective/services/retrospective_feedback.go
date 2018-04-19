@@ -31,6 +31,7 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 	sprint := models.Sprint{}
 
 	if err := db.Model(&models.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
