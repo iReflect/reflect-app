@@ -21,6 +21,7 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 	teams = new(userSerializers.TeamsSerializer)
 
 	filterQuery := db.Model(&userModels.Team{}).
+		Where("teams.deleted_at IS NULL").
 		Joins("JOIN user_teams ON teams.id = user_teams.team_id").
 		Where("user_teams.user_id = ?", userID).
 		Where("teams.active = true").
@@ -54,7 +55,11 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 		memberIDs = service.getTeamMemberIDs(teamID, false)
 	}
 
-	err = db.Model(&userModels.User{}).Where("id in (?)", memberIDs).Order("users.first_name, users.last_name, id").Scan(&members.Members).Error
+	err = db.Model(&userModels.User{}).
+		Where("users.deleted_at IS NULL").
+		Where("id in (?)", memberIDs).
+		Order("users.first_name, users.last_name, id").
+		Scan(&members.Members).Error
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, err
@@ -67,7 +72,9 @@ func (service TeamService) getTeamMemberIDs(teamID string, onlyActive bool) []ui
 	db := service.DB
 	var memberIds []uint
 
-	filterQuery := db.Model(&userModels.UserTeam{}).Where("team_id = ?", teamID)
+	filterQuery := db.Model(&userModels.UserTeam{}).
+		Where("user_teams.deleted_at IS NULL").
+		Where("team_id = ?", teamID)
 	if onlyActive {
 		filterQuery = filterQuery.Where("(leaved_at IS NULL OR leaved_at > NOW())")
 	}

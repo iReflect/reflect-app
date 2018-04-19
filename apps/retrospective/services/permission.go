@@ -16,6 +16,7 @@ type PermissionService struct {
 func (service PermissionService) UserCanAccessRetro(retroID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
@@ -28,6 +29,7 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
@@ -42,6 +44,7 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 func (service PermissionService) UserCanEditSprint(retroID string, sprintID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
 		Where("user_teams.user_id=?", userID).
 		Where("retrospectives.id=?", retroID).
@@ -58,6 +61,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
 		Scopes(
 			retroModels.RetroJoinSprints,
 			retroModels.RetroJoinUserTeams,
@@ -77,6 +81,7 @@ func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintI
 func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
 		Scopes(
 			retroModels.RetroJoinSprints,
 			retroModels.RetroJoinUserTeams,
@@ -98,6 +103,7 @@ func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID 
 func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string) bool {
 	db := service.DB
 	err := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("sprints.id=?", sprintID).
 		Where("sprints.status in (?)",
 			[]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).

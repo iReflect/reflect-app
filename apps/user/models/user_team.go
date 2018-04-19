@@ -57,7 +57,10 @@ func (userTeam *UserTeam) BeforeSave(db *gorm.DB) (err error) {
 	// TODO Add check
 
 	// More than one entries with null leaved_at for given user-team pair should not be allowed
-	baseQuery.Where("leaved_at IS NULL").Find(&userTeams).Count(&userTeamsCount)
+	baseQuery.Where("deleted_at IS NULL").
+		Where("leaved_at IS NULL").
+		Find(&userTeams).
+		Count(&userTeamsCount)
 	if userTeam.LeavedAt == nil && userTeamsCount != 0 {
 		err = errors.New("user pre-exist for the team")
 		return err

@@ -82,6 +82,7 @@ func (service SprintTaskService) MarkDone(
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Scan(&sprint).Error
 
@@ -93,8 +94,13 @@ func (service SprintTaskService) MarkDone(
 		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
 	}
 
-	query := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Select("task_id").QueryExpr()
+	query := db.Model(&retroModels.SprintTask{}).
+		Where("sprint_tasks.deleted_at IS NULL").
+		Where("id = ?", sprintTaskID).
+		Select("task_id").
+		QueryExpr()
 	err = db.Model(&retroModels.Task{}).
+		Where("tasks.deleted_at IS NULL").
 		Where("id = (?)", query).
 		Update("done_at", gorm.Expr("COALESCE(done_at, ?)", *sprint.EndDate)).
 		Error
@@ -116,8 +122,13 @@ func (service SprintTaskService) MarkUndone(
 	retroID string,
 	sprintID string) (task *retroSerializers.SprintTask, status int, err error) {
 	db := service.DB
-	query := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Select("task_id").QueryExpr()
+	query := db.Model(&retroModels.SprintTask{}).
+		Where("sprint_tasks.deleted_at IS NULL").
+		Where("id = ?", sprintTaskID).
+		Select("task_id").
+		QueryExpr()
 	err = db.Model(&retroModels.Task{}).
+		Where("tasks.deleted_at IS NULL").
 		Where("id = (?)", query).
 		Update("done_at", nil).
 		Error
@@ -207,6 +218,7 @@ func (service SprintTaskService) AddMember(
 
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
+		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_id = ?", sprintID).
 		Where("id = ?", memberID).
 		Find(&sprintMember).Error
@@ -220,6 +232,7 @@ func (service SprintTaskService) AddMember(
 	}
 
 	err = db.Model(&retroModels.SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Where("sprint_member_id = ?", sprintMember.ID).
 		Where("sprint_task_id = ?", sprintTaskID).
 		Find(&retroModels.SprintMemberTask{}).
@@ -263,6 +276,7 @@ func (service SprintTaskService) UpdateTaskMember(
 
 	sprintMemberTask := retroModels.SprintMemberTask{}
 	err := db.Model(&retroModels.SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Where("sprint_task_id = ?", sprintTaskID).
 		Where("id = ?", taskMemberData.ID).
 		Preload("SprintMember").
@@ -300,15 +314,18 @@ func (service SprintTaskService) tasksForCurrentAndPrevSprint(retroID string, sp
 	db := service.DB
 
 	currentSprintFilter := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Select("end_date").QueryExpr()
 
-	sprintFilter := db.Model(&retroModels.Sprint{}).Where("retrospective_id = ? AND start_date < (?)",
-		retroID, currentSprintFilter).
+	sprintFilter := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
+		Where("retrospective_id = ? AND start_date < (?)", retroID, currentSprintFilter).
 		Select("id").QueryExpr()
 
 	return db.Model(retroModels.Task{}).
+		Where("tasks.deleted_at IS NULL").
 		Where("tasks.retrospective_id = ?", retroID).
 		Scopes(
 			retroModels.TaskJoinST,
@@ -328,7 +345,9 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(
 
 	db := service.DB
 
-	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
+	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).
+		Where("sprint_tasks.deleted_at IS NULL").
+		Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
 
 	taskOwnerTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
@@ -379,19 +398,24 @@ func (service SprintTaskService) smtForCurrentAndPrevSprint(
 	sprintID string) *gorm.DB {
 	db := service.DB
 
-	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).Where("id = ?", sprintTaskID).
+	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).
+		Where("sprint_tasks.deleted_at IS NULL").
+		Where("id = ?", sprintTaskID).
 		Select("task_id").QueryExpr()
 
 	currentSprintFilter := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Select("end_date").QueryExpr()
 
-	sprintFilter := db.Model(&retroModels.Sprint{}).Where("retrospective_id = ? AND start_date < (?)",
-		retroID, currentSprintFilter).
+	sprintFilter := db.Model(&retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
+		Where("retrospective_id = ? AND start_date < (?)", retroID, currentSprintFilter).
 		Select("id").QueryExpr()
 
 	return db.Model(retroModels.SprintMemberTask{}).
+		Where("sprint_member_tasks.deleted_at IS NULL").
 		Where("sprint_tasks.task_id = (?)", sprintTaskFilter).
 		Scopes(
 			retroModels.SMTJoinST,

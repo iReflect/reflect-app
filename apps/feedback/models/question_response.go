@@ -49,7 +49,7 @@ func (questionResponse *QuestionResponse) BeforeSave(db *gorm.DB) (err error) {
 	// Check if the question response is valid
 	var question Question
 	if questionResponse.Question.ID == 0 {
-		db.Where("id = ?", questionResponse.QuestionID).First(&question)
+		db.Where("deleted_at IS NULL").Where("id = ?", questionResponse.QuestionID).First(&question)
 	} else {
 		question = questionResponse.Question
 	}
