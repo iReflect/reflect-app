@@ -39,7 +39,7 @@ func (service SprintTaskService) List(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get tasks")
+		return nil, http.StatusInternalServerError, errors.New("failed to get issues")
 	}
 
 	return taskList, http.StatusOK, nil
@@ -68,7 +68,7 @@ func (service SprintTaskService) Get(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get task")
+		return nil, http.StatusInternalServerError, errors.New("failed to get issue")
 	}
 
 	return &task, http.StatusOK, nil
@@ -91,7 +91,7 @@ func (service SprintTaskService) MarkDone(
 			return nil, http.StatusNotFound, errors.New("sprint not found")
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
+		return nil, http.StatusInternalServerError, errors.New("failed to mark the issue as done")
 	}
 
 	query := db.Model(&retroModels.SprintTask{}).
@@ -107,10 +107,10 @@ func (service SprintTaskService) MarkDone(
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("task not found")
+			return nil, http.StatusNotFound, errors.New("issue not found")
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
+		return nil, http.StatusInternalServerError, errors.New("failed to mark the issue as done")
 	}
 
 	return service.Get(sprintTaskID, retroID, sprintID)
@@ -135,7 +135,7 @@ func (service SprintTaskService) MarkUndone(
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("task not found")
+			return nil, http.StatusNotFound, errors.New("issue not found")
 		}
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
