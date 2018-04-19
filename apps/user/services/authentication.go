@@ -89,7 +89,10 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 	}
 	userEmail := getAccountEmail(googleUser)
 	user := userModels.User{}
-	if err := db.Where("email = ?", userEmail).First(&user).Error; err != nil {
+	if err := db.
+		Where("users.deleted_at IS NULL").
+		Where("email = ?", userEmail).
+		First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logrus.Info(fmt.Sprintf("User with email %s not found", userEmail))
 			return getNotFoundErrorResponse()
@@ -100,7 +103,9 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 
 	userResponse = new(userSerializers.UserAuthSerializer)
 
-	db.Model(&user).Scan(&userResponse)
+	db.Model(&user).
+		Where("users.deleted_at IS NULL").
+		Scan(&userResponse)
 
 	userResponse.Token = utils.RandToken()
 	session.Set("user", userResponse.ID)
@@ -120,7 +125,10 @@ func (service AuthenticationService) AuthenticateSession(c *gin.Context) bool {
 	userID := session.Get("user")
 	if userID != nil {
 		authenticatedUser := userModels.User{}
-		if err := db.Where("active = true").First(&authenticatedUser, userID).Error; err != nil {
+		if err := db.
+			Where("users.deleted_at IS NULL").
+			Where("active = true").
+			First(&authenticatedUser, userID).Error; err != nil {
 			logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
 			return false
 		}
