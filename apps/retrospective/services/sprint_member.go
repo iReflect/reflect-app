@@ -208,10 +208,11 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 
 // UpdateSprintMember update the sprint member summary
 func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID string,
-	memberData retroSerializers.SprintMemberSummary) (*retroSerializers.SprintMemberSummary, int, error) {
+	memberData retroSerializers.SprintMemberUpdate) (*retroSerializers.SprintMemberSummary, int, error) {
 	db := service.DB
 
 	var sprintMember retroModels.SprintMember
+	sprintMemberSummary := retroSerializers.SprintMemberSummary{}
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.deleted_at IS NULL").
 		Where("id = ?", sprintMemberID).
@@ -226,11 +227,21 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint member")
 	}
 
-	sprintMember.AllocationPercent = memberData.AllocationPercent
-	sprintMember.ExpectationPercent = memberData.ExpectationPercent
-	sprintMember.Vacations = memberData.Vacations
-	sprintMember.Rating = retrospective.Rating(memberData.Rating)
-	sprintMember.Comment = memberData.Comment
+	if memberData.AllocationPercent != nil {
+		sprintMember.AllocationPercent = *memberData.AllocationPercent
+	}
+	if memberData.ExpectationPercent != nil {
+		sprintMember.ExpectationPercent = *memberData.ExpectationPercent
+	}
+	if memberData.Vacations != nil {
+		sprintMember.Vacations = *memberData.Vacations
+	}
+	if memberData.Rating != nil {
+		sprintMember.Rating = retrospective.Rating(*memberData.Rating)
+	}
+	if memberData.Comment != nil {
+		sprintMember.Comment = *memberData.Comment
+	}
 
 	if err := db.Save(&sprintMember).Error; err != nil {
 		utils.LogToSentry(err)
@@ -240,20 +251,20 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	if err := db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.deleted_at IS NULL").
 		Where("sprint_members.id = ?", sprintMemberID).
-		Scopes(retroModels.SMLeftJoinSMT).
+		Scopes(retroModels.SMJoinMember, retroModels.SMLeftJoinSMT).
 		Select(`
-            COALESCE(SUM(sprint_member_tasks.points_earned), 0) AS actual_story_point,
-            COALESCE(SUM(sprint_member_tasks.time_spent_minutes), 0) AS total_time_spent_in_min`).
-		Group("sprint_members.id").
-		Row().
-		Scan(&memberData.ActualStoryPoint, &memberData.TotalTimeSpentInMin); err != nil {
+            DISTINCT sprint_members.*,
+            users.*,
+            COALESCE(SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.id), 0) AS actual_story_point,
+            COALESCE(SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.id), 0) AS total_time_spent_in_min`).
+		Scan(&sprintMemberSummary).Error; err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to update sprint member")
 	}
 
-	memberData.SetExpectedStoryPoint(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
+	sprintMemberSummary.SetExpectedStoryPoint(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
 
-	return &memberData, http.StatusOK, nil
+	return &sprintMemberSummary, http.StatusOK, nil
 }
 
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog,

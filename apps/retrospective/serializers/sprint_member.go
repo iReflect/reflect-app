@@ -30,3 +30,12 @@ func (member *SprintMemberSummary) SetExpectedStoryPoint(sprint models.Sprint, r
 type SprintMemberSummaryListSerializer struct {
 	Members []*SprintMemberSummary
 }
+
+// SprintMemberUpdate serializer to update a sprint member
+type SprintMemberUpdate struct {
+	BaseRating
+	AllocationPercent  *float64 `json:"AllocationPercent"`
+	ExpectationPercent *float64 `json:"ExpectationPercent"`
+	Vacations          *float64 `json:"Vacations"`
+	Comment            *string  `json:"Comment"`
+}

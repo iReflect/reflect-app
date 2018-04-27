@@ -21,7 +21,7 @@ type SprintNoteController struct {
 func (ctrl SprintNoteController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.Add)
 	r.GET("/", ctrl.List)
-	r.PUT("/:noteID/", ctrl.Update)
+	r.PATCH("/:noteID/", ctrl.Update)
 }
 
 // Add Note to sprint's retrospective

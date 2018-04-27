@@ -20,7 +20,7 @@ type SprintMemberController struct {
 func (ctrl SprintMemberController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.AddMember)
 	r.GET("/", ctrl.GetSprintMemberList)
-	r.PUT("/:memberID/", ctrl.UpdateSprintMember)
+	r.PATCH("/:memberID/", ctrl.UpdateSprintMember)
 	r.DELETE("/:memberID/", ctrl.RemoveMember)
 }
 
@@ -106,7 +106,7 @@ func (ctrl SprintMemberController) UpdateSprintMember(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
-	var memberData retroSerializers.SprintMemberSummary
+	var memberData retroSerializers.SprintMemberUpdate
 	err := c.BindJSON(&memberData)
 
 	response, status, err := ctrl.SprintService.UpdateSprintMember(sprintID, sprintMemberID, memberData)
