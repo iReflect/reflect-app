@@ -29,7 +29,7 @@ type Task struct {
 	Estimate          float64      `gorm:"not null; default: 0"`
 	Fields            fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	DoneAt            *time.Time
-	IsTrackerTask     bool         `gorm:"not null;default: false"`
+	IsTrackerTask     bool `gorm:"not null;default: false"`
 	SprintMemberTasks []SprintMemberTask
 }
 

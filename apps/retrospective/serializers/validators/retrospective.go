@@ -101,7 +101,7 @@ func IsValidRating(
 	fieldKind reflect.Kind,
 	param string,
 ) bool {
-	rating := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskMemberUpdate).Rating
+	rating := currentStruct.Interface().(retrospectiveSerializers.BaseRating).Rating
 	if rating != nil && *rating >= 0 && int(*rating) < len(retrospective.RatingValues) {
 		return true
 	}

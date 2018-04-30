@@ -21,7 +21,7 @@ type SprintHighlightController struct {
 func (ctrl SprintHighlightController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.Add)
 	r.GET("/", ctrl.List)
-	r.PUT("/:highlightID/", ctrl.Update)
+	r.PATCH("/:highlightID/", ctrl.Update)
 }
 
 // Add Highlight to sprint's retrospective
