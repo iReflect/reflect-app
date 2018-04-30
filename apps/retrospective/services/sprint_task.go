@@ -271,6 +271,7 @@ func (service SprintTaskService) UpdateTaskMember(
 	sprintTaskID string,
 	retroID string,
 	sprintID string,
+	smtID string,
 	taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, int, error) {
 	db := service.DB
 
@@ -278,7 +279,7 @@ func (service SprintTaskService) UpdateTaskMember(
 	err := db.Model(&retroModels.SprintMemberTask{}).
 		Where("sprint_member_tasks.deleted_at IS NULL").
 		Where("sprint_task_id = ?", sprintTaskID).
-		Where("id = ?", taskMemberData.ID).
+		Where("id = ?", smtID).
 		Preload("SprintMember").
 		Find(&sprintMemberTask).Error
 

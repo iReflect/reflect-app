@@ -24,7 +24,7 @@ func (ctrl SprinTaskController) Routes(r *gin.RouterGroup) {
 	r.DELETE("/:sprintTaskID/done/", ctrl.MarkUndone)
 	r.GET("/:sprintTaskID/members/", ctrl.GetMembers)
 	r.POST("/:sprintTaskID/members/", ctrl.AddMember)
-	r.PUT("/:sprintTaskID/members/:smtID/", ctrl.UpdateTaskMember)
+	r.PATCH("/:sprintTaskID/members/:smtID/", ctrl.UpdateTaskMember)
 }
 
 // List ...
@@ -171,6 +171,7 @@ func (ctrl SprinTaskController) UpdateTaskMember(c *gin.Context) {
 	sprintTaskID := c.Param("sprintTaskID")
 	retroID := c.Param("retroID")
 	sprintID := c.Param("sprintID")
+	smtID := c.Param("smtID")
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
@@ -184,7 +185,7 @@ func (ctrl SprinTaskController) UpdateTaskMember(c *gin.Context) {
 		return
 	}
 
-	taskMember, status, err := ctrl.SprintTaskService.UpdateTaskMember(sprintTaskID, retroID, sprintID, &taskMemberData)
+	taskMember, status, err := ctrl.SprintTaskService.UpdateTaskMember(sprintTaskID, retroID, sprintID, smtID, &taskMemberData)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
