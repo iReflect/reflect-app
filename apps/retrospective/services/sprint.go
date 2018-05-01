@@ -1,13 +1,15 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/jinzhu/gorm"
-
-	"database/sql"
-	customErrors "github.com/iReflect/reflect-app/libs"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
@@ -15,8 +17,8 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	customErrors "github.com/iReflect/reflect-app/libs"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 // SprintService ...
@@ -306,18 +308,38 @@ func (service SprintService) getSprintTaskTypeSummary(
 }
 
 // GetSprintsList ...
-func (service SprintService) GetSprintsList(
-	retrospectiveID string,
-	userID uint) (sprints *retroSerializers.SprintsSerializer, status int, err error) {
+func (service SprintService) GetSprintsList(retrospectiveID string, userID uint, perPage string, after string) (*retroSerializers.SprintsSerializer, int, error) {
 	db := service.DB
-	sprints = new(retroSerializers.SprintsSerializer)
+	sprints := new(retroSerializers.SprintsSerializer)
 
-	err = db.Model(&retroModels.Sprint{}).
+	parsedPerPage, err := strconv.Atoi(perPage)
+	if err != nil {
+		parsedPerPage = -1
+	}
+
+	filterQuery := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
 		Where("retrospective_id = ?", retrospectiveID).
 		Scopes(retroModels.NotDeletedSprint).
-		Preload("CreatedBy").
+		Preload("CreatedBy")
+
+	if after != "" {
+		decodedAfter, err := url.PathUnescape(after)
+		if err != nil {
+			utils.LogToSentry(err)
+			return nil, http.StatusInternalServerError, errors.New("failed to get sprints")
+		}
+
+		t, err := time.Parse(time.RFC3339, decodedAfter)
+		if err != nil {
+			utils.LogToSentry(err)
+			return nil, http.StatusInternalServerError, errors.New("failed to get sprints")
+		}
+		filterQuery = filterQuery.Where("sprints.end_date < ?", t)
+	}
+	err = filterQuery.
 		Order("end_date DESC, status, title, id").
+		Limit(parsedPerPage).
 		Find(&sprints.Sprints).Error
 
 	if err != nil {

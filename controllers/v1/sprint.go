@@ -2,11 +2,11 @@ package v1
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
-	"strconv"
 )
 
 // SprintController ...
@@ -35,12 +35,15 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 func (ctrl SprintController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	retroID := c.Param("retroID")
+	after, _ := c.GetQuery("after")
+	perPage, _ := c.GetQuery("count")
+
 	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	sprints, status, err := ctrl.SprintService.GetSprintsList(retroID, userID.(uint))
+	sprints, status, err := ctrl.SprintService.GetSprintsList(retroID, userID.(uint), perPage, after)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
