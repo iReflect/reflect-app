@@ -187,17 +187,31 @@ func (service SprintTaskService) GetMembers(
 
 	dbs := service.smtForCurrentAndPrevSprint(sprintTaskID, retroID, sprintID).
 		Select(`
+            DISTINCT ON (users.id)
             sprint_member_tasks.*,
             users.*,
+            sprints.end_date AS sprint_end_date,
             sprint_members.sprint_id,
+            CASE WHEN (sprint_members.sprint_id = ?) THEN TRUE ELSE FALSE END AS editable,
             SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id)                                AS total_points,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id)      AS sprint_points,
+            CASE WHEN (sprint_members.sprint_id = ?)
+              THEN
+                SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id)
+              ELSE
+                0
+              END                                                                                                              AS sprint_points,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id)                           AS total_time,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id) AS sprint_time`).
+            CASE WHEN (sprint_members.sprint_id = ?)
+              THEN
+                SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id)ELSE 
+                0
+              END                                                                                                              AS sprint_time`,
+			sprintID, sprintID, sprintID).
+		Order("users.id DESC, sprints.end_date DESC").
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) AS smt WHERE smt.sprint_id = ?", dbs, sprintID).
-		Order("smt.role, smt.first_name, smt.last_name").
+	err = db.Raw("SELECT smt.* FROM (?) AS smt", dbs).
+		Order("smt.editable DESC, smt.role, smt.first_name, smt.last_name").
 		Scan(&members.Members).Error
 
 	if err != nil {
@@ -229,7 +243,7 @@ func (service SprintTaskService) GetMember(
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id) AS sprint_time`).
 		QueryExpr()
 
-	err = db.Raw("SELECT DISTINCT(smt.*) FROM (?) as smt WHERE smt.sprint_member_id = ?",
+	err = db.Raw("SELECT DISTINCT(smt.*), TRUE as editable FROM (?) as smt WHERE smt.sprint_member_id = ?",
 		tempDB,
 		sprintMemberTask.SprintMemberID).
 		Scan(&member).Error
