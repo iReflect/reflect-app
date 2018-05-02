@@ -74,6 +74,39 @@ func (service SprintTaskService) Get(
 	return &task, http.StatusOK, nil
 }
 
+// Update ...
+func (service SprintTaskService) Update(sprintTaskID string, retroID string, sprintID string, data retroSerializers.SprintTaskUpdate) (*retroSerializers.SprintTask, int, error) {
+	db := service.DB
+
+	var task retroModels.Task
+	err := db.Model(&retroModels.Task{}).
+		Where("tasks.deleted_at IS NULL").
+		Scopes(retroModels.TaskJoinST).
+		Where("sprint_tasks.id = ?", sprintTaskID).
+		Where("sprint_tasks.sprint_id = ?", sprintID).
+		Find(&task).
+		Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("sprint task not found")
+		}
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to get sprint task")
+	}
+
+	if data.Rating != nil {
+		task.Rating = retrospective.Rating(*data.Rating)
+	}
+
+	if err := db.Save(&task).Error; err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to update sprint task")
+	}
+
+	return service.Get(sprintTaskID, retroID, sprintID)
+}
+
 // MarkDone ...
 func (service SprintTaskService) MarkDone(
 	sprintTaskID string,
@@ -339,10 +372,7 @@ func (service SprintTaskService) tasksForCurrentAndPrevSprint(retroID string, sp
 }
 
 // tasksWithTimeDetailsForCurrentAndPrevSprint ...
-func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(
-	retroID string,
-	sprintID string,
-	sprintTaskID *string) *gorm.DB {
+func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(retroID string, sprintID string, sprintTaskID *string) *gorm.DB {
 
 	db := service.DB
 
@@ -373,7 +403,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(
             tasks.priority,  
             tasks.assignee, 
             task_owners.member_name AS owner, 
-            tasks.estimate,  
+            tasks.estimate,
+            tasks.rating,
             tasks.done_at,
             tasks.is_tracker_task,
             sprint_members.sprint_id,
@@ -393,10 +424,7 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(
 }
 
 // smtForCurrentAndPrevSprint ...
-func (service SprintTaskService) smtForCurrentAndPrevSprint(
-	sprintTaskID string,
-	retroID string,
-	sprintID string) *gorm.DB {
+func (service SprintTaskService) smtForCurrentAndPrevSprint(sprintTaskID string, retroID string, sprintID string) *gorm.DB {
 	db := service.DB
 
 	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).

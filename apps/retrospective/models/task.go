@@ -10,6 +10,7 @@ import (
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
+	"github.com/iReflect/reflect-app/apps/retrospective"
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
@@ -19,15 +20,16 @@ type Task struct {
 	Key               string `gorm:"type:varchar(30); not null"`
 	TrackerUniqueID   string `gorm:"type:varchar(255); not null"`
 	Retrospective     Retrospective
-	RetrospectiveID   uint         `gorm:"not null"`
-	Summary           string       `gorm:"type:varchar(255); not null"`
-	Description       string       `gorm:"type:text; not null"`
-	Type              string       `gorm:"type:varchar(30); not null"`
-	Status            string       `gorm:"type:varchar(50); not null"`
-	Priority          string       `gorm:"type:varchar(50); not null"`
-	Assignee          string       `gorm:"type:varchar(100); not null"`
-	Estimate          float64      `gorm:"not null; default: 0"`
-	Fields            fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
+	RetrospectiveID   uint                 `gorm:"not null"`
+	Summary           string               `gorm:"type:varchar(255); not null"`
+	Description       string               `gorm:"type:text; not null"`
+	Type              string               `gorm:"type:varchar(30); not null"`
+	Status            string               `gorm:"type:varchar(50); not null"`
+	Priority          string               `gorm:"type:varchar(50); not null"`
+	Assignee          string               `gorm:"type:varchar(100); not null"`
+	Estimate          float64              `gorm:"not null; default: 0"`
+	Fields            fields.JSONB         `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
+	Rating            retrospective.Rating `gorm:"default:2; not null"`
 	DoneAt            *time.Time
 	IsTrackerTask     bool `gorm:"not null;default: false"`
 	SprintMemberTasks []SprintMemberTask
