@@ -17,6 +17,7 @@ type SprintTask struct {
 	SprintTime        uint
 	TotalPointsEarned float64
 	PointsEarned      float64
+	Rating            int8
 	DoneAt            *time.Time
 	IsTrackerTask     bool
 	IsInvalid         bool
@@ -36,14 +37,19 @@ type TaskMember struct {
 	SprintTime   uint
 	TotalPoints  float64
 	SprintPoints float64
-	Rating       *int8
+	Rating       int8
 	Comment      string
-	Role         *int8
+	Role         int8
 }
 
 // TaskMembersSerializer ...
 type TaskMembersSerializer struct {
 	Members []TaskMember
+}
+
+// SprintTaskUpdate ...
+type SprintTaskUpdate struct {
+	BaseRating
 }
 
 // AddSprintTaskMemberSerializer ...
