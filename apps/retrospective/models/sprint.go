@@ -182,16 +182,15 @@ func NotDeletedSprint(db *gorm.DB) *gorm.DB {
 
 // SprintJoinSM ...
 func SprintJoinSM(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_members ON sprint_members.sprint_id = sprints.id").Where("sprint_members.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_members ON sprint_members.sprint_id = sprints.id AND sprint_members.deleted_at IS NULL")
 }
 
 // SprintJoinRetro ...
 func SprintJoinRetro(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN retrospectives ON sprints.retrospective_id = retrospectives.id").Where("retrospectives.deleted_at IS NULL")
+	return db.Joins("JOIN retrospectives ON sprints.retrospective_id = retrospectives.id AND retrospectives.deleted_at IS NULL")
 }
 
 // SprintJoinST ...
 func SprintJoinST(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_tasks ON sprints.id = sprint_tasks.sprint_id").
-		Where("sprint_tasks.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_tasks ON sprints.id = sprint_tasks.sprint_id AND sprint_tasks.deleted_at IS NULL")
 }

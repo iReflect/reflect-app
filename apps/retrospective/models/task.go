@@ -88,11 +88,10 @@ func getFieldsMetaFieldMeta() admin.Meta {
 
 // TaskJoinTaskKeyMaps ...
 func TaskJoinTaskKeyMaps(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN task_key_maps ON task_key_maps.task_id = tasks.id").Where("task_key_maps.deleted_at IS NULL")
+	return db.Joins("JOIN task_key_maps ON task_key_maps.task_id = tasks.id AND task_key_maps.deleted_at IS NULL")
 }
 
 // TaskJoinST ...
 func TaskJoinST(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_tasks ON tasks.id = sprint_tasks.task_id").
-		Where("sprint_tasks.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_tasks ON tasks.id = sprint_tasks.task_id AND sprint_tasks.deleted_at IS NULL")
 }

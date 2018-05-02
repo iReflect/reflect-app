@@ -78,15 +78,15 @@ func getTaskProviderConfigMetaFieldMeta() admin.Meta {
 
 // RetroJoinSprints ...
 func RetroJoinSprints(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprints ON retrospectives.id = sprints.retrospective_id").Where("sprints.deleted_at IS NULL")
+	return db.Joins("JOIN sprints ON retrospectives.id = sprints.retrospective_id AND sprints.deleted_at IS NULL")
 }
 
 // RetroJoinTasks ...
 func RetroJoinTasks(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN tasks ON retrospectives.id = tasks.retrospective_id").Where("tasks.deleted_at IS NULL")
+	return db.Joins("JOIN tasks ON retrospectives.id = tasks.retrospective_id AND tasks.deleted_at IS NULL")
 }
 
 // RetroJoinUserTeams ...
 func RetroJoinUserTeams(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN user_teams ON retrospectives.team_id = user_teams.team_id").Where("user_teams.deleted_at IS NULL")
+	return db.Joins("JOIN user_teams ON retrospectives.team_id = user_teams.team_id AND user_teams.deleted_at IS NULL")
 }

@@ -60,6 +60,7 @@ type serverConfig struct {
 	SessionAge         int      `env:"SESSION_AGE"  envDefault:"57600"`
 	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:4200,http://localhost:3000"`
 	LoginURL           string   `env:"LOGIN_URL" envDefault:"http://localhost:4200/login"`
+	EncryptionKey      string   `env:"ENCRYPTION_KEY" envDefault:"DUMMY_KEY__FOR_LOCAL_DEV"`
 }
 
 type redisConfig struct {

@@ -6,7 +6,6 @@ import (
 	"github.com/getsentry/raven-go"
 	"github.com/sirupsen/logrus"
 	"math"
-	"os"
 	"time"
 )
 
@@ -32,15 +31,6 @@ func UIntInSlice(element uint, slice []uint) bool {
 		}
 	}
 	return false
-}
-
-// EncryptionKey ...
-func EncryptionKey() []byte {
-	key := os.Getenv("ENCRYPTION_KEY")
-	if len(key) == 0 {
-		key = "DUMMY_KEY__FOR_LOCAL_DEV"
-	}
-	return []byte(key)
 }
 
 // GetWorkingDaysBetweenTwoDates calculates the working days between two dates,

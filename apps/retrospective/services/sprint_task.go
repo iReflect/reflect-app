@@ -349,12 +349,13 @@ func (service SprintTaskService) tasksForCurrentAndPrevSprint(retroID string, sp
 
 	currentSprintFilter := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
-		Where("id = ?", sprintID).
+		Where("sprints.id = ?", sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Select("end_date").QueryExpr()
 
 	sprintFilter := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
+		Scopes(retroModels.NotDeletedSprint).
 		Where("retrospective_id = ? AND start_date < (?)", retroID, currentSprintFilter).
 		Select("id").QueryExpr()
 
@@ -363,23 +364,16 @@ func (service SprintTaskService) tasksForCurrentAndPrevSprint(retroID string, sp
 		Where("tasks.retrospective_id = ?", retroID).
 		Scopes(
 			retroModels.TaskJoinST,
-			retroModels.STJoinSMT,
-			retroModels.SMTJoinSM,
-			retroModels.SMJoinSprint,
-			retroModels.SMJoinMember).
-		Where("sprints.id in (?)", sprintFilter).
-		Scopes(retroModels.NotDeletedSprint)
+			retroModels.STLeftJoinSMT,
+			retroModels.SMTLeftJoinSM,
+			retroModels.SMLeftJoinMember).
+		Where("sprint_tasks.sprint_id in (?)", sprintFilter)
 }
 
 // tasksWithTimeDetailsForCurrentAndPrevSprint ...
 func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(retroID string, sprintID string, sprintTaskID *string) *gorm.DB {
 
 	db := service.DB
-
-	sprintTaskFilter := db.Model(&retroModels.SprintTask{}).
-		Where("sprint_tasks.deleted_at IS NULL").
-		Where("id = ?", sprintTaskID).
-		Select("task_id").QueryExpr()
 
 	taskOwnerTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
 		Select(`
@@ -407,7 +401,7 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
             tasks.rating,
             tasks.done_at,
             tasks.is_tracker_task,
-            sprint_members.sprint_id,
+            sprint_tasks.sprint_id,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
             SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned, 
@@ -415,10 +409,14 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 		`)
 
 	if sprintTaskID != nil {
+		sprintTaskFilter := db.Model(&retroModels.SprintTask{}).
+			Where("sprint_tasks.deleted_at IS NULL").
+			Where("id = ?", sprintTaskID).
+			Select("task_id").QueryExpr()
 		taskOwnerTable = taskOwnerTable.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
 		dbs = dbs.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
 	}
-	dbs = dbs.Joins("JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr())
+	dbs = dbs.Joins("LEFT JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr())
 
 	return dbs
 }

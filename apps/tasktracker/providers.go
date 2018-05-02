@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"strings"
 )
@@ -61,7 +62,7 @@ func EncryptTaskProviders(decrypted []byte) (encrypted []byte, err error) {
 		return nil, err
 	}
 
-	cryptkeeper.SetCryptKey(utils.EncryptionKey())
+	cryptkeeper.SetCryptKey([]byte(config.GetConfig().Server.EncryptionKey))
 	var providerData map[string]interface{}
 	var credentials map[string]interface{}
 
@@ -94,7 +95,7 @@ func DecryptTaskProviders(encrypted []byte) (decrypted []byte, err error) {
 		return nil, err
 	}
 
-	cryptkeeper.SetCryptKey(utils.EncryptionKey())
+	cryptkeeper.SetCryptKey([]byte(config.GetConfig().Server.EncryptionKey))
 	var providerData map[string]interface{}
 	var credentials map[string]interface{}
 	for _, taskProviderConfig := range configList {

@@ -239,12 +239,15 @@ func getMemberTaskRoleFieldMeta() admin.Meta {
 
 // SMTJoinST ...
 func SMTJoinST(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_tasks ON sprint_member_tasks.sprint_task_id = sprint_tasks.id").
-		Where("sprint_tasks.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_tasks ON sprint_member_tasks.sprint_task_id = sprint_tasks.id AND sprint_tasks.deleted_at IS NULL")
 }
 
 // SMTJoinSM ...
 func SMTJoinSM(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_members ON sprint_member_tasks.sprint_member_id = sprint_members.id").
-		Where("sprint_members.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_members ON sprint_member_tasks.sprint_member_id = sprint_members.id AND sprint_members.deleted_at IS NULL")
+}
+
+// SMTLeftJoinSM ...
+func SMTLeftJoinSM(db *gorm.DB) *gorm.DB {
+	return db.Joins("LEFT JOIN sprint_members ON sprint_member_tasks.sprint_member_id = sprint_members.id AND sprint_members.deleted_at IS NULL")
 }
