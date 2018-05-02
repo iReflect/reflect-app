@@ -26,7 +26,7 @@ type RetrospectiveFeedback struct {
 // RetrospectiveFeedbackUpdateSerializer ...
 type RetrospectiveFeedbackUpdateSerializer struct {
 	Text       *string    `json:"Text"`
-	Scope      *int8      `json:"Scope" binding:"is_valid_retrospective_feedback_scope"`
+	Scope      *int8      `json:"Scope" binding:"omitempty,is_valid_retrospective_feedback_scope"`
 	AssigneeID *uint      `json:"AssigneeID"`
 	ExpectedAt *time.Time `json:"ExpectedAt"`
 }

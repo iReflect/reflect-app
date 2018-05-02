@@ -56,5 +56,5 @@ type SprintTaskMemberUpdate struct {
 	BaseRating
 	SprintPoints *float64 `json:"SprintPoints"`
 	Comment      *string  `json:"Comment"`
-	Role         *int8    `json:"Role" binding:"is_valid_task_role"`
+	Role         *int8    `json:"Role" binding:"omitempty,is_valid_task_role"`
 }
