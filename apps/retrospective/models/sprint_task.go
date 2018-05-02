@@ -43,18 +43,20 @@ func getTaskMeta() admin.Meta {
 
 // STJoinTask ...
 func STJoinTask(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN tasks ON sprint_tasks.task_id = tasks.id").
-		Where("tasks.deleted_at IS NULL")
+	return db.Joins("JOIN tasks ON sprint_tasks.task_id = tasks.id AND tasks.deleted_at IS NULL")
 }
 
 // STJoinSMT ...
 func STJoinSMT(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_member_tasks ON sprint_tasks.id = sprint_member_tasks.sprint_task_id").
-		Where("sprint_member_tasks.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_member_tasks ON sprint_tasks.id = sprint_member_tasks.sprint_task_id AND sprint_member_tasks.deleted_at IS NULL")
+}
+
+// STLeftJoinSMT ...
+func STLeftJoinSMT(db *gorm.DB) *gorm.DB {
+	return db.Joins("LEFT JOIN sprint_member_tasks ON sprint_tasks.id = sprint_member_tasks.sprint_task_id AND sprint_member_tasks.deleted_at IS NULL")
 }
 
 // STJoinSprint ...
 func STJoinSprint(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprints ON sprint_tasks.sprint_id = sprints.id").
-		Where("sprints.deleted_at IS NULL")
+	return db.Joins("JOIN sprints ON sprint_tasks.sprint_id = sprints.id AND sprints.deleted_at IS NULL")
 }

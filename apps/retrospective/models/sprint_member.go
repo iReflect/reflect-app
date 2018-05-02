@@ -122,25 +122,35 @@ func getSprintMemberRatingMeta() admin.Meta {
 
 // SMJoinUT ...
 func SMJoinUT(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN user_teams ON sprint_members.member_id = user_teams.user_id").Where("user_teams.deleted_at IS NULL")
+	return db.Joins("JOIN user_teams ON sprint_members.member_id = user_teams.user_id AND user_teams.deleted_at IS NULL")
 }
 
 // SMJoinSMT ...
 func SMJoinSMT(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+	return db.Joins("JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id AND sprint_member_tasks.deleted_at IS NULL")
 }
 
 // SMLeftJoinSMT ...
 func SMLeftJoinSMT(db *gorm.DB) *gorm.DB {
-	return db.Joins("LEFT JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id").Where("sprint_member_tasks.deleted_at IS NULL")
+	return db.Joins("LEFT JOIN sprint_member_tasks ON sprint_member_tasks.sprint_member_id = sprint_members.id AND sprint_member_tasks.deleted_at IS NULL")
 }
 
 // SMJoinSprint ...
 func SMJoinSprint(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN sprints ON sprint_members.sprint_id = sprints.id").Where("sprints.deleted_at IS NULL")
+	return db.Joins("JOIN sprints ON sprint_members.sprint_id = sprints.id AND sprints.deleted_at IS NULL")
+}
+
+// SMLeftJoinSprint ...
+func SMLeftJoinSprint(db *gorm.DB) *gorm.DB {
+	return db.Joins("LEFT JOIN sprints ON sprint_members.sprint_id = sprints.id AND sprints.deleted_at IS NULL")
 }
 
 // SMJoinMember ...
 func SMJoinMember(db *gorm.DB) *gorm.DB {
-	return db.Joins("JOIN users ON sprint_members.member_id = users.id").Where("users.deleted_at IS NULL")
+	return db.Joins("JOIN users ON sprint_members.member_id = users.id AND users.deleted_at IS NULL")
+}
+
+// SMLeftJoinMember ...
+func SMLeftJoinMember(db *gorm.DB) *gorm.DB {
+	return db.Joins("LEFT JOIN users ON sprint_members.member_id = users.id AND users.deleted_at IS NULL")
 }
