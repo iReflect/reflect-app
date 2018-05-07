@@ -7,6 +7,7 @@ type SprintTask struct {
 	ID                uint
 	Key               string
 	Summary           string
+	Description       string
 	Type              string
 	Status            string
 	Priority          string

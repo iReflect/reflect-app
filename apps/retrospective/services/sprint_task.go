@@ -392,6 +392,7 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
             tasks.key,
             tasks.tracker_unique_id,
             tasks.summary,   
+            tasks.description,
             tasks.type,      
             tasks.status,    
             tasks.priority,  
