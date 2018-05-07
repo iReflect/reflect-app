@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -312,9 +310,9 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint,
 	db := service.DB
 	sprints := new(retroSerializers.SprintsSerializer)
 
-	parsedPerPage, err := strconv.Atoi(perPage)
-	if err != nil {
-		parsedPerPage = -1
+	perPageInt, err := strconv.Atoi(perPage)
+	if err != nil || perPageInt < 0 {
+		perPageInt = 0
 	}
 
 	filterQuery := db.Model(&retroModels.Sprint{}).
@@ -324,22 +322,16 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint,
 		Preload("CreatedBy")
 
 	if after != "" {
-		decodedAfter, err := url.PathUnescape(after)
+		afterDate, err := utils.ParseDateString(after)
 		if err != nil {
 			utils.LogToSentry(err)
 			return nil, http.StatusInternalServerError, errors.New("failed to get sprints")
 		}
-
-		t, err := time.Parse(time.RFC3339, decodedAfter)
-		if err != nil {
-			utils.LogToSentry(err)
-			return nil, http.StatusInternalServerError, errors.New("failed to get sprints")
-		}
-		filterQuery = filterQuery.Where("sprints.end_date < ?", t)
+		filterQuery = filterQuery.Where("sprints.end_date < ?", afterDate)
 	}
 	err = filterQuery.
 		Order("end_date DESC, status, title, id").
-		Limit(parsedPerPage).
+		Limit(perPageInt).
 		Find(&sprints.Sprints).Error
 
 	if err != nil {
