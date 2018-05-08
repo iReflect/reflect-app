@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -11,7 +12,6 @@ import (
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 // SprintTaskService ...
@@ -187,26 +187,43 @@ func (service SprintTaskService) GetMembers(
 
 	dbs := service.smtForCurrentAndPrevSprint(sprintTaskID, retroID, sprintID).
 		Select(`
-            DISTINCT ON (users.id)
-            sprint_member_tasks.*,
-            users.*,
-            sprints.end_date AS sprint_end_date,
-            sprint_members.sprint_id,
-            CASE WHEN (sprint_members.sprint_id = ?) THEN TRUE ELSE FALSE END AS editable,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id)                                AS total_points,
-            CASE WHEN (sprint_members.sprint_id = ?)
-              THEN
-                SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id)
-              ELSE
-                0
-              END                                                                                                              AS sprint_points,
-            SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id)                           AS total_time,
-            CASE WHEN (sprint_members.sprint_id = ?)
-              THEN
-                SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.member_id, sprint_members.sprint_id)ELSE 
-                0
-              END                                                                                                              AS sprint_time`,
-			sprintID, sprintID, sprintID).
+			DISTINCT ON (users.id)
+			sprint_member_tasks.id, 
+			sprint_member_tasks.created_at, 
+			sprint_member_tasks.deleted_at, 
+			sprint_member_tasks.updated_at, 
+			sprint_member_tasks.role, 
+			sprint_member_tasks.sprint_member_id, 
+			sprint_member_tasks.sprint_task_id, 
+			users.*, 
+			sprints.end_date AS sprint_end_date, 
+			sprint_members.sprint_id, 
+			CASE WHEN (sprint_members.sprint_id = ?) THEN TRUE ELSE FALSE END AS editable, 
+			SUM(
+			  sprint_member_tasks.points_earned
+			) OVER (
+			  PARTITION BY sprint_members.member_id
+			) AS total_points, 
+			CASE WHEN (sprint_members.sprint_id = ?) THEN SUM(
+			  sprint_member_tasks.points_earned
+			) OVER (
+			  PARTITION BY sprint_members.member_id, 
+			  sprint_members.sprint_id
+			) ELSE 0 END AS sprint_points, 
+			SUM(
+			  sprint_member_tasks.time_spent_minutes
+			) OVER (
+			  PARTITION BY sprint_members.member_id
+			) AS total_time, 
+			CASE WHEN (sprint_members.sprint_id = ?) THEN SUM(
+			  sprint_member_tasks.time_spent_minutes
+			) OVER (
+			  PARTITION BY sprint_members.member_id, 
+			  sprint_members.sprint_id
+			) ELSE 0 END AS sprint_time, 
+			CASE WHEN (sprint_members.sprint_id = ?) THEN sprint_member_tasks.comment ELSE NULL END AS comment, 
+			CASE WHEN (sprint_members.sprint_id = ?) THEN sprint_member_tasks.rating ELSE -1 END AS rating
+		`, sprintID, sprintID, sprintID, sprintID, sprintID).
 		Order("users.id DESC, sprints.end_date DESC").
 		QueryExpr()
 
