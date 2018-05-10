@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"math"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/getsentry/raven-go"

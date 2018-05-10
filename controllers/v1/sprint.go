@@ -38,12 +38,17 @@ func (ctrl SprintController) List(c *gin.Context) {
 	after, _ := c.GetQuery("after")
 	perPage, _ := c.GetQuery("count")
 
+	perPageInt, err := strconv.Atoi(perPage)
+	if err != nil || perPageInt < 0 {
+		perPageInt = 20
+	}
+
 	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	sprints, status, err := ctrl.SprintService.GetSprintsList(retroID, userID.(uint), perPage, after)
+	sprints, status, err := ctrl.SprintService.GetSprintsList(retroID, userID.(uint), perPageInt, after)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

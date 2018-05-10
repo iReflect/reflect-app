@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/jinzhu/gorm"
 
@@ -306,14 +305,9 @@ func (service SprintService) getSprintTaskTypeSummary(
 }
 
 // GetSprintsList ...
-func (service SprintService) GetSprintsList(retrospectiveID string, userID uint, perPage string, after string) (*retroSerializers.SprintsSerializer, int, error) {
+func (service SprintService) GetSprintsList(retrospectiveID string, userID uint, perPage int, after string) (*retroSerializers.SprintsSerializer, int, error) {
 	db := service.DB
 	sprints := new(retroSerializers.SprintsSerializer)
-
-	perPageInt, err := strconv.Atoi(perPage)
-	if err != nil || perPageInt < 0 {
-		perPageInt = 0
-	}
 
 	filterQuery := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
@@ -329,9 +323,9 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint,
 		}
 		filterQuery = filterQuery.Where("sprints.end_date < ?", afterDate)
 	}
-	err = filterQuery.
+	err := filterQuery.
 		Order("end_date DESC, status, title, id").
-		Limit(perPageInt).
+		Limit(perPage).
 		Find(&sprints.Sprints).Error
 
 	if err != nil {
