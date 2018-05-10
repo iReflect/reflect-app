@@ -40,7 +40,7 @@ func (service SprintTaskMemberService) GetMembers(
 			users.*, 
 			sprints.end_date AS sprint_end_date, 
 			sprint_members.sprint_id, 
-			CASE WHEN (sprint_members.sprint_id = ?) THEN TRUE ELSE FALSE END AS editable, 
+			CASE WHEN (sprint_members.sprint_id = ?) THEN TRUE ELSE FALSE END AS current, 
 			SUM(
 			  sprint_member_tasks.points_earned
 			) OVER (
@@ -70,7 +70,7 @@ func (service SprintTaskMemberService) GetMembers(
 		QueryExpr()
 
 	err = db.Raw("SELECT smt.* FROM (?) AS smt", dbs).
-		Order("smt.editable DESC, smt.role, smt.first_name, smt.last_name").
+		Order("smt.current DESC, smt.role, smt.first_name, smt.last_name").
 		Scan(&members.Members).Error
 
 	if err != nil {
