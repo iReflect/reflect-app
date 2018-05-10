@@ -141,8 +141,13 @@ func (a *App) SetRoutes() {
 
 	taskService := retrospectiveServices.SprintTaskService{DB: a.DB}
 	taskRoute := sprintRoute.Group(":sprintID/tasks")
-	tasksController := apiControllers.SprinTaskController{SprintTaskService: taskService, PermissionService: permissionService, TrailService: trailService}
+	tasksController := apiControllers.SprintTaskController{SprintTaskService: taskService, PermissionService: permissionService, TrailService: trailService}
 	tasksController.Routes(taskRoute)
+
+	taskMemberService := retrospectiveServices.SprintTaskMemberService{DB: a.DB}
+	taskMemberRoute := sprintRoute.Group(":sprintID/tasks/:sprintTaskID/members")
+	taskMemberController := apiControllers.SprintTaskMemberController{SprintTaskMemberService: taskMemberService, PermissionService: permissionService, TrailService: trailService}
+	taskMemberController.Routes(taskMemberRoute)
 
 	taskTrackerService := taskTrackerServices.TaskTrackerService{}
 	taskTrackerController := apiControllers.TaskTrackerController{TaskTrackerService: taskTrackerService}
