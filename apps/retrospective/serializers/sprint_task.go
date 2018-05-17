@@ -41,6 +41,7 @@ type TaskMember struct {
 	Rating       int8
 	Comment      string
 	Role         int8
+	Current      bool
 }
 
 // TaskMembersSerializer ...
