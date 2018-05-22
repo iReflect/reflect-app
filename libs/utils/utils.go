@@ -3,11 +3,27 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"math"
+	"net/url"
+	"time"
+
 	"github.com/getsentry/raven-go"
 	"github.com/sirupsen/logrus"
-	"math"
-	"time"
 )
+
+// ParseDateString parses a date string to time.Time
+func ParseDateString(date string) (*time.Time, error) {
+	unescapedDateString, err := url.PathUnescape(date)
+	if err != nil {
+		return nil, err
+	}
+
+	timeParsed, err := time.Parse(time.RFC3339, unescapedDateString)
+	if err != nil {
+		return nil, err
+	}
+	return &timeParsed, nil
+}
 
 // RandToken ...
 func RandToken() string {
