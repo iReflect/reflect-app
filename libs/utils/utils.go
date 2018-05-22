@@ -13,12 +13,12 @@ import (
 
 // ParseDateString parses a date string to time.Time
 func ParseDateString(date string) (*time.Time, error) {
-	timeDecoded, err := url.PathUnescape(date)
+	unescapedDateString, err := url.PathUnescape(date)
 	if err != nil {
 		return nil, err
 	}
 
-	timeParsed, err := time.Parse(time.RFC3339, timeDecoded)
+	timeParsed, err := time.Parse(time.RFC3339, unescapedDateString)
 	if err != nil {
 		return nil, err
 	}
