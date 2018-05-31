@@ -10,6 +10,7 @@ import (
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	"github.com/iReflect/reflect-app/config"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/google"
 )
 
@@ -104,8 +105,8 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 	responseBytes, err := appExecutor.Run(
 		timeTrackerConfig.FnGetTimeLog,
 		m.config.Email,
-		project, startTime.In(location).Format("2006-01-02"),
-		endTime.In(location).Format("2006-01-02"))
+		project, startTime.In(location).Format(constants.CustomDateFormat),
+		endTime.In(location).Format(constants.CustomDateFormat))
 	if err != nil {
 		log.Println("App Executor Failed: ", err)
 		utils.LogToSentry(err)

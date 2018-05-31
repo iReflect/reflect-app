@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"io/ioutil"
 )
@@ -23,9 +24,6 @@ const FromDateJQLKeyword = "${fromDate}"
 
 // ToDateJQLKeyword ...
 const ToDateJQLKeyword = "${toDate}"
-
-// JQLDateFormat ...
-const JQLDateFormat = "2006-01-02"
 
 // JIRATaskProvider ...
 type JIRATaskProvider struct {
@@ -130,13 +128,15 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 				"Required":         true,
 			},
 			{
-				"FieldName":        "JQL",
-				"FieldDisplayName": "JQL. eg. priority in (Blocker, Critical) AND project in (ProjectA, ProjectB)",
-				"Type":             "string",
-				"Required":         false,
-				"Hint": fmt.Sprintf("You can use the following parameters in your custom JQL, "+
-					"which will be replaced with their actual values at the time of the sprint sync.\n"+
-					"Sprint ID - %s\nFrom Date - %s\nTo Date - %s", SprintIDJQLKeyword, FromDateJQLKeyword, ToDateJQLKeyword),
+				"FieldName": "JQL",
+				"FieldDisplayName": fmt.Sprintf("JQL. eg. priority in (Blocker, Critical) AND status was \"Open\" During (%s, %s)",
+					FromDateJQLKeyword, ToDateJQLKeyword),
+				"Type":     "string",
+				"Required": false,
+				"Hint": fmt.Sprintf("<i>You can use the following parameters in your custom JQL, which will be replaced with "+
+					"their actual values at the time of the sprint sync.<br><strong>Sprint ID</strong>: %s, "+
+					"<strong>\"From\" Date</strong>: %s, <strong>\"To\" Date</strong>: %s </i>",
+					SprintIDJQLKeyword, FromDateJQLKeyword, ToDateJQLKeyword),
 			},
 			{
 				"FieldName":        "EstimateField",
@@ -319,11 +319,11 @@ func (c *JIRAConnection) sanitizeJQL(sprint *serializers.Sprint) string {
 	}
 	fromDate, toDate := "", ""
 	if sprint.FromDate != nil {
-		fromDate = sprint.FromDate.Format(JQLDateFormat)
+		fromDate = sprint.FromDate.Format(constants.CustomDateFormat)
 	}
 	if sprint.ToDate != nil {
 		// Adding 1 day to include the to date in the calculations
-		toDate = sprint.ToDate.AddDate(0, 0, 1).Format(JQLDateFormat)
+		toDate = sprint.ToDate.AddDate(0, 0, 1).Format(constants.CustomDateFormat)
 	}
 	return strings.NewReplacer(SprintIDJQLKeyword, sprint.ID, FromDateJQLKeyword, fromDate, ToDateJQLKeyword, toDate).Replace(c.config.JQL)
 }
