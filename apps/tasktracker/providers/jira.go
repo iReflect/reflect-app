@@ -11,9 +11,19 @@ import (
 	"errors"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"io/ioutil"
 )
+
+// SprintIDJQLKeyword ...
+const SprintIDJQLKeyword = "${sprintID}"
+
+// FromDateJQLKeyword ...
+const FromDateJQLKeyword = "${fromDate}"
+
+// ToDateJQLKeyword ...
+const ToDateJQLKeyword = "${toDate}"
 
 // JIRATaskProvider ...
 type JIRATaskProvider struct {
@@ -100,44 +110,48 @@ func getConfigObject(config interface{}) (JIRAConfig, error) {
 
 // ConfigTemplate ...
 func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
-	template := `{
-      "Type": "jira",
-      "DisplayTitle": "JIRA",
-      "SupportedAuthTypes": ["basicAuth"],
-      "Fields": [
-        {
-          "FieldName": "BaseURL",
-          "FieldDisplayName": "Base URL of the project. eg. 'https://ireflect.atlassian.net'",
-          "Type": "string",
-          "Required": true
-        },
-        {
-          "FieldName": "BoardIds",
-          "FieldDisplayName": "Board IDs (Comma Separated)",
-          "Type": "string",
-          "Required": true
-        },
-        {
-          "FieldName": "JQL",
-          "FieldDisplayName": "JQL",
-          "Type": "string",
-          "Required": false
-        },
-        {
-          "FieldName": "EstimateField",
-          "FieldDisplayName": "Estimate Field (Leave blank to use TimeEstimate)",
-          "Type": "string",
-          "Required": false
-        }
-      ]
-    }`
-	json.Unmarshal([]byte(template), &configMap)
+	configMap = map[string]interface{}{
+		"Type":               "jira",
+		"DisplayTitle":       "JIRA",
+		"SupportedAuthTypes": []string{"basicAuth"},
+		"Fields": []map[string]interface{}{
+			{
+				"FieldName":        "BaseURL",
+				"FieldDisplayName": "Base URL of the project. eg. 'https://ireflect.atlassian.net'",
+				"Type":             "string",
+				"Required":         true,
+			},
+			{
+				"FieldName":        "BoardIds",
+				"FieldDisplayName": "Board IDs (Comma Separated)",
+				"Type":             "string",
+				"Required":         true,
+			},
+			{
+				"FieldName": "JQL",
+				"FieldDisplayName": fmt.Sprintf("JQL. eg. priority in (Blocker, Critical) AND status was \"Open\" During (%s, %s)",
+					FromDateJQLKeyword, ToDateJQLKeyword),
+				"Type":     "string",
+				"Required": false,
+				"Hint": fmt.Sprintf("<i>You can use the following parameters in your custom JQL, which will be replaced with "+
+					"their actual values at the time of the sprint sync.<br><strong>Sprint ID</strong>: %s, "+
+					"<strong>\"From\" Date</strong>: %s, <strong>\"To\" Date</strong>: %s </i>",
+					SprintIDJQLKeyword, FromDateJQLKeyword, ToDateJQLKeyword),
+			},
+			{
+				"FieldName":        "EstimateField",
+				"FieldDisplayName": "Estimate Field (Leave blank to use TimeEstimate)",
+				"Type":             "string",
+				"Required":         false,
+			},
+		},
+	}
 	return configMap
 }
 
 // GetTaskList ...
 func (c *JIRAConnection) GetTaskList(ticketKeys []string) []serializers.Task {
-	tickets, err := c.getTicketsFromJQL("issueKey in ("+strings.Join(ticketKeys, ",")+")", true)
+	tickets, err := c.getTicketsFromJQL(fmt.Sprintf("issueKey in (%s)", strings.Join(ticketKeys, ",")), true, nil)
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -187,12 +201,12 @@ func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
 }
 
 // GetSprintTaskList ...
-func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
-	if sprint == "" {
-		return nil
+func (c *JIRAConnection) GetSprintTaskList(sprint serializers.Sprint) []serializers.Task {
+	var extraJQL string
+	if sprint.ID != "" {
+		extraJQL = fmt.Sprintf("Sprint in (%s)", sprint.ID)
 	}
-
-	tickets, _ := c.getTicketsFromJQL("Sprint  in ("+sprint+")", false)
+	tickets, _ := c.getTicketsFromJQL(extraJQL, false, &sprint)
 	return tickets
 }
 
@@ -200,27 +214,23 @@ func (c *JIRAConnection) GetSprintTaskList(sprint string) []serializers.Task {
 func (c *JIRAConnection) ValidateConfig() error {
 	searchOptions := jira.SearchOptions{MaxResults: 1}
 
-	_, _, err := c.client.Issue.Search(c.config.JQL, &searchOptions)
+	_, _, err := c.client.Issue.Search("", &searchOptions)
 	return err
 }
 
-func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool) (ticketsSerialized []serializers.Task, err error) {
+func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool, sprint *serializers.Sprint) (ticketsSerialized []serializers.Task, err error) {
 	// Need to pass in validateQuery=warn like this until jira-go supports this natively
 	searchOptions := jira.SearchOptions{MaxResults: 50000, ValidateQuery: "warn"}
 
-	var jql string
-
-	switch {
-	case skipBaseJQL:
+	jql := ""
+	if !skipBaseJQL && c.config.JQL != "" {
+		jql = c.sanitizeJQL(sprint)
+		if extraJQL != "" {
+			jql = extraJQL + " AND " + jql
+		}
+	} else {
 		jql = extraJQL
-	case extraJQL != "" && c.config.JQL != "":
-		jql = extraJQL + " AND " + c.config.JQL
-	case extraJQL != "":
-		jql = extraJQL
-	case c.config.JQL != "":
-		jql = c.config.JQL
 	}
-
 	// ToDo: Use pagination
 	tickets, res, err := c.client.Issue.Search(jql, &searchOptions)
 	if err != nil {
@@ -300,4 +310,20 @@ func (c *JIRAConnection) serializeTicket(ticket jira.Issue) *serializers.Task {
 		Assignee:        assignee,
 		Status:          ticket.Fields.Status.Name,
 	}
+}
+
+// sanitizeJQL replaces the parameters in the JQL with their respective values
+func (c *JIRAConnection) sanitizeJQL(sprint *serializers.Sprint) string {
+	if sprint == nil {
+		return ""
+	}
+	fromDate, toDate := "", ""
+	if sprint.FromDate != nil {
+		fromDate = sprint.FromDate.Format(constants.CustomDateFormat)
+	}
+	if sprint.ToDate != nil {
+		// Adding 1 day to include the to date in the calculations
+		toDate = sprint.ToDate.AddDate(0, 0, 1).Format(constants.CustomDateFormat)
+	}
+	return strings.NewReplacer(SprintIDJQLKeyword, sprint.ID, FromDateJQLKeyword, fromDate, ToDateJQLKeyword, toDate).Replace(c.config.JQL)
 }

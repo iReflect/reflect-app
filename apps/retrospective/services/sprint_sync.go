@@ -564,21 +564,26 @@ func (service SprintService) fetchAndUpdateTaskTrackerTask(
 	taskProviderConfig []byte) (mapset.Set, error) {
 	taskTrackerTaskKeySet := mapset.NewSet()
 
-	if sprint.SprintID != "" {
-		tickets, err := tasktracker.GetSprintTaskList(taskProviderConfig, sprint.SprintID)
+	tickets, err := tasktracker.GetSprintTaskList(
+		taskProviderConfig,
+		taskTrackerSerializers.Sprint{
+			ID:       sprint.SprintID,
+			FromDate: sprint.StartDate,
+			ToDate:   sprint.EndDate,
+		},
+	)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, err
+	}
+
+	for _, ticket := range tickets {
+		err = service.addOrUpdateTaskTrackerTask(sprint.ID, ticket, sprint.RetrospectiveID, "")
 		if err != nil {
 			utils.LogToSentry(err)
 			return nil, err
 		}
-
-		for _, ticket := range tickets {
-			err = service.addOrUpdateTaskTrackerTask(sprint.ID, ticket, sprint.RetrospectiveID, "")
-			if err != nil {
-				utils.LogToSentry(err)
-				return nil, err
-			}
-			taskTrackerTaskKeySet.Add(ticket.Key)
-		}
+		taskTrackerTaskKeySet.Add(ticket.Key)
 	}
 	return taskTrackerTaskKeySet, nil
 }

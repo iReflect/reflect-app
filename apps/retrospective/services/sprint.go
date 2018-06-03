@@ -371,7 +371,7 @@ func (service SprintService) Create(
 	sprint.CreatedByID = sprintData.CreatedByID
 	sprint.Status = retroModels.DraftSprint
 
-	if sprint.SprintID != "" && sprint.StartDate == nil && sprint.EndDate == nil {
+	if sprint.SprintID != "" {
 
 		taskProviderConfig, err := tasktracker.DecryptTaskProviders(retro.TaskProviderConfig)
 		if err != nil {
@@ -394,12 +394,11 @@ func (service SprintService) Create(
 				return nil, http.StatusUnprocessableEntity,
 					errors.New("sprint doesn't have any start and/or end date. provide start date and end date " +
 						"or set them in task provider")
+			} else if sprint.StartDate == nil && sprint.EndDate == nil {
+				sprint.StartDate = providerSprint.FromDate
+				sprint.EndDate = providerSprint.ToDate
 			}
-			sprint.StartDate = providerSprint.FromDate
-			sprint.EndDate = providerSprint.ToDate
-		}
-
-		if providerSprint == nil {
+		} else {
 			return nil, http.StatusUnprocessableEntity, errors.New("sprint id not found in task tracker")
 		}
 	}

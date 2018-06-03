@@ -30,7 +30,7 @@ type Connection interface {
 	GetTaskList(ticketKeys []string) []serializers.Task
 	GetTask(ticketKey string) (*serializers.Task, error)
 	GetSprint(sprintID string) *serializers.Sprint
-	GetSprintTaskList(sprint string) []serializers.Task
+	GetSprintTaskList(sprint serializers.Sprint) []serializers.Task
 	ValidateConfig() error
 }
 
@@ -163,7 +163,7 @@ func GetTaskDetails(config []byte, taskKey string) (*serializers.Task, error) {
 }
 
 // GetSprintTaskList ...
-func GetSprintTaskList(config []byte, sprint string) (tasks []serializers.Task, err error) {
+func GetSprintTaskList(config []byte, sprint serializers.Sprint) (tasks []serializers.Task, err error) {
 	connection := GetConnection(config)
 	if connection == nil {
 		return nil, errors.New("sprint_task_list: invalid connection config")
