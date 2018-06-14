@@ -93,6 +93,8 @@ func (service SprintTaskMemberService) GetMember(
 		return nil, http.StatusInternalServerError, errors.New("failed to get member")
 	}
 
+	member.Current = true // Since the member task will always be a part of the sprint, current will always be True.
+
 	return member, http.StatusOK, nil
 }
 
