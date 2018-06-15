@@ -231,6 +231,11 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool, sp
 	} else {
 		jql = extraJQL
 	}
+	jql = strings.Trim(jql, " ")
+	// If the sanitized JQL is empty, then there is no need to get tickets from the JIRA Board
+	if jql == "" {
+		return nil, nil
+	}
 	// ToDo: Use pagination
 	tickets, res, err := c.client.Issue.Search(jql, &searchOptions)
 	if err != nil {
