@@ -407,6 +407,12 @@
   version = "v8.18.2"
 
 [[projects]]
+  name = "gopkg.in/salsita/go-pivotaltracker.v1"
+  packages = ["v5/pivotal"]
+  revision = "46083f60193ab53b18d2ffe64d298127652b39ac"
+  version = "v1.4.0"
+
+[[projects]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -415,6 +421,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a89f7a96b2e21e65b2ae54d839b2f8cfb971b075f1a5f1aa8cedd34347142fa5"
+  inputs-digest = "377c22be792e99fd39d1b35a110c56dff64b5f87de586c7da922a56c29b1f8cf"
   solver-name = "gps-cdcl"
   solver-version = 1
