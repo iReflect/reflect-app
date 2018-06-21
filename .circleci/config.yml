@@ -18,7 +18,7 @@ jobs:
           name: Build artifacts
           command: make all
       - store_artifacts:
-          path: .gopath/bin/
+          path: .gopath/bin/reflect-app-*.zip
           destination: build
   test:
     docker:
