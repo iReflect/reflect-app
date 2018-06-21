@@ -15,7 +15,7 @@ jobs:
       - run:
           name: Build artifacts
           command: make all
-          
+
       - store_artifacts:
           path: .gopath/bin/
           destination: build
@@ -30,7 +30,7 @@ jobs:
         - POSTGRES_USER=ireflect
         - POSTGRES_PASSWORD=1Reflect
         - POSTGRES_DB=ireflect-test
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    working_directory: /go/src/github.com/{{ ORG_NAME }}/{{ REPO_NAME }}
     steps:
       - checkout
       - run:
@@ -47,11 +47,11 @@ jobs:
       - save_cache:
           key: v1-reflect-app-{{ .Revision }}
           paths:
-            - {{CIRCLE_WORKING_DIRECTORY}}/.gopath
+            - .gopath/bin
 
 workflows:
   version: 2
-  "test, build":
+  "test_build":
     jobs:
       - test
       - build:
