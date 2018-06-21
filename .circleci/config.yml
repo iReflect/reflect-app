@@ -15,7 +15,7 @@ jobs:
       - run:
           name: Build artifacts
           command: make all
-      # Save artifacts
+          
       - store_artifacts:
           path: .gopath/bin/
           destination: build
