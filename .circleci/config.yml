@@ -3,6 +3,23 @@
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.9
+    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            curl -L -s https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64 -o /go/bin/dep && chmod +x /go/bin/dep
+            make vendor
+      - run:
+          name: Build artifacts
+          command: make all
+      - run:
+          name: Save artifcats
+          command: mv .gopath/bin/reflect-app*.zip  $CIRCLE_ARTIFACTS/
   test:
     docker:
       - image: circleci/golang:1.9
@@ -17,19 +34,21 @@ jobs:
     working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
     steps:
       - checkout
-      - run: curl -L -s https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64 -o /go/bin/dep && chmod +x /go/bin/dep
-      - run: make vendor
-      - run: make test-coverage
-      - run: make all
-    post:
-      - mv .gopath/bin  $CIRCLE_ARTIFACTS/
-      - bash <(curl -s https://codecov.io/bash)
+      - run:
+          name: Install dependencies
+          command: |
+            curl -L -s https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64 -o /go/bin/dep && chmod +x /go/bin/dep
+            make vendor
+      - run:
+          name: Test
+          command: make test-coverage
+      - run:
+          name: Code coverage
+          command: bash <(curl -s https://codecov.io/bash)  
 
 workflows:
   version: 2
-  "test, build and deploy":
+  "test, build":
     jobs:
-      - test:
-          filters:
-            tags:
-              only: /.*/
+      - test
+      - build
