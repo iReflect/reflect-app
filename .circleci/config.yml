@@ -9,13 +9,9 @@ jobs:
     working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-reflect-app-{{ .Revision }}
       - run:
           name: Build artifacts
           command: make all
-
       - store_artifacts:
           path: .gopath/bin/
           destination: build
@@ -44,16 +40,10 @@ jobs:
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)  
-      - save_cache:
-          key: v1-reflect-app-{{ .Revision }}
-          paths:
-            - .gopath/bin
 
 workflows:
   version: 2
   "test_build":
     jobs:
       - test
-      - build:
-          requires:
-            - test
+      - build
