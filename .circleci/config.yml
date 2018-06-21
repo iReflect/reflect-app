@@ -30,7 +30,7 @@ jobs:
         - POSTGRES_USER=ireflect
         - POSTGRES_PASSWORD=1Reflect
         - POSTGRES_DB=ireflect-test
-    working_directory: /go/src/github.com/{{ ORG_NAME }}/{{ REPO_NAME }}
+    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
     steps:
       - checkout
       - run:
