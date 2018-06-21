@@ -11,7 +11,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-reflect-app-{{ checksum "project.clj" }}
+            - v1-reflect-app-{{ .Revision }}
       - run:
           name: Build artifacts
           command: make all
@@ -45,9 +45,9 @@ jobs:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)  
       - save_cache:
-          key: v1-reflect-app-{{ checksum "project.clj" }}
+          key: v1-reflect-app-{{ .Revision }}
           paths:
-            - {{working_directory}}/.gopath
+            - {{CIRCLE_WORKING_DIRECTORY}}/.gopath
 
 workflows:
   version: 2
