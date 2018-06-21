@@ -22,7 +22,7 @@ jobs:
       - run: make test-coverage
       - run: make all
     post:
-      - cp .gopath/bin/reflect-app-*.zip  $CIRCLE_ARTIFACTS/reflect-app.zip 
+      - mv .gopath/bin  $CIRCLE_ARTIFACTS/
       - bash <(curl -s https://codecov.io/bash)
 
 workflows:
