@@ -36,6 +36,7 @@ all: clean | $(BASE) ; $(info $(M) building executable…) @ ## Build program bi
 	$Q  cd $(BUILD_DIR) && mkdir -p db
 	cd $(BUILD_DIR) && cp -r $(BASE)/db/migrations db/
 	cd $(BIN) && zip -r -q $(BUILD_NAME).zip $(BUILD_NAME)
+	rm -rf $(BUILD_DIR)
 
 $(BASE): ; $(info $(M) setting GOPATH…)
 	@mkdir -p $(dir $@)
