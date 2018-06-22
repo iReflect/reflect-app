@@ -3,7 +3,7 @@
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
-  test:
+  test_build:
     docker:
       - image: circleci/golang:1.9
         environment:
@@ -30,9 +30,10 @@ jobs:
           command: make all
       - store_artifacts:
           path: .gopath/bin/
+          destination: build
 
 workflows:
   version: 2
   "test_build":
     jobs:
-      - test
+      - test_build
