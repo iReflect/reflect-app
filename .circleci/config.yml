@@ -3,17 +3,17 @@
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
-  build:
+  test:
     docker:
       - image: circleci/golang:1.9
         environment:
-        - DB_DSN="host=localhost user=ireflect password=1Reflect dbname=ireflect-test sslmode=disable"
-        - Driver="postgres"
+          - DB_DSN="host=localhost user=ireflect password=1Reflect dbname=ireflect-test sslmode=disable"
+          - Driver="postgres"
       - image: postgres:9.5
         environment:
-        - POSTGRES_USER=ireflect
-        - POSTGRES_PASSWORD=1Reflect
-        - POSTGRES_DB=ireflect-test
+          - POSTGRES_USER=ireflect
+          - POSTGRES_PASSWORD=1Reflect
+          - POSTGRES_DB=ireflect-test
     working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
     steps:
       - checkout
@@ -35,4 +35,4 @@ workflows:
   version: 2
   "test_build":
     jobs:
-      - build
+      - test
