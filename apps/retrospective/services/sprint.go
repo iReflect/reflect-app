@@ -16,6 +16,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	customErrors "github.com/iReflect/reflect-app/libs"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"strings"
 )
 
 // SprintService ...
@@ -274,7 +275,7 @@ func (service SprintService) GetSprintTaskSummary(
 
 func (service SprintService) getSprintTaskTypeSummary(
 	sprintID string,
-	taskTypes string) (*retroSerializers.SprintTaskSummary, int, error) {
+	taskTypes []string) (*retroSerializers.SprintTaskSummary, int, error) {
 	db := service.DB
 
 	var summary retroSerializers.SprintTaskSummary
@@ -298,7 +299,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get task info for " + taskTypes)
+		return nil, http.StatusInternalServerError, errors.New("failed to get task info for " + strings.Join(taskTypes, ", "))
 	}
 
 	return &summary, http.StatusOK, nil
