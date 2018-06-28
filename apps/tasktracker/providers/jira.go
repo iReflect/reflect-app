@@ -176,7 +176,7 @@ func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
 
 	var sprints []jira.Sprint
 	for _, boardID := range boardIDs {
-		sprint, _, err := c.client.Board.GetAllSprints(boardID)
+		sprint, _, err := c.client.Board.GetAllSprints(strings.TrimSpace(boardID))
 
 		if err == nil {
 			sprints = append(sprints, sprint...)
