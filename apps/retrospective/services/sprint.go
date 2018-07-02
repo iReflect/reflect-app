@@ -392,10 +392,12 @@ func (service SprintService) Create(
 		providerSprint = connection.GetSprint(sprintData.SprintID)
 		if providerSprint != nil {
 			if providerSprint.FromDate == nil || providerSprint.ToDate == nil {
-				return nil, http.StatusUnprocessableEntity,
-					errors.New("sprint doesn't have any start and/or end date. provide start date and end date " +
-						"or set them in task provider")
-			} else if sprint.StartDate == nil && sprint.EndDate == nil {
+				if sprint.StartDate == nil || sprint.EndDate == nil {
+					return nil, http.StatusUnprocessableEntity,
+						errors.New("sprint doesn't have any start and/or end date. provide start date and end date " +
+							"or set them in task provider")
+				}
+			} else {
 				sprint.StartDate = providerSprint.FromDate
 				sprint.EndDate = providerSprint.ToDate
 			}
