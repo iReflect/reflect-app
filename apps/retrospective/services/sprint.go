@@ -391,19 +391,20 @@ func (service SprintService) Create(
 		// ToDo: The form will take task provider specific sprint ids in the future
 		providerSprint = connection.GetSprint(sprintData.SprintID)
 		if providerSprint != nil {
-			if providerSprint.FromDate == nil || providerSprint.ToDate == nil {
-				if sprint.StartDate == nil || sprint.EndDate == nil {
-					return nil, http.StatusUnprocessableEntity,
-						errors.New("sprint doesn't have any start and/or end date. provide start date and end date " +
-							"or set them in task provider")
-				}
-			} else {
+			if sprint.StartDate == nil {
 				sprint.StartDate = providerSprint.FromDate
+			}
+			if sprint.EndDate == nil {
 				sprint.EndDate = providerSprint.ToDate
 			}
 		} else {
-			return nil, http.StatusUnprocessableEntity, errors.New("sprint id not found in task tracker")
+			return nil, http.StatusUnprocessableEntity, errors.New("sprint not found in task tracker")
 		}
+	}
+	if sprint.StartDate == nil || sprint.EndDate == nil {
+		return nil, http.StatusUnprocessableEntity,
+			errors.New("sprint doesn't have a start and/or end date, please provide the start date and end date " +
+				"or set them in the task tracker")
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
