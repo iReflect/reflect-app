@@ -90,5 +90,5 @@
   version = "0.0.2"
 
 [[constraint]]
-  name = "gopkg.in/salsita/go-pivotaltracker.v1"
-  version = "1.4.0"
+  name = "github.com/iReflect/go-pivotaltracker"
+  branch = "master"
