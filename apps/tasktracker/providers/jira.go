@@ -172,32 +172,28 @@ func (c *JIRAConnection) GetTask(ticketKey string) (*serializers.Task, error) {
 
 // GetSprint ...
 func (c *JIRAConnection) GetSprint(sprintID string) *serializers.Sprint {
-	boardIDs := strings.Split(c.config.BoardIds, ",")
-
-	var sprints []jira.Sprint
-	for _, boardID := range boardIDs {
-		sprint, _, err := c.client.Board.GetAllSprints(boardID)
-
-		if err == nil {
-			sprints = append(sprints, sprint...)
-		} else {
-			utils.LogToSentry(err)
-		}
+	// Prepare http request for the sprint Get
+	req, err := c.client.NewRequest("GET", fmt.Sprintf("rest/agile/1.0/sprint/%s", sprintID), nil)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil
 	}
 
-	for _, sprint := range sprints {
-		if strconv.Itoa(sprint.ID) == sprintID {
-			return &serializers.Sprint{
-				ID:       sprintID,
-				BoardID:  strconv.Itoa(sprint.OriginBoardID),
-				Name:     sprint.Name,
-				FromDate: sprint.StartDate,
-				ToDate:   sprint.EndDate,
-			}
-		}
+	var sprint jira.Sprint
+	// Call the Sprint Get API
+	resp, err := c.client.Do(req, &sprint)
+	if err != nil {
+		utils.LogToSentry(jira.NewJiraError(resp, err))
+		return nil
 	}
 
-	return nil
+	return &serializers.Sprint{
+		ID:       sprintID,
+		BoardID:  strconv.Itoa(sprint.OriginBoardID),
+		Name:     sprint.Name,
+		FromDate: sprint.StartDate,
+		ToDate:   sprint.EndDate,
+	}
 }
 
 // GetSprintTaskList ...

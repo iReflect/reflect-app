@@ -16,6 +16,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	customErrors "github.com/iReflect/reflect-app/libs"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"strings"
 )
 
 // SprintService ...
@@ -274,7 +275,7 @@ func (service SprintService) GetSprintTaskSummary(
 
 func (service SprintService) getSprintTaskTypeSummary(
 	sprintID string,
-	taskTypes string) (*retroSerializers.SprintTaskSummary, int, error) {
+	taskTypes []string) (*retroSerializers.SprintTaskSummary, int, error) {
 	db := service.DB
 
 	var summary retroSerializers.SprintTaskSummary
@@ -298,7 +299,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get task info for " + taskTypes)
+		return nil, http.StatusInternalServerError, errors.New("failed to get task info for " + strings.Join(taskTypes, ", "))
 	}
 
 	return &summary, http.StatusOK, nil
@@ -390,17 +391,20 @@ func (service SprintService) Create(
 		// ToDo: The form will take task provider specific sprint ids in the future
 		providerSprint = connection.GetSprint(sprintData.SprintID)
 		if providerSprint != nil {
-			if providerSprint.FromDate == nil || providerSprint.ToDate == nil {
-				return nil, http.StatusUnprocessableEntity,
-					errors.New("sprint doesn't have any start and/or end date. provide start date and end date " +
-						"or set them in task provider")
-			} else if sprint.StartDate == nil && sprint.EndDate == nil {
+			if sprint.StartDate == nil {
 				sprint.StartDate = providerSprint.FromDate
+			}
+			if sprint.EndDate == nil {
 				sprint.EndDate = providerSprint.ToDate
 			}
 		} else {
-			return nil, http.StatusUnprocessableEntity, errors.New("sprint id not found in task tracker")
+			return nil, http.StatusUnprocessableEntity, errors.New("sprint not found in task tracker")
 		}
+	}
+	if sprint.StartDate == nil || sprint.EndDate == nil {
+		return nil, http.StatusUnprocessableEntity,
+			errors.New("sprint doesn't have a start and/or end date, please provide the start date and end date " +
+				"or set them in the task tracker")
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
