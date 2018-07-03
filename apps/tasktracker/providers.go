@@ -192,9 +192,9 @@ func GetConnection(config []byte) Connection {
 }
 
 // GetTaskTypeMappings ...
-func GetTaskTypeMappings(config []byte) (map[string]string, error) {
+func GetTaskTypeMappings(config []byte) (map[string][]string, error) {
 	var configList []interface{}
-	types := make(map[string]string)
+	types := make(map[string][]string)
 
 	if err := json.Unmarshal(config, &configList); err != nil {
 		return nil, err
@@ -210,8 +210,12 @@ func GetTaskTypeMappings(config []byte) (map[string]string, error) {
 			if !ok {
 				return nil, errors.New("failed to read from retrospective config")
 			}
-
-			types[taskType] = strings.ToLower(typeUpper)
+			// remove extra spaces from the task tracker type mapping values
+			taskTypeValueList := strings.Split(strings.ToLower(typeUpper), ",")
+			for index, value := range taskTypeValueList {
+				taskTypeValueList[index] = strings.TrimSpace(value)
+			}
+			types[taskType] = taskTypeValueList
 		}
 	}
 
