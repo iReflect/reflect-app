@@ -111,7 +111,7 @@ func getConfigObject(config interface{}) (JIRAConfig, error) {
 // ConfigTemplate ...
 func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 	configMap = map[string]interface{}{
-		"Type":               "jira",
+		"Type":               TaskProviderJira,
 		"DisplayTitle":       "JIRA",
 		"SupportedAuthTypes": []string{"basicAuth"},
 		"Fields": []map[string]interface{}{
