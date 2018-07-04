@@ -12,6 +12,7 @@ import (
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	"github.com/iReflect/reflect-app/db/models/fields"
+	"strings"
 )
 
 // Task represents the tasks for retrospectives
@@ -50,12 +51,19 @@ func (task Task) Validate(db *gorm.DB) (err error) {
 
 // BeforeSave ...
 func (task *Task) BeforeSave(db *gorm.DB) (err error) {
+	task.sanitizeKey()
 	return task.Validate(db)
 }
 
 // BeforeUpdate ...
 func (task *Task) BeforeUpdate(db *gorm.DB) (err error) {
 	return task.Validate(db)
+}
+
+// sanitizeKey ...
+func (task *Task) sanitizeKey() {
+	task.Key = strings.TrimSpace(task.Key)
+	task.TrackerUniqueID = strings.TrimSpace(task.TrackerUniqueID)
 }
 
 // RegisterTaskToAdmin ...

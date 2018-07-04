@@ -14,7 +14,7 @@ type TimeProvider interface {
 
 // Connection ...
 type Connection interface {
-	GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog
+	GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []*serializers.TimeLog
 }
 
 var timeProviders = make(map[string]TimeProvider)
@@ -34,7 +34,7 @@ func GetTimeProvider(name string) TimeProvider {
 }
 
 // GetProjectTimeLogs ...
-func GetProjectTimeLogs(config []byte, project string, startTime time.Time, endTime time.Time) (timeLogs []serializers.TimeLog, err error) {
+func GetProjectTimeLogs(config []byte, project string, startTime time.Time, endTime time.Time) (timeLogs []*serializers.TimeLog, err error) {
 	connections, err := GetConnections(config)
 	if err != nil {
 		return nil, err
