@@ -89,9 +89,9 @@ func getConfigObject(config interface{}) (GsheetConfig, error) {
 }
 
 // GetProjectTimeLogs ...
-func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog {
+func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []*serializers.TimeLog {
 
-	var timeLogs []serializers.TimeLog
+	var timeLogs []*serializers.TimeLog
 
 	timeTrackerConfig := config.GetConfig().TimeTracker
 	appExecutor := google.AppScriptExecutor{ScriptID: timeTrackerConfig.ScriptID, CredentialsFile: timeTrackerConfig.GoogleCredentials}
@@ -130,7 +130,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 
 	for _, logData := range trackerData.Result {
 		if logData.TaskID != "" {
-			timeLogs = append(timeLogs, serializers.TimeLog{
+			timeLogs = append(timeLogs, &serializers.TimeLog{
 				Project: logData.Project,
 				TaskKey: logData.TaskID,
 				Logger:  "GSheets",

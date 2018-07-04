@@ -18,6 +18,7 @@ import (
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"github.com/jinzhu/gorm"
+	"strings"
 )
 
 // SyncSprintData ...
@@ -60,8 +61,8 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	}
 
 	var timeTrackerTaskKeys []string
-	var timeLogs []timeTrackerSerializers.TimeLog
-	sprintMemberTimeLogs := map[uint][]timeTrackerSerializers.TimeLog{}
+	var timeLogs []*timeTrackerSerializers.TimeLog
+	sprintMemberTimeLogs := map[uint][]*timeTrackerSerializers.TimeLog{}
 	for _, sprintMember := range sprint.SprintMembers {
 		var memberTaskKeys []string
 		memberTaskKeys, timeLogs, err = service.GetSprintMemberTimeTrackerData(sprintMember, sprint)
@@ -210,7 +211,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 	}
 
 	var timeTrackerTaskKeys []string
-	var timeLogs []timeTrackerSerializers.TimeLog
+	var timeLogs []*timeTrackerSerializers.TimeLog
 	timeTrackerTaskKeys, timeLogs, err = service.GetSprintMemberTimeTrackerData(sprintMember, sprint)
 	if err != nil {
 		utils.LogToSentry(err)
@@ -319,7 +320,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 // GetSprintMemberTimeTrackerData ...
 func (service SprintService) GetSprintMemberTimeTrackerData(
 	sprintMember retroModels.SprintMember,
-	sprint retroModels.Sprint) ([]string, []timeTrackerSerializers.TimeLog, error) {
+	sprint retroModels.Sprint) ([]string, []*timeTrackerSerializers.TimeLog, error) {
 
 	timeLogs, err := timetracker.GetProjectTimeLogs(
 		sprintMember.Member.TimeProviderConfig,
@@ -334,6 +335,7 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 
 	var ticketKeys []string
 	for _, timeLog := range timeLogs {
+		timeLog.TaskKey = strings.TrimSpace(timeLog.TaskKey)
 		ticketKeys = append(ticketKeys, timeLog.TaskKey)
 		if err != nil {
 			utils.LogToSentry(err)
@@ -486,16 +488,19 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	ticket taskTrackerSerializers.Task,
 	retroID uint,
 	alternateTaskKey string) (err error) {
+
+	taskKey := strings.TrimSpace(ticket.Key)
+	trackerUniqueID := strings.TrimSpace(ticket.TrackerUniqueID)
 	tx := service.DB.Begin()
 
 	var task retroModels.Task
 	err = tx.Model(&retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
-		Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
+		Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: trackerUniqueID}).
 		Assign(retroModels.Task{
 			RetrospectiveID: retroID,
-			TrackerUniqueID: ticket.TrackerUniqueID,
-			Key:             ticket.Key,
+			TrackerUniqueID: trackerUniqueID,
+			Key:             taskKey,
 			Summary:         ticket.Summary,
 			Description:     ticket.Description,
 			Type:            ticket.Type,
@@ -511,7 +516,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 		utils.LogToSentry(err)
 		return err
 	}
-	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: ticket.Key}).
+	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: taskKey}).
 		Where("task_key_maps.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.TaskKeyMap{}).Error
 
@@ -583,7 +588,8 @@ func (service SprintService) fetchAndUpdateTaskTrackerTask(
 			utils.LogToSentry(err)
 			return nil, err
 		}
-		taskTrackerTaskKeySet.Add(ticket.Key)
+		ticketKey := strings.TrimSpace(ticket.Key)
+		taskTrackerTaskKeySet.Add(ticketKey)
 	}
 	return taskTrackerTaskKeySet, nil
 }
@@ -607,12 +613,13 @@ func (service SprintService) fetchAndUpdateTimeTrackerTask(
 
 	timeTrackerTaskKeySet.Clear()
 	for _, ticket := range tickets {
+		ticketKey := strings.TrimSpace(ticket.Key)
 		err = service.addOrUpdateTaskTrackerTask(sprintID, ticket, retroID, "")
 		if err != nil {
 			utils.LogToSentry(err)
 			return nil, err
 		}
-		timeTrackerTaskKeySet.Add(ticket.Key)
+		timeTrackerTaskKeySet.Add(ticketKey)
 	}
 	return timeTrackerTaskKeySet, nil
 }
@@ -630,16 +637,17 @@ func (service SprintService) updateMissingTimeTrackerTask(
 	missingTaskSet = missingTaskSet.Difference(taskTrackerTaskKeySet)
 	missingTaskKeys := missingTaskSet.ToSlice()
 	for _, taskKey := range missingTaskKeys {
-		task, err := tasktracker.GetTaskDetails(taskProviderConfig, taskKey.(string))
+		taskKey := strings.TrimSpace(taskKey.(string))
+		task, err := tasktracker.GetTaskDetails(taskProviderConfig, taskKey)
 		if err != nil {
 			utils.LogToSentry(err)
 			return err
 		}
 
 		if task != nil {
-			err = service.addOrUpdateTaskTrackerTask(sprintID, *task, retroID, taskKey.(string))
+			err = service.addOrUpdateTaskTrackerTask(sprintID, *task, retroID, taskKey)
 		} else {
-			err = service.insertTimeTrackerTask(sprintID, taskKey.(string), retroID)
+			err = service.insertTimeTrackerTask(sprintID, taskKey, retroID)
 		}
 		if err != nil {
 			utils.LogToSentry(err)
@@ -653,7 +661,7 @@ func (service SprintService) updateSprintMemberTimeLog(
 	sprintID uint,
 	retroID uint,
 	sprintMemberID uint,
-	timeLogs []timeTrackerSerializers.TimeLog) error {
+	timeLogs []*timeTrackerSerializers.TimeLog) error {
 
 	db := service.DB
 	// Reset existing time_spent

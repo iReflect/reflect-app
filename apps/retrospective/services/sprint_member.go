@@ -267,7 +267,7 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 	return &sprintMemberSummary, http.StatusOK, nil
 }
 
-func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog,
+func (service SprintService) addOrUpdateSMT(timeLog *timeTrackerSerializers.TimeLog,
 	sprintMemberID uint,
 	sprintID uint,
 	retroID uint) (err error) {
