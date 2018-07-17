@@ -213,9 +213,29 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
         users.first_name || ' ' || users.last_name          AS member_name,
         SUM(sprint_member_tasks.time_spent_minutes)
         OVER (
-          PARTITION BY tasks.id, sprint_members.member_id ) AS member_time`).
+          PARTITION BY tasks.id, sprint_members.member_id) AS member_time`).
 		Order("tasks.id").
-		Order("member_time DESC")
+		Order("member_time DESC").
+		Order("sprint_members.member_id DESC")
+
+	tempSprintTaskMemberTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
+		Select(`
+        tasks.id as temp_task_id,
+		users.first_name || ' ' || users.last_name			AS sprint_member_name,
+		sprint_member_tasks.time_spent_minutes,
+		sprint_members.sprint_id,
+		sprint_members.member_id,
+        MAX(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS max_sprint_task_member_time,
+        SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.member_id) AS sprint_task_member_total_time`)
+
+	sprintTaskOwnerTable := db.Raw(`
+        SELECT DISTINCT ON (temp_sprint_task_members.temp_task_id) temp_sprint_task_members.temp_task_id as task_id, *
+		FROM (?) as temp_sprint_task_members
+		WHERE temp_sprint_task_members.time_spent_minutes = temp_sprint_task_members.max_sprint_task_member_time
+		AND temp_sprint_task_members.sprint_id = ?
+		ORDER BY temp_sprint_task_members.temp_task_id, temp_sprint_task_members.sprint_task_member_total_time DESC,
+		temp_sprint_task_members.member_id DESC`,
+		tempSprintTaskMemberTable.QueryExpr(), sprintID)
 
 	// TODO Update to include non-timesheet sprint tasks too
 	dbs := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
@@ -223,13 +243,16 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
             sprint_tasks.id,
             tasks.key,
             tasks.tracker_unique_id,
-            tasks.summary,   
+            tasks.summary,
             tasks.description,
-            tasks.type,      
-            tasks.status,    
-            tasks.priority,  
-            tasks.assignee, 
-            task_owners.member_name AS owner, 
+            tasks.type,
+            tasks.status,
+            tasks.priority,
+            tasks.assignee,
+            task_owners.member_name AS owner,
+            sprint_task_owners.sprint_member_name as sprint_owner,
+            sprint_task_owners.sprint_task_member_total_time as sprint_owner_total_time,
+            sprint_task_owners.max_sprint_task_member_time as sprint_owner_time,
             tasks.estimate,
             tasks.rating,
             tasks.done_at,
@@ -249,7 +272,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 		taskOwnerTable = taskOwnerTable.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
 		dbs = dbs.Where("sprint_tasks.task_id = (?)", sprintTaskFilter)
 	}
-	dbs = dbs.Joins("LEFT JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr())
-
+	dbs = dbs.
+		Joins("LEFT JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr()).
+		Joins(`LEFT JOIN (?) AS sprint_task_owners ON sprint_task_owners.task_id = tasks.id`, sprintTaskOwnerTable.QueryExpr())
 	return dbs
 }

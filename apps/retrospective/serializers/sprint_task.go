@@ -4,24 +4,27 @@ import "time"
 
 // SprintTask ...
 type SprintTask struct {
-	ID                uint
-	Key               string
-	Summary           string
-	Description       string
-	Type              string
-	Status            string
-	Priority          string
-	Assignee          string
-	Owner             string
-	Estimate          float64
-	TotalTime         uint
-	SprintTime        uint
-	TotalPointsEarned float64
-	PointsEarned      float64
-	Rating            int8
-	DoneAt            *time.Time
-	IsTrackerTask     bool
-	IsInvalid         bool
+	ID                   uint
+	Key                  string
+	Summary              string
+	Description          string
+	Type                 string
+	Status               string
+	Priority             string
+	IsTrackerTask        bool
+	IsInvalid            bool
+	Rating               int8
+	Estimate             float64
+	TotalPointsEarned    float64
+	PointsEarned         float64
+	Assignee             string // Assignee of the task
+	Owner                string // Owner of the task across the sprints
+	SprintOwner          string // Owner of the task in the sprint
+	SprintOwnerTime      uint   // Time spent on the task by the Sprint Owner in the sprint
+	SprintOwnerTotalTime uint   // Total time spent on the task by the Sprint Owner across the sprints
+	SprintTime           uint   // Time spent on the task in the sprint
+	TotalTime            uint   // Total time spent on the task across the sprints
+	DoneAt               *time.Time
 }
 
 // SprintTasksSerializer ...
