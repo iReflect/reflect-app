@@ -215,8 +215,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
         OVER (
           PARTITION BY tasks.id, sprint_members.member_id) AS member_time`).
 		Order("tasks.id").
-		Order("member_time DESC").
-		Order("sprint_members.member_id DESC")
+		Order("member_time DESC NULLS LAST").
+		Order("sprint_members.member_id DESC NULLS LAST")
 
 	tempSprintTaskMemberTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
 		Select(`
@@ -229,13 +229,15 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
         SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.member_id) AS sprint_task_member_total_time`)
 
 	sprintTaskOwnerQuery := `
-		SELECT DISTINCT ON (temp_sprint_task_members.temp_task_id) temp_sprint_task_members.temp_task_id as task_id, *
-		FROM (?) as temp_sprint_task_members
-		WHERE temp_sprint_task_members.time_spent_minutes = temp_sprint_task_members.max_sprint_task_member_time
-		AND temp_sprint_task_members.sprint_id = ?
-		ORDER BY temp_sprint_task_members.temp_task_id, temp_sprint_task_members.sprint_task_member_total_time DESC,
-		temp_sprint_task_members.member_id DESC
-	`
+    SELECT DISTINCT ON (temp_sprint_task_members.temp_task_id)
+      temp_sprint_task_members.temp_task_id as task_id,
+      *
+    FROM (?) as temp_sprint_task_members
+    WHERE temp_sprint_task_members.time_spent_minutes = temp_sprint_task_members.max_sprint_task_member_time
+          AND temp_sprint_task_members.sprint_id = ?
+    ORDER BY temp_sprint_task_members.temp_task_id, temp_sprint_task_members.sprint_task_member_total_time DESC NULLS LAST,
+      temp_sprint_task_members.member_id DESC NULLS LAST
+    `
 
 	sprintTaskOwnerTable := db.Raw(sprintTaskOwnerQuery, tempSprintTaskMemberTable.QueryExpr(), sprintID)
 
