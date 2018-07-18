@@ -69,12 +69,11 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time) int {
 	end := endDate
 
 	if location != nil {
-		logrus.Info("##################################123123", startDate, "########", endDate, "##########", location)
 		start = startDate.In(location)
 		end = endDate.In(location)
+		logrus.Info("##################################", start, "########", end, "##########", location)
 	}
-	logrus.Info("##################################", startDate, "########", endDate)
-	logrus.Info("##################################444444", startDate.Format(constants.CustomDateFormat), "########", endDate.Format(constants.CustomDateFormat))
+	logrus.Info("##################################@@@@@", start.Format(constants.CustomDateFormat), "########", end.Format(constants.CustomDateFormat))
 	for start.Weekday() != time.Monday && start.Before(end) {
 		if start.Weekday() != time.Sunday && start.Weekday() != time.Saturday {
 			workingDays++
