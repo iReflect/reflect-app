@@ -61,6 +61,7 @@ type serverConfig struct {
 	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:4200,http://localhost:3000"`
 	LoginURL           string   `env:"LOGIN_URL" envDefault:"http://localhost:4200/login"`
 	EncryptionKey      string   `env:"ENCRYPTION_KEY" envDefault:"DUMMY_KEY__FOR_LOCAL_DEV"`
+	TimeZone           string   `env:"TIME_ZONE"  envDefault:"Asia/Kolkata"`
 }
 
 type redisConfig struct {

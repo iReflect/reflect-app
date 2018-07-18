@@ -3,12 +3,13 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"github.com/getsentry/raven-go"
+	"github.com/iReflect/reflect-app/config"
+	"github.com/sirupsen/logrus"
+	"log"
 	"math"
 	"net/url"
 	"time"
-
-	"github.com/getsentry/raven-go"
-	"github.com/sirupsen/logrus"
 )
 
 // ParseDateString parses a date string to time.Time
@@ -52,12 +53,24 @@ func UIntInSlice(element uint, slice []uint) bool {
 // GetWorkingDaysBetweenTwoDates calculates the working days between two dates,
 // i.e., number of days between two dates excluding weekends
 func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time) int {
+	serverConf := config.GetConfig().Server
+	location, err := time.LoadLocation(serverConf.TimeZone)
+	if err != nil {
+		log.Println("Invalid Timezone: ", err)
+		LogToSentry(err)
+	}
+
 	if endDate.Before(startDate) {
 		return 0
 	}
 	workingDays := 0
 	start := startDate
 	end := endDate
+
+	if location != nil {
+		start = startDate.In(location)
+		end = endDate.In(location)
+	}
 	for start.Weekday() != time.Monday && start.Before(end) {
 		if start.Weekday() != time.Sunday && start.Weekday() != time.Saturday {
 			workingDays++
