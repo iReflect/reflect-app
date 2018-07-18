@@ -2,7 +2,10 @@ package models
 
 import (
 	"errors"
+	"github.com/iReflect/reflect-app/config"
 	customErrors "github.com/iReflect/reflect-app/libs"
+	"github.com/iReflect/reflect-app/libs/utils"
+	"log"
 	"strconv"
 	"time"
 
@@ -65,8 +68,6 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 		return err
 	}
 
-	var sprints []Sprint
-
 	// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
 	// so we need to add checks for both the cases.
 	retroID := sprint.RetrospectiveID
@@ -76,46 +77,70 @@ func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 	baseQuery := db.Model(Sprint{}).
 		Where("deleted_at IS NULL").
 		Where("retrospective_id = ?", retroID).Scopes(NotDeletedSprint)
-	lastSprint := Sprint{}
 
 	if sprint.Status == DraftSprint {
-
 		// More than one entries with status draft for given retro should not be allowed
-		baseQuery.Where("status = ? AND id <> ?", DraftSprint, sprint.ID).Find(&sprints)
-		if len(sprints) > 0 {
-			return &customErrors.ModelError{Message: "another sprint is currently in draft"}
+		err = sprint.validateConcurrency(baseQuery, "another sprint is currently in draft")
+		if err != nil {
+			return err
 		}
-
 		// Draft sprint must begin exactly 1 day after last frozen/active sprint
-		if err := baseQuery.Where("status IN (?)", []SprintStatus{CompletedSprint, ActiveSprint}).
-			Order("end_date desc").First(&lastSprint).Error; err == nil {
-			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
-			startDate := sprint.StartDate.UTC()
-			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
-				return &customErrors.ModelError{Message: "sprint must begin the day after the last completed/activated sprint ended"}
-			}
+		err = sprint.validateDateContinuity(baseQuery, []SprintStatus{CompletedSprint, ActiveSprint}, "sprint must begin the day after the last completed/activated sprint ended")
+		if err != nil {
+			return err
 		}
 	}
 
 	if sprint.Status == ActiveSprint {
 		// More than one entries with status active for given retro should not be allowed
-		baseQuery.Where("status = ? AND id <> ?", ActiveSprint, sprint.ID).Find(&sprints)
-		if len(sprints) > 0 {
-			err = errors.New("another sprint is currently active")
+		err = sprint.validateConcurrency(baseQuery, "another sprint is currently active")
+		if err != nil {
 			return err
 		}
-
 		// Active sprint must begin exactly 1 day after last completed sprint
-		if err := baseQuery.Where("status = ?", CompletedSprint).Order("end_date desc").
-			First(&lastSprint).Error; err == nil {
-			expectedDate := lastSprint.EndDate.UTC().AddDate(0, 0, 1)
-			startDate := sprint.StartDate.UTC()
-			if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
-				return &customErrors.ModelError{Message: "sprint must begin the day after the last completed sprint ended"}
-			}
+		err = sprint.validateDateContinuity(baseQuery, []SprintStatus{CompletedSprint}, "sprint must begin the day after the last completed sprint ended")
+		if err != nil {
+			return err
 		}
 	}
+	return
+}
 
+func (sprint *Sprint) validateConcurrency(baseQuery *gorm.DB, errorMessage string) (err error) {
+
+	var sprints []Sprint
+
+	baseQuery.Where("status = ? AND id <> ?", sprint.Status, sprint.ID).Find(&sprints)
+	if len(sprints) > 0 {
+		err = errors.New(errorMessage)
+		return err
+	}
+	return
+}
+
+func (sprint *Sprint) validateDateContinuity(baseQuery *gorm.DB, statuses []SprintStatus, errorMessage string) (err error) {
+
+	serverConf := config.GetConfig().Server
+	location, err := time.LoadLocation(serverConf.TimeZone)
+
+	if err != nil {
+		log.Println("Invalid Timezone: ", err)
+		utils.LogToSentry(err)
+	}
+
+	lastSprint := Sprint{}
+	if err := baseQuery.Where("status IN (?)", statuses).
+		Order("end_date desc").First(&lastSprint).Error; err == nil {
+		expectedDate := lastSprint.EndDate.AddDate(0, 0, 1)
+		startDate := *(sprint.StartDate)
+		if location != nil {
+			expectedDate = expectedDate.In(location)
+			startDate = startDate.In(location)
+		}
+		if expectedDate.Year() != startDate.Year() || expectedDate.YearDay() != startDate.YearDay() {
+			return &customErrors.ModelError{Message: errorMessage}
+		}
+	}
 	return
 }
 
