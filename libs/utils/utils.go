@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"github.com/getsentry/raven-go"
 	"github.com/iReflect/reflect-app/config"
-	"github.com/iReflect/reflect-app/constants"
 	"github.com/sirupsen/logrus"
 	"log"
 	"math"
@@ -71,11 +70,9 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time) int {
 	if location != nil {
 		start = startDate.In(location)
 		end = endDate.In(location)
-		logrus.Info("##################################", start, "########", end, "##########", location)
 	}
-	start = getStartOfDay(start)
-	end = getStartOfDay(end)
-	logrus.Info("##################################@@@@@", start.Format(constants.CustomDateFormat), "########", end.Format(constants.CustomDateFormat))
+	start = GetStartOfDay(start)
+	end = GetStartOfDay(end)
 
 	for start.Weekday() != time.Monday && start.Before(end) {
 		if start.Weekday() != time.Sunday && start.Weekday() != time.Saturday {
@@ -97,12 +94,12 @@ func GetWorkingDaysBetweenTwoDates(startDate time.Time, endDate time.Time) int {
 	} else {
 		workingDays++
 	}
-	logrus.Info("##################################", workingDays)
 
 	return workingDays
 }
 
-func getStartOfDay(t time.Time)  time.Time {
+// GetStartOfDay ...
+func GetStartOfDay(t time.Time) time.Time {
 	year, month, day := t.Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
 }
