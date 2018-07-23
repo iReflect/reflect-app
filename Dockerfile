@@ -10,4 +10,6 @@ WORKDIR /usr/src/app
 
 RUN chmod +x ./reflect-app
 
+RUN chmod +x ./reflect-app
+
 CMD ["./reflect-app"]
