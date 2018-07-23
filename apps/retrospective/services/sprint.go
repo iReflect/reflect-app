@@ -109,6 +109,7 @@ func (service SprintService) ActivateSprint(sprintID string, retroID string) (in
 		if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
 			return http.StatusInternalServerError, errors.New("sprint couldn't be activated")
 		}
+		service.QueueSprint(sprint.ID, true)
 		return http.StatusNoContent, nil
 	}
 	return http.StatusBadRequest, errors.New("cannot activate an invalid draft sprint")
@@ -140,7 +141,7 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 }
 
 // Get return details of the given sprint
-func (service SprintService) Get(sprintID string, userID uint) (*retroSerializers.Sprint, int, error) {
+func (service SprintService) Get(sprintID string, userID uint, getSprintSummary bool) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
 
@@ -158,12 +159,13 @@ func (service SprintService) Get(sprintID string, userID uint) (*retroSerializer
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
 	}
 
-	summary, status, err := service.GetSprintSummary(sprintID, sprint.RetrospectiveID)
-	if err != nil {
-		return nil, status, err
+	if getSprintSummary {
+		summary, status, err := service.GetSprintSummary(sprintID, sprint.RetrospectiveID)
+		if err != nil {
+			return nil, status, err
+		}
+		sprint.Summary = *summary
 	}
-
-	sprint.Summary = *summary
 
 	err = db.Model(&retroModels.SprintSyncStatus{}).
 		Where("sprint_sync_statuses.deleted_at IS NULL").
@@ -491,9 +493,9 @@ func (service SprintService) Create(
 	}
 
 	service.SetNotSynced(sprint.ID)
-	service.QueueSprint(sprint.ID, true)
+	service.QueueSprint(sprint.ID, false)
 
-	return service.Get(fmt.Sprint(sprint.ID), userID)
+	return service.Get(fmt.Sprint(sprint.ID), userID, true)
 }
 
 // ValidateSprint validate the given sprint
@@ -562,5 +564,5 @@ func (service SprintService) UpdateSprint(
 		return nil, http.StatusInternalServerError, errors.New("sprint couldn't be updated")
 	}
 
-	return service.Get(sprintID, userID)
+	return service.Get(sprintID, userID, true)
 }
