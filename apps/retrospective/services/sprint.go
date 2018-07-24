@@ -141,7 +141,7 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 }
 
 // Get return details of the given sprint
-func (service SprintService) Get(sprintID string, userID uint, getSprintSummary bool) (*retroSerializers.Sprint, int, error) {
+func (service SprintService) Get(sprintID string, userID uint, includeSprintSummary bool) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
 
@@ -159,7 +159,7 @@ func (service SprintService) Get(sprintID string, userID uint, getSprintSummary 
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
 	}
 
-	if getSprintSummary {
+	if includeSprintSummary {
 		summary, status, err := service.GetSprintSummary(sprintID, sprint.RetrospectiveID)
 		if err != nil {
 			return nil, status, err
