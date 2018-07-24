@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
 )
@@ -93,7 +94,7 @@ func (ctrl SprintController) Get(c *gin.Context) {
 		return
 	}
 
-	sprint, status, err := ctrl.SprintService.Get(sprintID, userID.(uint))
+	sprint, status, err := ctrl.SprintService.Get(sprintID, userID.(uint), true)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -208,7 +209,13 @@ func (ctrl SprintController) Process(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid sprint"})
 	}
 
-	ctrl.SprintService.QueueSprint(uint(sprintIDInt), false)
+	sprint, _, err := ctrl.SprintService.Get(sprintID, userID.(uint), false)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "sprint not found"})
+	}
+
+	ctrl.SprintService.QueueSprint(uint(sprintIDInt), sprint.Status == retroModels.ActiveSprint)
 
 	ctrl.TrailService.Add("Triggered Sprint Refresh", "Sprint", sprintID, userID.(uint))
 
