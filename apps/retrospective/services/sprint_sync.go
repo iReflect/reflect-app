@@ -296,9 +296,9 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select(`
             sprint_member_tasks.*, 
-            row_number() OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id
-                ORDER BY sprint_member_tasks.time_spent_minutes desc) AS time_spent_rank,
             sprint_members.sprint_id,
+            (SUM(sprint_member_tasks.time_spent_minutes)
+				OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id)::numeric) AS total_time_spent,
             (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER
 				(PARTITION BY sprint_tasks.task_id)) + (SUM(sprint_member_tasks.points_earned) OVER
 				(PARTITION BY sprint_tasks.id))) AS remaining_points
@@ -306,12 +306,14 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 		QueryExpr()
 
 	err = db.Exec(`
-    UPDATE sprint_member_tasks 
-	    SET points_assigned = COALESCE(s1.remaining_points,0), 
-            points_earned = COALESCE(s1.remaining_points, 0),
+    UPDATE sprint_member_tasks
+	    SET points_assigned = COALESCE(sprint_member_tasks.time_spent_minutes
+				/ NULLIF(s1.total_time_spent, 0) * s1.remaining_points, 0),
+            points_earned = COALESCE(sprint_member_tasks.time_spent_minutes
+				/ NULLIF(s1.total_time_spent, 0) * s1.remaining_points, 0),
             updated_at = NOW()
         FROM (?) AS s1 
-        WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id
+        WHERE s1.sprint_id = ? and sprint_member_tasks.id = s1.id
     `, dbs, sprintID).Error
 
 	if err != nil {
