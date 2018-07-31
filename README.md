@@ -177,13 +177,15 @@ To learn how to write and execute test cases in Go, refer https://golang.org/pkg
 - [Deploy To Production](https://doc.getqor.com/admin/deploy.html)
 
 ## Contributing
-- Get the package or fork the repo:
+- Fork the repo under your Github account.
+- Get the package:
     ```
-    go get -d github.com/iReflect/reflect-app
+    go get -d github.com/GITHUB_USERNAME/reflect-app
     ```
 - Set your fork as a remote:
     ```
     git remote add fork git@github.com:GITHUB_USERNAME/reflect-app.git
     ```
+- File a ticket in our issue tracker [iReflect-Kanban](https://ireflect.atlassian.net/).
 - Make changes, commit to your fork.
 - Send a pull request with your changes.
