@@ -285,8 +285,7 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	sprintTaskToSkipPointsAllocation := db.Model(retroModels.SprintTask{}).
 		Scopes(retroModels.STLeftJoinSMT).
 		Where("sprint_tasks.sprint_id = ?", sprintID).
-		Where("sprint_member_tasks.id IS NULL").
-		Or("sprint_member_tasks.points_earned <> sprint_member_tasks.points_assigned").
+		Where("sprint_member_tasks.id IS NULL OR sprint_member_tasks.points_earned <> sprint_member_tasks.points_assigned").
 		Select("DISTINCT sprint_tasks.id").QueryExpr()
 
 	dbs := db.Model(retroModels.SprintMemberTask{}).
