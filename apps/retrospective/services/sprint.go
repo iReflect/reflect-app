@@ -35,6 +35,8 @@ func (service SprintService) isSprintDeletable(sprint retroModels.Sprint) (bool,
 		var sprintCount SprintCount
 		err := db.Model(&retroModels.Sprint{}).
 			Where("sprints.deleted_at IS NULL").
+			Scopes(retroModels.NotDeletedSprint).
+			Where("retrospective_id = ?", sprint.RetrospectiveID).
 			Select(
 				"count(case when start_date > ? then id end) as draft_count, count(case when start_date < ? then id end) as freeze_count",
 				sprint.EndDate, sprint.StartDate).Scan(&sprintCount).Error
@@ -66,9 +68,9 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 	}
 
 	// Check if the sprint is deleteable.
-	is_sprint_deleteable, err := service.isSprintDeletable(sprint)
+	isDeletableSprint, err := service.isSprintDeletable(sprint)
 	if err == nil {
-		if !is_sprint_deleteable {
+		if !isDeletableSprint {
 			return http.StatusBadRequest, errors.New("this sprint can not be deleted!!!")
 		}
 	} else {
@@ -194,9 +196,9 @@ func (service SprintService) Get(sprintID string, userID uint) (*retroSerializer
 
 	// Check if the sprint is deleteable.
 	sprint.Deletable = true
-	isDeleteableSprint, err := service.isSprintDeletable(currentSprint)
+	isDeletableSprint, err := service.isSprintDeletable(currentSprint)
 	if err == nil {
-		sprint.Deletable = isDeleteableSprint
+		sprint.Deletable = isDeletableSprint
 	} else {
 		utils.LogToSentry(err)
 	}
