@@ -40,6 +40,26 @@ func (service SprintTaskService) List(
 		return nil, http.StatusInternalServerError, errors.New("failed to get issues")
 	}
 
+	var retro retroSerializers.Retrospective
+	if err := db.Model(retroSerializers.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
+		Where("id = ?", retroID).
+		Find(&retro).Error; err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	connection, err := retro.GetTaskTrackerConnection()
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	for _, task := range taskList.Tasks {
+		// Set task URL according to the task provider
+		if task.IsTrackerTask {
+			task.Url = connection.GetTaskUrl(task.Key)
+		}
+	}
+
 	return taskList, http.StatusOK, nil
 }
 
@@ -69,6 +89,22 @@ func (service SprintTaskService) Get(
 		return nil, http.StatusInternalServerError, errors.New("failed to get issue")
 	}
 
+	var retro retroSerializers.Retrospective
+	if err := db.Model(retroSerializers.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
+		Where("id = ?", retroID).
+		Find(&retro).Error; err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	connection, _ := retro.GetTaskTrackerConnection()
+	if connection == nil {
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	// Set task URL according to the task provider
+	if task.IsTrackerTask {
+		task.Url = connection.GetTaskUrl(task.Key)
+	}
 	return &task, http.StatusOK, nil
 }
 

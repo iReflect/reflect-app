@@ -3,6 +3,7 @@ package serializers
 import (
 	"time"
 
+	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userSerializer "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
@@ -35,4 +36,18 @@ type RetrospectiveCreateSerializer struct {
 // RetrospectiveListSerializer ...
 type RetrospectiveListSerializer struct {
 	Retrospectives []Retrospective
+}
+
+// GetTaskTrackerConnection ...
+func (retro Retrospective) GetTaskTrackerConnection() (tasktracker.Connection, error) {
+	taskProviderConfig, err := tasktracker.DecryptTaskProviders(retro.TaskProviderConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	connection := tasktracker.GetConnection(taskProviderConfig)
+	if connection == nil {
+		return nil, err
+	}
+	return connection, nil
 }

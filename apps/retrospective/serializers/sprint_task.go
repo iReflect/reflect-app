@@ -6,6 +6,7 @@ import "time"
 type SprintTask struct {
 	ID                   uint
 	Key                  string
+	Url                  string
 	Summary              string
 	Description          string
 	Type                 string
@@ -29,7 +30,7 @@ type SprintTask struct {
 
 // SprintTasksSerializer ...
 type SprintTasksSerializer struct {
-	Tasks []SprintTask
+	Tasks []*SprintTask
 }
 
 // TaskMember ...

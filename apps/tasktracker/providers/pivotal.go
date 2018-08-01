@@ -178,6 +178,11 @@ func (c *PivotalConnection) serializeTicket(ticket *pivotal.Story, userIDNameMap
 	return task
 }
 
+// GetTaskUrl ...
+func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
+	return fmt.Sprintf("https://www.pivotaltracker.com/story/show/%v", ticketKey)
+}
+
 // GetTaskList ...
 func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task {
 	if len(ticketKeys) == 0 {
@@ -276,7 +281,7 @@ func (c *PivotalConnection) GetSprintTaskList(sprint serializers.Sprint) []seria
 func (c *PivotalConnection) ValidateConfig() error {
 	projectID, err := strconv.Atoi(c.config.ProjectID)
 	if err != nil {
-		return nil
+		return err
 	}
 	_, _, err = c.client.Projects.Get(projectID)
 	return err
