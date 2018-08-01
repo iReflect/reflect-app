@@ -71,11 +71,11 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 	isDeletableSprint, err := service.isSprintDeletable(sprint)
 	if err == nil {
 		if !isDeletableSprint {
-			return http.StatusBadRequest, errors.New("this sprint can not be deleted.")
+			return http.StatusBadRequest, errors.New("this sprint can not be deleted")
 		}
 	} else {
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("something went wrong, please retry after some time.")
+		return http.StatusInternalServerError, errors.New("something went wrong, please retry after some time")
 	}
 
 	// Transaction to delete the sprint starts
