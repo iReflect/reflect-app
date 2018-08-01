@@ -24,6 +24,27 @@ type SprintService struct {
 	DB *gorm.DB
 }
 
+// Check if a given sprint is deletable or not
+func (service SprintService) isSprintDeletable(sprint retroModels.Sprint) (bool, error) {
+	db := service.DB
+	// Check if the sprint is an active sprint sandwiched b/w a draft and a frozen sprint.
+	if sprint.Status == retroModels.ActiveSprint {
+		type SprintCount struct {
+			DraftCount, FreezeCount int
+		}
+		var sprintCount SprintCount
+		err := db.Model(&retroModels.Sprint{}).
+			Where("sprints.deleted_at IS NULL").
+			Scopes(retroModels.NotDeletedSprint).
+			Where("retrospective_id = ?", sprint.RetrospectiveID).
+			Select(
+				"count(case when start_date > ? then id end) as draft_count, count(case when start_date < ? then id end) as freeze_count",
+				sprint.EndDate, sprint.StartDate).Scan(&sprintCount).Error
+		return !(sprintCount.DraftCount > 0 && sprintCount.FreezeCount > 0), err
+	}
+	return true, nil
+}
+
 // DeleteSprint deletes the given sprint
 func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 	db := service.DB
@@ -45,6 +66,19 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 		utils.LogToSentry(err)
 		return http.StatusInternalServerError, errors.New("failed to get sprint")
 	}
+
+	// Check if the sprint is deleteable.
+	isDeletableSprint, err := service.isSprintDeletable(sprint)
+	if err == nil {
+		if !isDeletableSprint {
+			return http.StatusBadRequest, errors.New("this sprint can not be deleted")
+		}
+	} else {
+		utils.LogToSentry(err)
+		return http.StatusInternalServerError, errors.New("something went wrong, please retry after some time")
+	}
+
+	// Transaction to delete the sprint starts
 	tx := db.Begin()
 
 	for _, sprintMember := range sprint.SprintMembers {
@@ -144,11 +178,13 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 func (service SprintService) Get(sprintID string, userID uint, includeSprintSummary bool) (*retroSerializers.Sprint, int, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
+	var currentSprint retroModels.Sprint
 
 	err := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
 		Where("id = ?", sprintID).
 		Preload("CreatedBy").
+		Find(&currentSprint).
 		First(&sprint).
 		Error
 	if err != nil {
@@ -157,6 +193,15 @@ func (service SprintService) Get(sprintID string, userID uint, includeSprintSumm
 		}
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+	}
+
+	// Check if the sprint is deleteable.
+	sprint.Deletable = true
+	isDeletableSprint, err := service.isSprintDeletable(currentSprint)
+	if err == nil {
+		sprint.Deletable = isDeletableSprint
+	} else {
+		utils.LogToSentry(err)
 	}
 
 	if includeSprintSummary {
