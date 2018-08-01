@@ -266,9 +266,9 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
-		Where("sprints.deleted_at IS NULL").
-		Scopes(retroModels.NotDeletedSprint).
 		Where("id = ?", sprintID).
+		Where("sprints.status = ?", retroModels.ActiveSprint).
+		Where("sprints.deleted_at IS NULL").
 		Preload("SprintMembers").
 		Preload("Retrospective").
 		Find(&sprint).Error
@@ -280,29 +280,42 @@ func (service SprintService) AssignPoints(sprintID string) (err error) {
 
 	service.SetSyncing(sprint.ID)
 
+	// sprintTaskToSkipPointsAllocation is the list of all the sprint tasks which can be skipped for the points allocation,
+	// i.e., sprint tasks with no related SMTs or SMTs with differing points earned and points assigned value.
+	sprintTaskToSkipPointsAllocation := db.Model(retroModels.SprintTask{}).
+		Scopes(retroModels.STLeftJoinSMT).
+		Where("sprint_tasks.sprint_id = ?", sprintID).
+		Where("sprint_member_tasks.id IS NULL").
+		Or("sprint_member_tasks.points_earned <> sprint_member_tasks.points_assigned").
+		Select("DISTINCT sprint_tasks.id").QueryExpr()
+
 	dbs := db.Model(retroModels.SprintMemberTask{}).
 		Where("sprint_member_tasks.deleted_at IS NULL").
 		Scopes(retroModels.SMTJoinSM, retroModels.SMTJoinST, retroModels.STJoinTask, retroModels.SMJoinSprint).
 		Where("(sprints.status <> ? OR sprints.id = ?)", retroModels.DraftSprint, sprintID).
+		Not("sprint_tasks.id in (?)", sprintTaskToSkipPointsAllocation).
 		Scopes(retroModels.NotDeletedSprint).
 		Where("tasks.retrospective_id = ?", sprint.RetrospectiveID).
 		Select(`
             sprint_member_tasks.*, 
-            row_number() OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id
-                ORDER BY sprint_member_tasks.time_spent_minutes desc) AS time_spent_rank,
             sprint_members.sprint_id,
-            (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY sprint_tasks.task_id)))
-                AS remaining_points
+            (SUM(sprint_member_tasks.time_spent_minutes)
+				OVER (PARTITION BY sprint_tasks.task_id, sprint_members.sprint_id)::numeric) AS sprint_task_total_time_spent,
+            (tasks.estimate - (SUM(sprint_member_tasks.points_earned) OVER
+				(PARTITION BY sprint_tasks.task_id)) + (SUM(sprint_member_tasks.points_earned) OVER
+				(PARTITION BY sprint_tasks.id))) AS remaining_points
         `).
 		QueryExpr()
 
 	err = db.Exec(`
-    UPDATE sprint_member_tasks 
-	    SET points_assigned = COALESCE(s1.remaining_points,0), 
-            points_earned = COALESCE(s1.remaining_points, 0),
+    UPDATE sprint_member_tasks
+	    SET points_assigned = COALESCE(sprint_member_tasks.time_spent_minutes
+				/ NULLIF(s1.sprint_task_total_time_spent, 0) * s1.remaining_points, 0),
+            points_earned = COALESCE(sprint_member_tasks.time_spent_minutes
+				/ NULLIF(s1.sprint_task_total_time_spent, 0) * s1.remaining_points, 0),
             updated_at = NOW()
         FROM (?) AS s1 
-        WHERE s1.sprint_id = ? and time_spent_rank = 1 and sprint_member_tasks.id = s1.id
+        WHERE s1.sprint_id = ? and sprint_member_tasks.id = s1.id
     `, dbs, sprintID).Error
 
 	if err != nil {
