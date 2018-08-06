@@ -8,8 +8,10 @@ import (
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
+	"github.com/iReflect/reflect-app/apps/tasktracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/iReflect/reflect-app/db/models/fields"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // Retrospective represents a retrospective of a team
@@ -89,4 +91,27 @@ func RetroJoinTasks(db *gorm.DB) *gorm.DB {
 // RetroJoinUserTeams ...
 func RetroJoinUserTeams(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN user_teams ON retrospectives.team_id = user_teams.team_id AND user_teams.deleted_at IS NULL")
+}
+
+// GetTaskTrackerConnectionFromRetro ...
+func GetTaskTrackerConnectionFromRetro(db *gorm.DB, retroID string) (tasktracker.Connection, error) {
+	var retro Retrospective
+	if err := db.Model(Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
+		Where("id = ?", retroID).
+		Find(&retro).Error; err != nil {
+		utils.LogToSentry(err)
+		return nil, errors.New("couldn't find any retrospective with this ID")
+	}
+
+	taskProviderConfig, err := tasktracker.DecryptTaskProviders(retro.TaskProviderConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	connection := tasktracker.GetConnection(taskProviderConfig)
+	if connection == nil {
+		return nil, errors.New("no valid connection found")
+	}
+	return connection, nil
 }

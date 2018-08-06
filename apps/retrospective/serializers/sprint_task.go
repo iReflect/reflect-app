@@ -6,7 +6,7 @@ import "time"
 type SprintTask struct {
 	ID                   uint
 	Key                  string
-	Url                  string
+	URL                  string
 	Summary              string
 	Description          string
 	Type                 string
