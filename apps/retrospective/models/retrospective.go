@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -101,17 +102,20 @@ func GetTaskTrackerConnectionFromRetro(db *gorm.DB, retroID string) (tasktracker
 		Where("id = ?", retroID).
 		Find(&retro).Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, errors.New("couldn't find any retrospective with this ID")
+		return nil, fmt.Errorf("retrospective with ID %v not found", retroID)
 	}
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(retro.TaskProviderConfig)
 	if err != nil {
+		utils.LogToSentry(err)
 		return nil, err
 	}
 
 	connection := tasktracker.GetConnection(taskProviderConfig)
 	if connection == nil {
-		return nil, errors.New("no valid connection found")
+		err = errors.New("no valid connection found")
+		utils.LogToSentry(err)
+		return nil, err
 	}
 	return connection, nil
 }
