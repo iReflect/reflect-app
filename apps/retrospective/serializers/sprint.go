@@ -22,6 +22,7 @@ type Sprint struct {
 	RetrospectiveID uint
 	Summary         SprintSummary
 	Editable        *bool
+	Deletable       bool
 }
 
 // SetEditable ...
