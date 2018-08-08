@@ -50,7 +50,7 @@ func init() {
 
 type dbConfig struct {
 	Driver        string `env:"DB_DRIVER"  envDefault:"postgres"`
-	DSN           string `env:"DB_DSN"  envDefault:"host=localhost user=ireflect password=1Reflect dbname=ireflectdev sslmode=disable"`
+	DSN           string `env:"DB_DSN"  envDefault:"host=localhost user=ireflect password=1Reflect dbname=ireflect_dev sslmode=disable"`
 	MigrationsDir string `env:"MIGRATION_DIR"  envDefault:"db/migrations"`
 	LogEnabled    bool   `env:"DB_LOG_ENABLED"  envDefault:"true"`
 }

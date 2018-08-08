@@ -42,12 +42,12 @@ Create a database as below to use the default configuration (or override the def
 host=localhost
 user=ireflect
 password=1Reflect
-dbname=ireflectdev
+dbname=ireflect_dev
 ```
 
 You can override the default DB connection information by setting an ENV variable
 ```
-export DB_DSN="host=localhost user=ireflect password=1Reflect dbname=ireflectdev sslmode=disable"
+export DB_DSN="host=localhost user=ireflect password=1Reflect dbname=ireflect_dev sslmode=disable"
 export DB_DRIVER="postgres"
 ```
 
@@ -138,11 +138,17 @@ make run
 ## Accessing the Admin interface
 Admin Interface is accessible at http://localhost:3000/admin/.
 
-Before that, create an admin user using the command line. Execute the following command for postgresql:
-> **Note:** The given SQL query is based on the current user model definition and assuming Google Sheets as the only available time tracker.
-```
-psql -U username -d database_name -c "INSERT INTO USERS (email, first_name, last_name, time_provider_config, is_admin) values ('<email_id>', '<first_name>', '<last_name>', '[{"data": {"email": "<email_id>"}, "type": "gsheet"}]', true)"
-```
+Before that, create an admin user using the postgresql shell.
+- Initiate an interactive postgresql session by running the command:
+    ```
+    psql -U <username> <database_name>
+    ```
+- Once connected to the database, enter the below query terminated with a semicolon `;`.
+
+    > **Note:** The given query is based on the current user model definition and assuming Google Sheets as the only available time tracker.
+    ```
+    <database_name>=# INSERT INTO USERS (email, first_name, last_name, time_provider_config, is_admin) values ('<email_id>', '<first_name>', '<last_name>', '[{"data": {"email": "<email_id>"}, "type": "gsheet"}]', true);
+    ```
 
 ## Build the application
 To generate a binary distribution file for the application, run the following command.
