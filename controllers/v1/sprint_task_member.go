@@ -8,6 +8,7 @@ import (
 
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // SprintTaskMemberController ...
@@ -71,7 +72,11 @@ func (ctrl SprintTaskMemberController) AddMember(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Added SprintTask Member", "Sprint Member SprintTask", sprintTaskID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.AddedSprintMemberTask],
+		constants.ActionItemType[constants.SprintMemberTask],
+		sprintTaskID,
+		userID.(uint))
 
 	c.JSON(status, members)
 }
@@ -102,7 +107,11 @@ func (ctrl SprintTaskMemberController) UpdateTaskMember(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated SprintTask Member", "Sprint Member SprintTask", strconv.Itoa(int(taskMember.ID)), userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.UpdatedSprintMemberTask],
+		constants.ActionItemType[constants.SprintMemberTask],
+		strconv.Itoa(int(taskMember.ID)),
+		userID.(uint))
 
 	c.JSON(status, taskMember)
 }

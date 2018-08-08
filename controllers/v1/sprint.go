@@ -8,6 +8,7 @@ import (
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // SprintController ...
@@ -79,7 +80,11 @@ func (ctrl SprintController) Create(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Created Sprint", "Sprint", strconv.Itoa(int(sprint.ID)), userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.CreatedSprint],
+		constants.ActionItemType[constants.Sprint],
+		strconv.Itoa(int(sprint.ID)),
+		userID.(uint))
 
 	c.JSON(http.StatusCreated, sprint)
 }
@@ -118,7 +123,11 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Deleted Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.DeletedSprint],
+		constants.ActionItemType[constants.Sprint],
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -144,7 +153,11 @@ func (ctrl SprintController) Update(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.UpdatedSprint],
+		constants.ActionItemType[constants.Sprint],
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, response)
 }
@@ -166,7 +179,11 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Activated Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.ActivatedSprint],
+		constants.ActionItemType[constants.Sprint],
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -188,7 +205,11 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Froze Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.FreezeSprint],
+		constants.ActionItemType[constants.Sprint],
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -217,7 +238,11 @@ func (ctrl SprintController) Process(c *gin.Context) {
 
 	ctrl.SprintService.QueueSprint(uint(sprintIDInt), sprint.Status == retroModels.ActiveSprint)
 
-	ctrl.TrailService.Add("Triggered Sprint Refresh", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActionType[constants.TriggeredSprintRefresh],
+		constants.ActionItemType[constants.Sprint],
+		sprintID,
+		userID.(uint))
 
 	c.JSON(http.StatusNoContent, nil)
 }
