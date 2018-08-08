@@ -40,6 +40,18 @@ func (service SprintTaskService) List(
 		return nil, http.StatusInternalServerError, errors.New("failed to get issues")
 	}
 
+	connection, err := retroModels.GetTaskTrackerConnectionFromRetro(db, retroID)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	for _, task := range taskList.Tasks {
+		// Set task URL according to the task provider
+		if task.IsTrackerTask {
+			task.URL = connection.GetTaskUrl(task.Key)
+		}
+	}
+
 	return taskList, http.StatusOK, nil
 }
 
@@ -69,6 +81,14 @@ func (service SprintTaskService) Get(
 		return nil, http.StatusInternalServerError, errors.New("failed to get issue")
 	}
 
+	connection, err := retroModels.GetTaskTrackerConnectionFromRetro(db, retroID)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	// Set task URL according to the task provider
+	if task.IsTrackerTask {
+		task.URL = connection.GetTaskUrl(task.Key)
+	}
 	return &task, http.StatusOK, nil
 }
 
