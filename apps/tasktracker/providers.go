@@ -29,6 +29,7 @@ type TaskProvider interface {
 type Connection interface {
 	GetTaskList(ticketKeys []string) []serializers.Task
 	GetTask(ticketKey string) (*serializers.Task, error)
+	GetTaskUrl(ticketKey string) string
 	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint serializers.Sprint) []serializers.Task
 	ValidateConfig() error

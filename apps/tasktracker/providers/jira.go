@@ -44,6 +44,11 @@ type JIRAConfig struct {
 	EstimateField string                  `json:"EstimateField"`
 }
 
+func (config JIRAConfig) GetBaseURL() string {
+	// Just to make sure there are no trailing slashes in the base url, even if provided by the user.
+	return strings.Trim(config.BaseURL, "/")
+}
+
 // TaskProviderJira ...
 const (
 	TaskProviderJira = "jira"
@@ -63,7 +68,7 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 		return nil
 	}
 
-	client, err := jira.NewClient(nil, jiraConfig.BaseURL)
+	client, err := jira.NewClient(nil, jiraConfig.GetBaseURL())
 
 	if err != nil {
 		return nil
@@ -147,6 +152,11 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 		},
 	}
 	return configMap
+}
+
+// GetTaskUrl ...
+func (c *JIRAConnection) GetTaskUrl(ticketKey string) string {
+	return fmt.Sprintf("%v/browse/%v", c.config.GetBaseURL(), ticketKey)
 }
 
 // GetTaskList ...
