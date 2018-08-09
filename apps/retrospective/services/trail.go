@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/iReflect/reflect-app/constants"
 	"github.com/jinzhu/gorm"
 
 	"errors"
@@ -10,6 +9,7 @@ import (
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	trailSerializer "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // TrailService ...
@@ -22,8 +22,8 @@ func (service TrailService) Add(action string, actionItem string, actionItemID s
 	db := service.DB
 	trail := new(retroModels.Trail)
 
-	trail.Action = action
-	trail.ActionItem = actionItem
+	trail.Action = constants.ActionTypeMap[action]
+	trail.ActionItem = constants.ActionItemTypeMap[actionItem]
 	intID, err := strconv.Atoi(actionItemID)
 	if err != nil {
 		return
@@ -39,36 +39,37 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 	db := service.DB
 	trails = new(trailSerializer.TrailSerializer)
 
-	trailSprint := db.Model(&retroModels.Trail{}).
-		Where("trails.action_item = ?", constants.ActionItemType[constants.Sprint]).
+	sprintTrail := db.Model(&retroModels.Trail{}).
+		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.Sprint]).
 		Where("trails.action_item_id = ?", sprintID).
-		Order("action_item_id").QueryExpr()
+		Order("created_at DESC").QueryExpr()
 
-	trailSprintMember := db.Model(&retroModels.Trail{}).
-		Joins("JOIN sprint_members ON trails.action_item_id = sprint_members.id").
+	sprintMemberTrail := db.Model(&retroModels.Trail{}).
+		Scopes(retroModels.TrailJoinSM).
 		Where("sprint_members.sprint_id = ?", sprintID).
-		Where("trails.action_item = ?", constants.ActionItemType[constants.SprintMember]).
-		Order("action_item_id").QueryExpr()
+		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.SprintMember]).
+		Order("created_at DESC").QueryExpr()
 
-	trailSprintTask := db.Model(&retroModels.Trail{}).
-		Joins("JOIN sprint_tasks ON trails.action_item_id = sprint_tasks.id").
+	sprintTaskTrail := db.Model(&retroModels.Trail{}).
+		Scopes(retroModels.TrailJoinST).
 		Where("sprint_tasks.sprint_id = ?", sprintID).
-		Where("action_item = ?", constants.ActionItemType[constants.SprintTask]).
-		Order("action_item_id").QueryExpr()
+		Where("action_item = ?", constants.ActionItemTypeMap[constants.SprintTask]).
+		Order("created_at DESC").QueryExpr()
 
-	trailSprintMemberTask := db.Model(&retroModels.Trail{}).
-		Joins("JOIN sprint_member_tasks ON trails.action_item_id = sprint_member_tasks.id").
-		Where("trails.action_item = ?", constants.ActionItemType[constants.SprintMemberTask]).
-		Joins("JOIN sprint_tasks ON sprint_member_tasks.sprint_task_id = sprint_tasks.id").
+	sprintMemberTaskTrail := db.Model(&retroModels.Trail{}).
+		Scopes(retroModels.TrailJoinSMT).
+		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.SprintMemberTask]).
+		Scopes(retroModels.SprintTaskJoinSMT).
 		Where("sprint_tasks.sprint_id = ?", sprintID).
-		Order("action_item_id").QueryExpr()
+		Order("created_at DESC").QueryExpr()
 
-	errTrails := db.Raw("SELECT * FROM (?) AS sprint UNION ALL SELECT * FROM (?) AS sprint_member UNION ALL SELECT * FROM (?) AS sprint_task UNION ALL SELECT * FROM (?) AS sprint_member_task",
-		trailSprint, trailSprintMember, trailSprintTask, trailSprintMemberTask).
+	err = db.Raw("SELECT * FROM (?) AS sprint UNION SELECT * FROM (?) AS sprint_member UNION SELECT * FROM (?) AS sprint_task UNION SELECT * FROM (?) AS sprint_member_task",
+		sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail).
+		Order("created_at DESC").
 		Scan(&trails.Trails).Error
 
-	if errTrails != nil {
-		return nil, http.StatusNoContent, errors.New("No Sprint History")
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.New("No Sprint History")
 	}
 	return trails, http.StatusOK, nil
 

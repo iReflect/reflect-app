@@ -62,8 +62,8 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.AddedGoal],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.AddedGoal,
+		constants.RetrospectiveFeedback,
 		fmt.Sprint(response.ID),
 		userID.(uint))
 	c.JSON(status, response)
@@ -134,8 +134,8 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.UpdatedGoal],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.UpdatedGoal,
+		constants.RetrospectiveFeedback,
 		goalID,
 		userID.(uint))
 
@@ -170,8 +170,8 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 		return
 	}
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.ResolvedGoal],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.ResolvedGoal,
+		constants.RetrospectiveFeedback,
 		goalID,
 		userID.(uint))
 
@@ -207,8 +207,8 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.UnresolvedGoal],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.UnresolvedGoal,
+		constants.RetrospectiveFeedback,
 		goalID,
 		userID.(uint))
 

@@ -115,8 +115,8 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.CreatedRetrospective],
-		constants.ActionItemType[constants.Retrospective],
+		constants.CreatedRetrospective,
+		constants.Retrospective,
 		strconv.Itoa(int(retro.ID)),
 		userID.(uint))
 

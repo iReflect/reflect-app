@@ -31,6 +31,8 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/process/", ctrl.Process)
 
 	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
+
+	r.GET("/:sprintID/process_history", ctrl.GetTrails)
 }
 
 // List the sprints accessible to the user
@@ -81,8 +83,8 @@ func (ctrl SprintController) Create(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.CreatedSprint],
-		constants.ActionItemType[constants.Sprint],
+		constants.CreatedSprint,
+		constants.Sprint,
 		strconv.Itoa(int(sprint.ID)),
 		userID.(uint))
 
@@ -124,8 +126,8 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.DeletedSprint],
-		constants.ActionItemType[constants.Sprint],
+		constants.DeletedSprint,
+		constants.Sprint,
 		sprintID,
 		userID.(uint))
 
@@ -154,8 +156,8 @@ func (ctrl SprintController) Update(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.UpdatedSprint],
-		constants.ActionItemType[constants.Sprint],
+		constants.UpdatedSprint,
+		constants.Sprint,
 		sprintID,
 		userID.(uint))
 
@@ -180,8 +182,8 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.ActivatedSprint],
-		constants.ActionItemType[constants.Sprint],
+		constants.ActivatedSprint,
+		constants.Sprint,
 		sprintID,
 		userID.(uint))
 
@@ -206,8 +208,8 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.FreezeSprint],
-		constants.ActionItemType[constants.Sprint],
+		constants.FreezeSprint,
+		constants.Sprint,
 		sprintID,
 		userID.(uint))
 
@@ -239,8 +241,8 @@ func (ctrl SprintController) Process(c *gin.Context) {
 	ctrl.SprintService.QueueSprint(uint(sprintIDInt), sprint.Status == retroModels.ActiveSprint)
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.TriggeredSprintRefresh],
-		constants.ActionItemType[constants.Sprint],
+		constants.TriggeredSprintRefresh,
+		constants.Sprint,
 		sprintID,
 		userID.(uint))
 
@@ -265,4 +267,16 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 	}
 
 	c.JSON(status, response)
+}
+
+// GetTrails is method to get the all trails related to a particular sprint
+func (ctrl SprintController) GetTrails(c *gin.Context) {
+	sprintID, _ := strconv.Atoi(c.Param("sprintID"))
+
+	trails, status, err := ctrl.TrailService.GetTrails(uint(sprintID))
+
+	if err != nil {
+		return
+	}
+	c.JSON(status, trails)
 }

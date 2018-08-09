@@ -60,8 +60,8 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.AddedNote],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.AddedNote,
+		constants.RetrospectiveFeedback,
 		fmt.Sprint(response.ID),
 		userID.(uint))
 
@@ -131,8 +131,8 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.UpdateNote],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.UpdatedNote,
+		constants.RetrospectiveFeedback,
 		noteID,
 		userID.(uint))
 

@@ -50,8 +50,8 @@ func (ctrl SprintMemberController) AddMember(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.AddedSprintMember],
-		constants.ActionItemType[constants.SprintMember],
+		constants.AddedSprintMember,
+		constants.SprintMember,
 		strconv.Itoa(int(response.ID)),
 		userID.(uint))
 
@@ -97,8 +97,8 @@ func (ctrl SprintMemberController) RemoveMember(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.RemovedSprintMember],
-		constants.ActionItemType[constants.SprintMember],
+		constants.RemovedSprintMember,
+		constants.SprintMember,
 		memberID,
 		userID.(uint))
 
@@ -126,8 +126,8 @@ func (ctrl SprintMemberController) UpdateSprintMember(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.UpdatedSprintMember],
-		constants.ActionItemType[constants.SprintMember],
+		constants.UpdatedSprintMember,
+		constants.SprintMember,
 		sprintMemberID,
 		userID.(uint))
 

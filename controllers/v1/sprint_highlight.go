@@ -60,8 +60,8 @@ func (ctrl SprintHighlightController) Add(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.AddedHighlight],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.AddedHighlight,
+		constants.RetrospectiveFeedback,
 		fmt.Sprint(response.ID),
 		userID.(uint))
 
@@ -131,8 +131,8 @@ func (ctrl SprintHighlightController) Update(c *gin.Context) {
 	}
 
 	ctrl.TrailService.Add(
-		constants.ActionType[constants.UpdatedHighlight],
-		constants.ActionItemType[constants.RetrospectiveFeedback],
+		constants.UpdatedHighlight,
+		constants.RetrospectiveFeedback,
 		highlightID,
 		userID.(uint))
 

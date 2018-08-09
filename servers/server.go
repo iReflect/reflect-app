@@ -109,10 +109,6 @@ func (a *App) SetRoutes() {
 
 	retrospectiveFeedbackService := retrospectiveServices.RetrospectiveFeedbackService{DB: a.DB}
 
-	trailControllerRoute := retrospectiveRoute.Group(":retroID/sprint")
-	trailController := apiControllers.TrailController{TrailService: trailService}
-	trailController.Routes(trailControllerRoute)
-
 	sprintRoute := retrospectiveRoute.Group(":retroID/sprints")
 	sprintService := retrospectiveServices.SprintService{DB: a.DB}
 	sprintController := apiControllers.SprintController{SprintService: sprintService, PermissionService: permissionService, TrailService: trailService}

@@ -6,7 +6,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
-// Trail . . . .
+// Trail .......
 type Trail struct {
 	Action       string
 	ActionItem   string
@@ -16,7 +16,7 @@ type Trail struct {
 	CreatedAt    time.Time
 }
 
-// TrailSerializer used in trail API
+// TrailSerializer used to get trails ...
 type TrailSerializer struct {
 	Trails []Trail
 }
