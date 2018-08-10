@@ -42,34 +42,33 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 	sprintTrail := db.Model(&retroModels.Trail{}).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.Sprint]).
 		Where("trails.action_item_id = ?", sprintID).
-		Order("created_at DESC").QueryExpr()
+		QueryExpr()
 
 	sprintMemberTrail := db.Model(&retroModels.Trail{}).
 		Scopes(retroModels.TrailJoinSM).
 		Where("sprint_members.sprint_id = ?", sprintID).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.SprintMember]).
-		Order("created_at DESC").QueryExpr()
+		QueryExpr()
 
 	sprintTaskTrail := db.Model(&retroModels.Trail{}).
 		Scopes(retroModels.TrailJoinST).
 		Where("sprint_tasks.sprint_id = ?", sprintID).
-		Where("action_item = ?", constants.ActionItemTypeMap[constants.SprintTask]).
-		Order("created_at DESC").QueryExpr()
+		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.SprintTask]).
+		QueryExpr()
 
 	sprintMemberTaskTrail := db.Model(&retroModels.Trail{}).
-		Scopes(retroModels.TrailJoinSMT).
+		Scopes(retroModels.TrailJoinSMT, retroModels.SMTJoinST).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.SprintMemberTask]).
-		Scopes(retroModels.SprintTaskJoinSMT).
 		Where("sprint_tasks.sprint_id = ?", sprintID).
-		Order("created_at DESC").QueryExpr()
+		QueryExpr()
 
-	err = db.Raw("SELECT * FROM (?) AS sprint UNION SELECT * FROM (?) AS sprint_member UNION SELECT * FROM (?) AS sprint_task UNION SELECT * FROM (?) AS sprint_member_task",
+	err = db.Raw("SELECT * FROM (?) AS sprint_trails UNION SELECT * FROM (?) AS sprint_member_trails UNION SELECT * FROM (?) AS sprint_task_trails UNION SELECT * FROM (?) AS sprint_member_task_trails",
 		sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail).
 		Order("created_at DESC").
 		Scan(&trails.Trails).Error
 
 	if err != nil {
-		return nil, http.StatusInternalServerError, errors.New("No Sprint History")
+		return nil, http.StatusInternalServerError, errors.New("Error in Getting trail List")
 	}
 	return trails, http.StatusOK, nil
 
