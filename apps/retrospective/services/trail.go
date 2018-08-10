@@ -18,7 +18,7 @@ type TrailService struct {
 }
 
 // Add ...
-func (service TrailService) Add(action constants.ActionDataType, actionItem constants.ActionItemDataType, actionItemID string, actionByID uint) {
+func (service TrailService) Add(action constants.ActionType, actionItem constants.ActionItemType, actionItemID string, actionByID uint) {
 	db := service.DB
 	trail := new(retroModels.Trail)
 
@@ -68,7 +68,7 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 		Scan(&trails.Trails).Error
 
 	if err != nil {
-		return nil, http.StatusInternalServerError, errors.New("Error in Getting trail List")
+		return nil, http.StatusInternalServerError, errors.New("failed to get the sprint trails")
 	}
 	return trails, http.StatusOK, nil
 
