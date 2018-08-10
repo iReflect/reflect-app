@@ -18,7 +18,7 @@ type TrailService struct {
 }
 
 // Add ...
-func (service TrailService) Add(action string, actionItem string, actionItemID string, actionByID uint) {
+func (service TrailService) Add(action constants.ActionDataType, actionItem constants.ActionItemDataType, actionItemID string, actionByID uint) {
 	db := service.DB
 	trail := new(retroModels.Trail)
 
