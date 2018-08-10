@@ -32,7 +32,7 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 
 	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
 
-	r.GET("/:sprintID/process_history", ctrl.GetTrails)
+	r.GET("/:sprintID/process_history/", ctrl.GetTrails)
 }
 
 // List the sprints accessible to the user
@@ -271,9 +271,17 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 
 // GetTrails is method to get the all trails related to a particular sprint
 func (ctrl SprintController) GetTrails(c *gin.Context) {
-	sprintID, _ := strconv.Atoi(c.Param("sprintID"))
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	userID, _ := c.Get("userID")
 
-	trails, status, err := ctrl.TrailService.GetTrails(uint(sprintID))
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	sprintIDInt, _ := strconv.Atoi(sprintID)
+	trails, status, err := ctrl.TrailService.GetTrails(uint(sprintIDInt))
 
 	if err != nil {
 		return
