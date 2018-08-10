@@ -274,13 +274,17 @@ func (ctrl SprintController) GetTrails(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
 	userID, _ := c.Get("userID")
+	sprintIDInt, errConversion := strconv.Atoi(sprintID)
 
+	if errConversion != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 
-	sprintIDInt, _ := strconv.Atoi(sprintID)
 	trails, status, err := ctrl.TrailService.GetTrails(uint(sprintIDInt))
 
 	if err != nil {
