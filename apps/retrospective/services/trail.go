@@ -30,6 +30,7 @@ func (service TrailService) Add(action constants.ActionType, actionItem constant
 	}
 	trail.ActionItemID = uint(intID)
 	trail.ActionByID = actionByID
+
 	db.Create(&trail)
 	return
 }
@@ -64,8 +65,9 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 
 	err = db.Raw("SELECT * FROM (?) AS sprint_trails UNION SELECT * FROM (?) AS sprint_member_trails UNION SELECT * FROM (?) AS sprint_task_trails UNION SELECT * FROM (?) AS sprint_member_task_trails",
 		sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail).
+		Preload("ActionBy").
 		Order("created_at DESC").
-		Scan(&trails.Trails).Error
+		Find(&trails.Trails).Error
 
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.New("failed to get the sprint trails")

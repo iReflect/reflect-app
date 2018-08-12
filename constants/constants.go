@@ -9,11 +9,11 @@ type ActionItemType string
 // constants defined to use in ActionItemTypeMap
 const (
 	Retrospective         ActionItemType = "Retrospective"
-	RetrospectiveFeedback ActionItemType = "RetrospectiveFeedback"
-	SprintMember          ActionItemType = "SprintMember"
-	SprintMemberTask      ActionItemType = "SprintMemberTask"
-	Sprint                ActionItemType = "Sprint"
-	SprintTask            ActionItemType = "SprintTask"
+	RetrospectiveFeedback                = "RetrospectiveFeedback"
+	SprintMember                         = "SprintMember"
+	SprintMemberTask                     = "SprintMemberTask"
+	Sprint                               = "Sprint"
+	SprintTask                           = "SprintTask"
 )
 
 // ActionItemTypeMap is types of ActionItem of Trail model used in adding trails.
@@ -32,28 +32,28 @@ type ActionType string
 // constants defined to use in ActionTypeMap
 const (
 	CreatedRetrospective    ActionType = "CreatedRetrospective"
-	AddedGoal               ActionType = "AddedGoal"
-	UpdatedGoal             ActionType = "UpdatedGoal"
-	ResolvedGoal            ActionType = "ResolvedGoal"
-	UnresolvedGoal          ActionType = "UnresolvedGoal"
-	AddedHighlight          ActionType = "AddedHighlight"
-	UpdatedHighlight        ActionType = "UpdatedHighlight"
-	AddedSprintMember       ActionType = "AddedSprintMember"
-	UpdatedSprintMember     ActionType = "UpdatedSprintMember"
-	RemovedSprintMember     ActionType = "RemovedSprintMember"
-	AddedNote               ActionType = "AddedNote"
-	UpdatedNote             ActionType = "UpdatedNote"
-	AddedSprintMemberTask   ActionType = "AddedSprintMemberTask"
-	UpdatedSprintMemberTask ActionType = "UpdatedSprintMemberTask"
-	CreatedSprint           ActionType = "CreatedSprint"
-	DeletedSprint           ActionType = "DeletedSprint"
-	UpdatedSprint           ActionType = "UpdatedSprint"
-	ActivatedSprint         ActionType = "ActivatedSprint"
-	FreezeSprint            ActionType = "FreezeSprint"
-	TriggeredSprintRefresh  ActionType = "TriggeredSprintRefresh"
-	UpdatedSprintTask       ActionType = "UpdatedSprintTask"
-	MarkDoneSprintTask      ActionType = "MarkDoneSprintTask"
-	MarkUndoneSprintTask    ActionType = "MarkUndoneSprintTask"
+	AddedGoal                          = "AddedGoal"
+	UpdatedGoal                        = "UpdatedGoal"
+	ResolvedGoal                       = "ResolvedGoal"
+	UnresolvedGoal                     = "UnresolvedGoal"
+	AddedHighlight                     = "AddedHighlight"
+	UpdatedHighlight                   = "UpdatedHighlight"
+	AddedSprintMember                  = "AddedSprintMember"
+	UpdatedSprintMember                = "UpdatedSprintMember"
+	RemovedSprintMember                = "RemovedSprintMember"
+	AddedNote                          = "AddedNote"
+	UpdatedNote                        = "UpdatedNote"
+	AddedSprintMemberTask              = "AddedSprintMemberTask"
+	UpdatedSprintMemberTask            = "UpdatedSprintMemberTask"
+	CreatedSprint                      = "CreatedSprint"
+	DeletedSprint                      = "DeletedSprint"
+	UpdatedSprint                      = "UpdatedSprint"
+	ActivatedSprint                    = "ActivatedSprint"
+	FreezeSprint                       = "FreezeSprint"
+	TriggeredSprintRefresh             = "TriggeredSprintRefresh"
+	UpdatedSprintTask                  = "UpdatedSprintTask"
+	MarkDoneSprintTask                 = "MarkDoneSprintTask"
+	MarkUndoneSprintTask               = "MarkUndoneSprintTask"
 )
 
 // ActionTypeMap is types of Action of Trail model used in adding trails.
@@ -66,7 +66,7 @@ var ActionTypeMap = map[ActionType]string{
 	AddedHighlight:          "Added a highlight",
 	UpdatedHighlight:        "Updated a highlight",
 	AddedSprintMember:       "Added member in sprint",
-	UpdatedSprintMember:     "Updated members in sprint",
+	UpdatedSprintMember:     "Updated member in sprint",
 	RemovedSprintMember:     "Removed member from sprint",
 	AddedNote:               "Added a note",
 	UpdatedNote:             "Updated a note",
