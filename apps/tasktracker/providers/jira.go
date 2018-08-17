@@ -255,13 +255,14 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool, sp
 
 func (c *JIRAConnection) getTicket(ticketKey string) (ticketSerialized *serializers.Task, err error) {
 
-	ticket, res, err := c.client.Issue.Get(ticketKey, nil)
+	ticket, resp, err := c.client.Issue.Get(ticketKey, nil)
 	if err != nil {
-		jiraErr, _ := ioutil.ReadAll(res.Response.Body)
 
-		if strings.Contains(err.Error(), "Issue does not exist") {
+		if resp.StatusCode == 404 {
 			return nil, nil
 		}
+
+		jiraErr, _ := ioutil.ReadAll(resp.Response.Body)
 		utils.LogToSentry(fmt.Errorf("%s: %s", ticketKey, jiraErr))
 		return nil, err
 	}
