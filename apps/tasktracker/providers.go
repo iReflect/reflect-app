@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 
 	"errors"
+	"strings"
+
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strings"
 )
 
 // Credentials ...
@@ -221,6 +222,33 @@ func GetTaskTypeMappings(config []byte) (map[string][]string, error) {
 	}
 
 	return types, nil
+}
+
+// GetDoneStatusMapping ...
+func GetDoneStatusMapping(config []byte) ([]string, error) {
+	var configList []interface{}
+	var statusType []string
+
+	if err := json.Unmarshal(config, &configList); err != nil {
+		return nil, err
+	}
+
+	var data map[string]interface{}
+	for _, tpConfig := range configList {
+		tp := tpConfig.(map[string]interface{})
+		data = tp["data"].(map[string]interface{})
+
+		typeUpper, ok := data["DoneStatus"].(string)
+		if !ok {
+			return nil, errors.New("failed to read from retrospective config")
+		}
+		// remove extra spaces from the task tracker type mapping values
+		statusType = strings.Split(strings.ToLower(typeUpper), ",")
+		for index, value := range statusType {
+			statusType[index] = strings.TrimSpace(value)
+		}
+	}
+	return statusType, nil
 }
 
 // ValidateConfigs ...

@@ -5,6 +5,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/deckarep/golang-set"
@@ -498,26 +499,78 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	ticket taskTrackerSerializers.Task,
 	retroID uint,
 	alternateTaskKey string) (err error) {
+
+	db := service.DB
+	type endDate struct {
+		EndDate *time.Time
+	}
+	var endDateObj endDate
+	var retro retroModels.Retrospective
+
+	err = db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
+		Scopes(retroModels.RetroJoinSprints).
+		Where("sprints.id = ?", sprintID).First(&retro).Error
+
+	DoneStatusList, err := tasktracker.GetDoneStatusMapping(retro.TaskProviderConfig)
+	if err != nil {
+		utils.LogToSentry(err)
+		return errors.New("failed to Done Status Mapping")
+	}
+
+	err = db.Raw("select end_date from sprints where id = ?", sprintID).
+		First(&endDateObj).Error
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}
+	var DoneStatusFlag = false
+
+	for _, value := range DoneStatusList {
+		if strings.ToLower(ticket.Status) == value {
+			DoneStatusFlag = true
+			break
+		}
+	}
 	tx := service.DB.Begin()
-
 	var task retroModels.Task
-	err = tx.Model(&retroModels.Task{}).
-		Where("tasks.deleted_at IS NULL").
-		Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
-		Assign(retroModels.Task{
-			RetrospectiveID: retroID,
-			TrackerUniqueID: ticket.TrackerUniqueID,
-			Key:             ticket.Key,
-			Summary:         ticket.Summary,
-			Description:     ticket.Description,
-			Type:            ticket.Type,
-			Priority:        ticket.Priority,
-			Assignee:        ticket.Assignee,
-			Status:          ticket.Status,
-			IsTrackerTask:   true,
-		}).
-		FirstOrCreate(&task).Error
-
+	if DoneStatusFlag && endDateObj.EndDate != nil {
+		err = tx.Model(&retroModels.Task{}).
+			Where("tasks.deleted_at IS NULL").
+			Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
+			Assign(retroModels.Task{
+				RetrospectiveID: retroID,
+				TrackerUniqueID: ticket.TrackerUniqueID,
+				Key:             ticket.Key,
+				Summary:         ticket.Summary,
+				Description:     ticket.Description,
+				Type:            ticket.Type,
+				Priority:        ticket.Priority,
+				Assignee:        ticket.Assignee,
+				Status:          ticket.Status,
+				DoneAt:          endDateObj.EndDate,
+				IsTrackerTask:   true,
+			}).
+			FirstOrCreate(&task).Error
+	} else {
+		err = tx.Model(&retroModels.Task{}).
+			Where("tasks.deleted_at IS NULL").
+			Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
+			Assign(retroModels.Task{
+				RetrospectiveID: retroID,
+				TrackerUniqueID: ticket.TrackerUniqueID,
+				Key:             ticket.Key,
+				Summary:         ticket.Summary,
+				Description:     ticket.Description,
+				Type:            ticket.Type,
+				Priority:        ticket.Priority,
+				Assignee:        ticket.Assignee,
+				Status:          ticket.Status,
+				IsTrackerTask:   true,
+			}).
+			FirstOrCreate(&task).Error
+	}
 	if err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
