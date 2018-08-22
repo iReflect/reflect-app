@@ -238,14 +238,14 @@ func GetDoneStatusMapping(config []byte) ([]string, error) {
 		tp := tpConfig.(map[string]interface{})
 		data = tp["data"].(map[string]interface{})
 
-		typeUpper, ok := data["DoneStatus"].(string)
+		statusUpper, ok := data["DoneStatus"].(string)
 		if !ok {
 			return nil, errors.New("failed to read from retrospective config")
 		}
-		// remove extra spaces from the task tracker type mapping values
-		statusType = strings.Split(strings.ToLower(typeUpper), ",")
-		for index, value := range statusType {
-			statusType[index] = strings.TrimSpace(value)
+		// remove extra spaces from the completed task status mapping values
+		statusType = strings.Split(strings.ToLower(statusUpper), ",")
+		for index, status := range statusType {
+			statusType[index] = strings.TrimSpace(status)
 		}
 	}
 	return statusType, nil

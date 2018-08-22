@@ -76,7 +76,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	}
 
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
-		sprint.ID,
+		sprint,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
 		taskTrackerTaskKeySet,
@@ -87,7 +87,7 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		return err
 	}
 
-	err = service.updateMissingTimeTrackerTask(sprint.ID,
+	err = service.updateMissingTimeTrackerTask(sprint,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
 		timeTrackerTaskKeys,
@@ -220,7 +220,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 	}
 
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
-		sprint.ID,
+		sprint,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
 		taskTrackerTaskKeySet,
@@ -231,7 +231,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 		return err
 	}
 
-	err = service.updateMissingTimeTrackerTask(sprint.ID,
+	err = service.updateMissingTimeTrackerTask(sprint,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
 		timeTrackerTaskKeys,
@@ -495,47 +495,30 @@ func (service SprintService) changeTaskEstimates(tx *gorm.DB, task retroModels.T
 }
 
 func (service SprintService) addOrUpdateTaskTrackerTask(
-	sprintID uint,
+	sprint retroModels.Sprint,
 	ticket taskTrackerSerializers.Task,
 	retroID uint,
 	alternateTaskKey string) (err error) {
 
 	db := service.DB
-	type endDate struct {
-		EndDate *time.Time
-	}
-	var endDateObj endDate
-	var retro retroModels.Retrospective
 
-	err = db.Model(&retroModels.Retrospective{}).
-		Where("retrospectives.deleted_at IS NULL").
-		Scopes(retroModels.RetroJoinSprints).
-		Where("sprints.id = ?", sprintID).First(&retro).Error
-
-	DoneStatusList, err := tasktracker.GetDoneStatusMapping(retro.TaskProviderConfig)
+	DoneStatusList, err := tasktracker.GetDoneStatusMapping(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
 		utils.LogToSentry(err)
-		return errors.New("failed to Done Status Mapping")
+		return errors.New("failed to fetch completed Status Mapping")
 	}
 
-	err = db.Raw("select end_date from sprints where id = ?", sprintID).
-		First(&endDateObj).Error
-
-	if err != nil {
-		utils.LogToSentry(err)
-		return err
-	}
 	var DoneStatusFlag = false
 
-	for _, value := range DoneStatusList {
-		if strings.ToLower(ticket.Status) == value {
+	for _, status := range DoneStatusList {
+		if strings.ToLower(ticket.Status) == status {
 			DoneStatusFlag = true
 			break
 		}
 	}
-	tx := service.DB.Begin()
+	tx := db.Begin()
 	var task retroModels.Task
-	if DoneStatusFlag && endDateObj.EndDate != nil {
+	if DoneStatusFlag {
 		err = tx.Model(&retroModels.Task{}).
 			Where("tasks.deleted_at IS NULL").
 			Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
@@ -549,7 +532,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 				Priority:        ticket.Priority,
 				Assignee:        ticket.Assignee,
 				Status:          ticket.Status,
-				DoneAt:          endDateObj.EndDate,
+				DoneAt:          sprint.EndDate,
 				IsTrackerTask:   true,
 			}).
 			FirstOrCreate(&task).Error
@@ -599,7 +582,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 
 	}
 
-	err = tx.Where(retroModels.SprintTask{SprintID: sprintID, TaskID: task.ID}).
+	err = tx.Where(retroModels.SprintTask{SprintID: sprint.ID, TaskID: task.ID}).
 		Where("sprint_tasks.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.SprintTask{}).Error
 
@@ -643,7 +626,7 @@ func (service SprintService) fetchAndUpdateTaskTrackerTask(
 	}
 
 	for _, ticket := range tickets {
-		err = service.addOrUpdateTaskTrackerTask(sprint.ID, ticket, sprint.RetrospectiveID, "")
+		err = service.addOrUpdateTaskTrackerTask(sprint, ticket, sprint.RetrospectiveID, "")
 		if err != nil {
 			utils.LogToSentry(err)
 			return nil, err
@@ -655,7 +638,7 @@ func (service SprintService) fetchAndUpdateTaskTrackerTask(
 
 // fetchAndUpdateTimeTrackerTask ...
 func (service SprintService) fetchAndUpdateTimeTrackerTask(
-	sprintID uint,
+	sprint retroModels.Sprint,
 	retroID uint,
 	taskProviderConfig []byte,
 	taskTrackerTaskKeySet mapset.Set,
@@ -672,7 +655,7 @@ func (service SprintService) fetchAndUpdateTimeTrackerTask(
 
 	timeTrackerTaskKeySet.Clear()
 	for _, ticket := range tickets {
-		err = service.addOrUpdateTaskTrackerTask(sprintID, ticket, retroID, "")
+		err = service.addOrUpdateTaskTrackerTask(sprint, ticket, retroID, "")
 		if err != nil {
 			utils.LogToSentry(err)
 			return nil, err
@@ -684,7 +667,7 @@ func (service SprintService) fetchAndUpdateTimeTrackerTask(
 
 // updateMissingTimeTrackerTask ...
 func (service SprintService) updateMissingTimeTrackerTask(
-	sprintID uint,
+	sprint retroModels.Sprint,
 	retroID uint,
 	taskProviderConfig []byte,
 	timeTrackerTaskKeys []string,
@@ -702,9 +685,9 @@ func (service SprintService) updateMissingTimeTrackerTask(
 		}
 
 		if task != nil {
-			err = service.addOrUpdateTaskTrackerTask(sprintID, *task, retroID, taskKey.(string))
+			err = service.addOrUpdateTaskTrackerTask(sprint, *task, retroID, taskKey.(string))
 		} else {
-			err = service.insertTimeTrackerTask(sprintID, taskKey.(string), retroID)
+			err = service.insertTimeTrackerTask(sprint.ID, taskKey.(string), retroID)
 		}
 		if err != nil {
 			utils.LogToSentry(err)
