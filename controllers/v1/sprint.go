@@ -288,6 +288,7 @@ func (ctrl SprintController) GetTrails(c *gin.Context) {
 	trails, status, err := ctrl.TrailService.GetTrails(uint(sprintIDInt))
 
 	if err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
 	c.JSON(status, trails)
