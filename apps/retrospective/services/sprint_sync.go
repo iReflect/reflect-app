@@ -518,47 +518,40 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	}
 	tx := db.Begin()
 	var task retroModels.Task
-	if DoneStatusFlag {
-		err = tx.Model(&retroModels.Task{}).
-			Where("tasks.deleted_at IS NULL").
-			Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
-			Assign(retroModels.Task{
-				RetrospectiveID: retroID,
-				TrackerUniqueID: ticket.TrackerUniqueID,
-				Key:             ticket.Key,
-				Summary:         ticket.Summary,
-				Description:     ticket.Description,
-				Type:            ticket.Type,
-				Priority:        ticket.Priority,
-				Assignee:        ticket.Assignee,
-				Status:          ticket.Status,
-				DoneAt:          sprint.EndDate,
-				IsTrackerTask:   true,
-			}).
-			FirstOrCreate(&task).Error
-	} else {
-		err = tx.Model(&retroModels.Task{}).
-			Where("tasks.deleted_at IS NULL").
-			Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
-			Assign(retroModels.Task{
-				RetrospectiveID: retroID,
-				TrackerUniqueID: ticket.TrackerUniqueID,
-				Key:             ticket.Key,
-				Summary:         ticket.Summary,
-				Description:     ticket.Description,
-				Type:            ticket.Type,
-				Priority:        ticket.Priority,
-				Assignee:        ticket.Assignee,
-				Status:          ticket.Status,
-				IsTrackerTask:   true,
-			}).
-			FirstOrCreate(&task).Error
-	}
+
+	err = tx.Model(&retroModels.Task{}).
+		Where("tasks.deleted_at IS NULL").
+		Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticket.TrackerUniqueID}).
+		Assign(retroModels.Task{
+			RetrospectiveID: retroID,
+			TrackerUniqueID: ticket.TrackerUniqueID,
+			Key:             ticket.Key,
+			Summary:         ticket.Summary,
+			Description:     ticket.Description,
+			Type:            ticket.Type,
+			Priority:        ticket.Priority,
+			Assignee:        ticket.Assignee,
+			Status:          ticket.Status,
+			IsTrackerTask:   true,
+		}).
+		FirstOrCreate(&task).Error
+
 	if err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
 		return err
 	}
+	if DoneStatusFlag {
+		err = tx.Model(&retroModels.Task{}).
+			Where("id = ?", task.ID).
+			Update("DoneAt", sprint.EndDate).Error
+
+		if err != nil {
+			utils.LogToSentry(err)
+			return err
+		}
+	}
+
 	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: ticket.Key}).
 		Where("task_key_maps.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.TaskKeyMap{}).Error
