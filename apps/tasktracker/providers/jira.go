@@ -305,23 +305,27 @@ func (c *JIRAConnection) serializeTicket(ticket jira.Issue) *serializers.Task {
 		estimate = &timeEstimate
 	}
 
-	assignee := ""
-	if ticket.Fields.Assignee != nil {
-		assignee = ticket.Fields.Assignee.DisplayName
-	}
-
-	return &serializers.Task{
+	serializedTask := serializers.Task{
 		Key:             ticket.Key,
 		TrackerUniqueID: ticket.ID,
+		Estimate:        estimate,
 		ProjectID:       ticket.Fields.Project.ID,
 		Summary:         ticket.Fields.Summary,
 		Description:     ticket.Fields.Description,
 		Type:            ticket.Fields.Type.Name,
-		Priority:        ticket.Fields.Priority.Name,
-		Estimate:        estimate,
-		Assignee:        assignee,
-		Status:          ticket.Fields.Status.Name,
 	}
+
+	if ticket.Fields.Assignee != nil {
+		serializedTask.Assignee = ticket.Fields.Assignee.DisplayName
+	}
+	if ticket.Fields.Status != nil {
+		serializedTask.Status = ticket.Fields.Status.Name
+	}
+	if ticket.Fields.Priority != nil {
+		serializedTask.Priority = ticket.Fields.Priority.Name
+	}
+
+	return &serializedTask
 }
 
 // sanitizeJQL replaces the parameters in the JQL with their respective values
