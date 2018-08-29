@@ -317,7 +317,8 @@ func (service SprintService) AssignPoints(sprintID string, sprintTaskID *string)
         FROM (?) AS s1 
         WHERE s1.sprint_id = ? AND sprint_member_tasks.id = s1.id`
 
-	sqlValues := []interface{}{annotatedSMTExpr, sprintID}
+
+    sqlValues := []interface{}{annotatedSMTExpr, sprintID}
 
 	if sprintTaskID != nil {
 		updateSQL = fmt.Sprintf("%s AND s1.sprint_task_id = ?", updateSQL)
