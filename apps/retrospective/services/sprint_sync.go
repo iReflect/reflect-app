@@ -16,6 +16,7 @@ import (
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
+	CONSTANTS "github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"github.com/jinzhu/gorm"
@@ -316,7 +317,7 @@ func (service SprintService) AssignPoints(sprintID string, sprintTaskID *string)
         FROM (?) AS s1 
         WHERE s1.sprint_id = ? AND sprint_member_tasks.id = s1.id`
 
-    sqlValues := []interface{}{annotatedSMTExpr, sprintID}
+	sqlValues := []interface{}{annotatedSMTExpr, sprintID}
 
 	if sprintTaskID != nil {
 		updateSQL = fmt.Sprintf("%s AND s1.sprint_task_id = ?", updateSQL)
@@ -540,8 +541,8 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 		return errors.New("failed to fetch completed status mapping")
 	}
 
-	if len(StatusMap["DoneStatus"]) != 0 {
-		DoneStatusList := StatusMap["DoneStatus"]
+	if len(StatusMap[CONSTANTS.DoneStatus]) != 0 {
+		DoneStatusList := StatusMap[CONSTANTS.DoneStatus]
 		for _, status := range DoneStatusList {
 			if strings.ToLower(ticket.Status) == status {
 				err = tx.Model(&retroModels.Task{}).

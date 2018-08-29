@@ -9,6 +9,7 @@ import (
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/config"
+	CONSTANTS "github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -43,7 +44,7 @@ var TaskProviders = make(map[string]TaskProvider)
 var TaskTypes = []string{"FeatureTypes", "TaskTypes", "BugTypes"}
 
 // StatusTypes ...
-var StatusTypes = []string{"DoneStatus"}
+var StatusTypes = []string{CONSTANTS.DoneStatus}
 
 // RegisterTaskProvider ...
 func RegisterTaskProvider(name string, newProvider TaskProvider) {
