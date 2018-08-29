@@ -12,6 +12,7 @@ import (
 
 func init() {
 	workers.RegisterJob("sync_sprint_data", SyncSprintData)
+	workers.RegisterJob("assign_points_to_sprint_task", AssignPointsToSprintTask)
 }
 
 // SyncSprintData ...
@@ -33,7 +34,7 @@ func SyncSprintData(job *work.Job) error {
 
 	assignPoints := job.ArgBool("assignPoints")
 	if assignPoints {
-		sprintService.AssignPoints(sprintID)
+		sprintService.AssignPoints(sprintID, nil)
 	}
 
 	log.Println("Completed job: ", job.Name)
