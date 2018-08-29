@@ -42,6 +42,9 @@ var TaskProviders = make(map[string]TaskProvider)
 // TaskTypes ...
 var TaskTypes = []string{"FeatureTypes", "TaskTypes", "BugTypes"}
 
+// StatusTypes ...
+var StatusTypes = []string{"DoneStatus"}
+
 // RegisterTaskProvider ...
 func RegisterTaskProvider(name string, newProvider TaskProvider) {
 	TaskProviders[name] = newProvider
@@ -224,10 +227,10 @@ func GetTaskTypeMappings(config []byte) (map[string][]string, error) {
 	return types, nil
 }
 
-// GetDoneStatusMapping ...
-func GetDoneStatusMapping(config []byte) ([]string, error) {
+// GetStatusMapping ...
+func GetStatusMapping(config []byte) (map[string][]string, error) {
 	var configList []interface{}
-	var statusType []string
+	statusType := make(map[string][]string)
 
 	if err := json.Unmarshal(config, &configList); err != nil {
 		return nil, err
@@ -238,14 +241,18 @@ func GetDoneStatusMapping(config []byte) ([]string, error) {
 		tp := tpConfig.(map[string]interface{})
 		data = tp["data"].(map[string]interface{})
 
-		statusUpper, ok := data["DoneStatus"].(string)
-		if !ok {
-			return nil, errors.New("failed to read from retrospective config")
-		}
-		// remove extra spaces from the completed task status mapping values
-		statusType = strings.Split(strings.ToLower(statusUpper), ",")
-		for index, status := range statusType {
-			statusType[index] = strings.TrimSpace(status)
+		for index, status := range StatusTypes {
+			statusUpper, ok := data[status].(string)
+			if ok {
+				// remove extra spaces from the completed task status mapping values
+				statusTypeList := strings.Split(strings.ToLower(statusUpper), ",")
+				for indexInner, status := range statusTypeList {
+					statusTypeList[indexInner] = strings.TrimSpace(status)
+				}
+				statusType[StatusTypes[index]] = statusTypeList
+			} else {
+				statusType[StatusTypes[index]] = []string{}
+			}
 		}
 	}
 	return statusType, nil

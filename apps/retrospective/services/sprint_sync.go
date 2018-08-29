@@ -502,20 +502,6 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 
 	db := service.DB
 
-	DoneStatusList, err := tasktracker.GetDoneStatusMapping(sprint.Retrospective.TaskProviderConfig)
-	if err != nil {
-		utils.LogToSentry(err)
-		return errors.New("failed to fetch completed Status Mapping")
-	}
-
-	var DoneStatusFlag = false
-
-	for _, status := range DoneStatusList {
-		if strings.ToLower(ticket.Status) == status {
-			DoneStatusFlag = true
-			break
-		}
-	}
 	tx := db.Begin()
 	var task retroModels.Task
 
@@ -533,25 +519,36 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 			Assignee:        ticket.Assignee,
 			Status:          ticket.Status,
 			IsTrackerTask:   true,
-		}).
-		FirstOrCreate(&task).Error
+		}).FirstOrCreate(&task).Error
 
 	if err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
 		return err
 	}
-	if DoneStatusFlag {
-		err = tx.Model(&retroModels.Task{}).
-			Where("id = ?", task.ID).
-			Update("DoneAt", sprint.EndDate).Error
 
-		if err != nil {
-			utils.LogToSentry(err)
-			return err
-		}
+	StatusMap, err := tasktracker.GetStatusMapping(sprint.Retrospective.TaskProviderConfig)
+	if err != nil {
+		utils.LogToSentry(err)
+		return errors.New("failed to fetch completed status mapping")
 	}
 
+	if len(StatusMap["DoneStatus"]) != 0 {
+		DoneStatusList := StatusMap["DoneStatus"]
+		for _, status := range DoneStatusList {
+			if strings.ToLower(ticket.Status) == status {
+				err = tx.Model(&retroModels.Task{}).
+					Where("id = ?", task.ID).
+					Update("DoneAt", sprint.EndDate).Error
+
+				if err != nil {
+					utils.LogToSentry(err)
+					return err
+				}
+				break
+			}
+		}
+	}
 	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: ticket.Key}).
 		Where("task_key_maps.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.TaskKeyMap{}).Error
