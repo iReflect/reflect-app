@@ -16,7 +16,6 @@ import (
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
-	CONSTANTS "github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"github.com/jinzhu/gorm"
@@ -535,15 +534,15 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 		return err
 	}
 
-	StatusMap, err := tasktracker.GetStatusMapping(sprint.Retrospective.TaskProviderConfig)
+	statusMap, err := tasktracker.GetStatusMapping(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
 		utils.LogToSentry(err)
 		return errors.New("failed to fetch completed status mapping")
 	}
 
-	if len(StatusMap[CONSTANTS.DoneStatus]) != 0 {
-		DoneStatusList := StatusMap[CONSTANTS.DoneStatus]
-		for _, status := range DoneStatusList {
+	if len(statusMap[tasktracker.DoneStatus]) != 0 {
+		doneStatusList := statusMap[tasktracker.DoneStatus]
+		for _, status := range doneStatusList {
 			if strings.ToLower(ticket.Status) == status {
 				err = tx.Model(&retroModels.Task{}).
 					Where("id = ?", task.ID).

@@ -9,7 +9,6 @@ import (
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/config"
-	CONSTANTS "github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -43,8 +42,11 @@ var TaskProviders = make(map[string]TaskProvider)
 // TaskTypes ...
 var TaskTypes = []string{"FeatureTypes", "TaskTypes", "BugTypes"}
 
+// DoneStatus ...
+const DoneStatus = "DoneStatus"
+
 // StatusTypes ...
-var StatusTypes = []string{CONSTANTS.DoneStatus}
+var StatusTypes = []string{DoneStatus}
 
 // RegisterTaskProvider ...
 func RegisterTaskProvider(name string, newProvider TaskProvider) {
@@ -242,17 +244,17 @@ func GetStatusMapping(config []byte) (map[string][]string, error) {
 		tp := tpConfig.(map[string]interface{})
 		data = tp["data"].(map[string]interface{})
 
-		for index, status := range StatusTypes {
+		for _, status := range StatusTypes {
 			statusUpper, ok := data[status].(string)
 			if ok {
 				// remove extra spaces from the completed task status mapping values
 				statusTypeList := strings.Split(strings.ToLower(statusUpper), ",")
-				for indexInner, status := range statusTypeList {
-					statusTypeList[indexInner] = strings.TrimSpace(status)
+				for index, status := range statusTypeList {
+					statusTypeList[index] = strings.TrimSpace(status)
 				}
-				statusType[StatusTypes[index]] = statusTypeList
+				statusType[status] = statusTypeList
 			} else {
-				statusType[StatusTypes[index]] = []string{}
+				statusType[status] = []string{}
 			}
 		}
 	}
