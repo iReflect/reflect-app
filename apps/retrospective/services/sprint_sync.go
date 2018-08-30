@@ -508,9 +508,7 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	retroID uint,
 	alternateTaskKey string) (err error) {
 
-	db := service.DB
-
-	tx := db.Begin()
+	tx := service.DB.Begin()
 	var task retroModels.Task
 
 	err = tx.Model(&retroModels.Task{}).
@@ -527,7 +525,8 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 			Assignee:        ticket.Assignee,
 			Status:          ticket.Status,
 			IsTrackerTask:   true,
-		}).FirstOrCreate(&task).Error
+		}).
+		FirstOrCreate(&task).Error
 
 	if err != nil {
 		tx.Rollback()
@@ -538,12 +537,11 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 	statusMap, err := tasktracker.GetStatusMapping(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
 		utils.LogToSentry(err)
-		return errors.New("failed to fetch completed status mapping")
+		return errors.New("failed to fetch status mapping")
 	}
 
 	if len(statusMap[tasktracker.DoneStatus]) != 0 {
-		doneStatusList := statusMap[tasktracker.DoneStatus]
-		for _, status := range doneStatusList {
+		for _, status := range statusMap[tasktracker.DoneStatus] {
 			if strings.ToLower(ticket.Status) == status {
 				err = tx.Model(&retroModels.Task{}).
 					Where("id = ?", task.ID).

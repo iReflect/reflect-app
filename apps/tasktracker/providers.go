@@ -247,10 +247,10 @@ func GetStatusMapping(config []byte) (map[string][]string, error) {
 		for _, status := range StatusTypes {
 			statusUpper, ok := data[status].(string)
 			if ok {
-				// remove extra spaces from the completed task status mapping values
+				// remove extra spaces from the status mapping values
 				statusTypeList := strings.Split(strings.ToLower(statusUpper), ",")
-				for index, status := range statusTypeList {
-					statusTypeList[index] = strings.TrimSpace(status)
+				for index, statusInner := range statusTypeList {
+					statusTypeList[index] = strings.TrimSpace(statusInner)
 				}
 				statusType[status] = statusTypeList
 			} else {
