@@ -44,6 +44,11 @@ type JIRAConfig struct {
 	EstimateField string                  `json:"EstimateField"`
 }
 
+func (config JIRAConfig) GetBaseURL() string {
+	// Just to make sure there are no trailing slashes in the base url, even if provided by the user.
+	return strings.Trim(config.BaseURL, "/")
+}
+
 // TaskProviderJira ...
 const (
 	TaskProviderJira = "jira"
@@ -63,7 +68,7 @@ func (p *JIRATaskProvider) New(config interface{}) tasktracker.Connection {
 		return nil
 	}
 
-	client, err := jira.NewClient(nil, jiraConfig.BaseURL)
+	client, err := jira.NewClient(nil, jiraConfig.GetBaseURL())
 
 	if err != nil {
 		return nil
@@ -147,6 +152,11 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 		},
 	}
 	return configMap
+}
+
+// GetTaskUrl ...
+func (c *JIRAConnection) GetTaskUrl(ticketKey string) string {
+	return fmt.Sprintf("%v/browse/%v", c.config.GetBaseURL(), ticketKey)
 }
 
 // GetTaskList ...
@@ -245,13 +255,14 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool, sp
 
 func (c *JIRAConnection) getTicket(ticketKey string) (ticketSerialized *serializers.Task, err error) {
 
-	ticket, res, err := c.client.Issue.Get(ticketKey, nil)
+	ticket, resp, err := c.client.Issue.Get(ticketKey, nil)
 	if err != nil {
-		jiraErr, _ := ioutil.ReadAll(res.Response.Body)
 
-		if strings.Contains(err.Error(), "Issue does not exist") {
+		if resp.StatusCode == 404 {
 			return nil, nil
 		}
+
+		jiraErr, _ := ioutil.ReadAll(resp.Response.Body)
 		utils.LogToSentry(fmt.Errorf("%s: %s", ticketKey, jiraErr))
 		return nil, err
 	}
@@ -294,23 +305,27 @@ func (c *JIRAConnection) serializeTicket(ticket jira.Issue) *serializers.Task {
 		estimate = &timeEstimate
 	}
 
-	assignee := ""
-	if ticket.Fields.Assignee != nil {
-		assignee = ticket.Fields.Assignee.DisplayName
-	}
-
-	return &serializers.Task{
+	serializedTask := serializers.Task{
 		Key:             ticket.Key,
 		TrackerUniqueID: ticket.ID,
+		Estimate:        estimate,
 		ProjectID:       ticket.Fields.Project.ID,
 		Summary:         ticket.Fields.Summary,
 		Description:     ticket.Fields.Description,
 		Type:            ticket.Fields.Type.Name,
-		Priority:        ticket.Fields.Priority.Name,
-		Estimate:        estimate,
-		Assignee:        assignee,
-		Status:          ticket.Fields.Status.Name,
 	}
+
+	if ticket.Fields.Assignee != nil {
+		serializedTask.Assignee = ticket.Fields.Assignee.DisplayName
+	}
+	if ticket.Fields.Status != nil {
+		serializedTask.Status = ticket.Fields.Status.Name
+	}
+	if ticket.Fields.Priority != nil {
+		serializedTask.Priority = ticket.Fields.Priority.Name
+	}
+
+	return &serializedTask
 }
 
 // sanitizeJQL replaces the parameters in the JQL with their respective values

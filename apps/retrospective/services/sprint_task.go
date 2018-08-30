@@ -2,14 +2,17 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
+	"github.com/iReflect/reflect-app/workers"
 )
 
 // SprintTaskService ...
@@ -38,6 +41,18 @@ func (service SprintTaskService) List(
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to get issues")
+	}
+
+	connection, err := retroModels.GetTaskTrackerConnectionFromRetro(db, retroID)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	for _, task := range taskList.Tasks {
+		// Set task URL according to the task provider
+		if task.IsTrackerTask {
+			task.URL = connection.GetTaskUrl(task.Key)
+		}
 	}
 
 	return taskList, http.StatusOK, nil
@@ -69,6 +84,14 @@ func (service SprintTaskService) Get(
 		return nil, http.StatusInternalServerError, errors.New("failed to get issue")
 	}
 
+	connection, err := retroModels.GetTaskTrackerConnectionFromRetro(db, retroID)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.New("invalid retrospective")
+	}
+	// Set task URL according to the task provider
+	if task.IsTrackerTask {
+		task.URL = connection.GetTaskUrl(task.Key)
+	}
 	return &task, http.StatusOK, nil
 }
 
@@ -143,6 +166,8 @@ func (service SprintTaskService) MarkDone(
 		utils.LogToSentry(err)
 		return nil, http.StatusInternalServerError, errors.New("failed to mark the issue as done")
 	}
+
+	service.AssignPointsToSprintTask(sprintTaskID, sprintID)
 
 	return service.Get(sprintTaskID, retroID, sprintID)
 }
@@ -280,4 +305,9 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 		Joins("LEFT JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr()).
 		Joins(`LEFT JOIN (?) AS sprint_task_owners ON sprint_task_owners.task_id = tasks.id`, sprintTaskOwnerTable.QueryExpr())
 	return dbs
+}
+
+// AssignPointsToSprintTask ...
+func (service SprintTaskService) AssignPointsToSprintTask(sprintTaskID string, sprintID string) {
+	workers.Enqueuer.EnqueueUnique("assign_points_to_sprint_task", work.Q{"sprintID": fmt.Sprint(sprintID), "sprintTaskID": fmt.Sprint(sprintTaskID)})
 }

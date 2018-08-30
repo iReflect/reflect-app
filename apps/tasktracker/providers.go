@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 
 	"errors"
+	"strings"
+
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strings"
 )
 
 // Credentials ...
@@ -29,6 +30,7 @@ type TaskProvider interface {
 type Connection interface {
 	GetTaskList(ticketKeys []string) []serializers.Task
 	GetTask(ticketKey string) (*serializers.Task, error)
+	GetTaskUrl(ticketKey string) string
 	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint serializers.Sprint) []serializers.Task
 	ValidateConfig() error
@@ -39,6 +41,12 @@ var TaskProviders = make(map[string]TaskProvider)
 
 // TaskTypes ...
 var TaskTypes = []string{"FeatureTypes", "TaskTypes", "BugTypes"}
+
+// DoneStatus ...
+const DoneStatus = "DoneStatus"
+
+// StatusTypes ...
+var StatusTypes = []string{DoneStatus}
 
 // RegisterTaskProvider ...
 func RegisterTaskProvider(name string, newProvider TaskProvider) {
@@ -220,6 +228,37 @@ func GetTaskTypeMappings(config []byte) (map[string][]string, error) {
 	}
 
 	return types, nil
+}
+
+// GetStatusMapping ...
+func GetStatusMapping(config []byte) (map[string][]string, error) {
+	var configList []interface{}
+	statusType := make(map[string][]string)
+
+	if err := json.Unmarshal(config, &configList); err != nil {
+		return nil, err
+	}
+
+	var data map[string]interface{}
+	for _, tpConfig := range configList {
+		tp := tpConfig.(map[string]interface{})
+		data = tp["data"].(map[string]interface{})
+
+		for _, status := range StatusTypes {
+			statusUpper, ok := data[status].(string)
+			if ok {
+				// remove extra spaces from the status mapping values
+				statusTypeList := strings.Split(strings.ToLower(statusUpper), ",")
+				for index, statusInner := range statusTypeList {
+					statusTypeList[index] = strings.TrimSpace(statusInner)
+				}
+				statusType[status] = statusTypeList
+			} else {
+				statusType[status] = []string{}
+			}
+		}
+	}
+	return statusType, nil
 }
 
 // ValidateConfigs ...
