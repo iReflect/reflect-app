@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
@@ -52,6 +53,11 @@ func (service SprintTaskService) List(
 		// Set task URL according to the task provider
 		if task.IsTrackerTask {
 			task.URL = connection.GetTaskUrl(task.Key)
+		}
+		var participants_slice = strings.Split(task.TaskParticipants, ", ")
+
+		if len(participants_slice) > 1 {
+			task.TaskParticipants = RemoveDuplicatesFromSlice(participants_slice)
 		}
 	}
 
@@ -316,4 +322,21 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 // AssignPointsToSprintTask ...
 func (service SprintTaskService) AssignPointsToSprintTask(sprintTaskID string, sprintID string) {
 	workers.Enqueuer.EnqueueUnique("assign_points_to_sprint_task", work.Q{"sprintID": fmt.Sprint(sprintID), "sprintTaskID": fmt.Sprint(sprintTaskID)})
+}
+
+func RemoveDuplicatesFromSlice(list []string) string {
+	cleaned := []string{}
+	m := make(map[string]bool)
+
+	for _, item := range list {
+		if item == "" {
+			continue
+		}
+    if _, ok := m[item]; !ok {
+      m[item] = true
+      cleaned = append(cleaned, item)
+    }
+  }
+
+	return  strings.Join(cleaned[:], ", ")
 }
