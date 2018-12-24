@@ -113,13 +113,14 @@ func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (re
 }
 
 // GetTeamMembers ...
-func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint) (members *userSerializers.MembersSerializer, status int, err error) {
+func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint, isAdmin bool)	(
+	members *userSerializers.MembersSerializer, status int, err error) {
 	retro, status, err := service.Get(retrospectiveID, false)
 	if err != nil {
 		return nil, status, err
 	}
 
-	members, status, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true)
+	members, status, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true, isAdmin)
 	if err != nil {
 		return nil, status, err
 	}

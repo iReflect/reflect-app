@@ -64,6 +64,7 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 func (ctrl RetrospectiveController) GetTeamMembers(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	retroID := c.Param("retroID")
+	isAdmin := ctrl.PermissionService.IsUserAdmin(userID.(uint))
 
 	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
@@ -71,7 +72,7 @@ func (ctrl RetrospectiveController) GetTeamMembers(c *gin.Context) {
 	}
 
 	//ToDo: Match leaved_at with sprint dates instead of now
-	members, status, err := ctrl.RetrospectiveService.GetTeamMembers(retroID, userID.(uint))
+	members, status, err := ctrl.RetrospectiveService.GetTeamMembers(retroID, userID.(uint), isAdmin)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
