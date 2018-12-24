@@ -30,8 +30,9 @@ func (ctrl RetrospectiveController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	perPage := c.DefaultQuery("perPage", "")
 	page := c.DefaultQuery("page", "")
+	isAdmin := ctrl.PermissionService.IsUserAdmin(userID.(uint))
 
-	response, status, err := ctrl.RetrospectiveService.List(userID.(uint), perPage, page)
+	response, status, err := ctrl.RetrospectiveService.List(userID.(uint), perPage, page, isAdmin)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})

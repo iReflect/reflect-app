@@ -4,6 +4,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 )
 
@@ -14,6 +15,10 @@ type PermissionService struct {
 
 // UserCanAccessRetro ...
 func (service PermissionService) UserCanAccessRetro(retroID string, userID uint) bool {
+	if service.IsUserAdmin(userID){
+		return true
+	}
+
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
@@ -27,6 +32,10 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 
 // UserCanAccessSprint ...
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
+	if service.IsUserAdmin(userID){
+		return true
+	}
+
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
@@ -42,6 +51,10 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 
 // UserCanEditSprint ...
 func (service PermissionService) UserCanEditSprint(retroID string, sprintID string, userID uint) bool {
+	if service.IsUserAdmin(userID){
+		return true
+	}
+
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
@@ -59,6 +72,10 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 
 // UserCanAccessSprintTask ...
 func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
+	if service.IsUserAdmin(userID){
+		return true
+	}
+
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
@@ -79,6 +96,10 @@ func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintI
 
 // UserCanEditSprintTask ...
 func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
+	if service.IsUserAdmin(userID){
+		return true
+	}
+
 	db := service.DB
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
@@ -100,7 +121,11 @@ func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID 
 }
 
 // CanAccessRetrospectiveFeedback ...
-func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string) bool {
+func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string, userID uint) bool {
+	if service.IsUserAdmin(userID){
+		return true
+	}
+
 	db := service.DB
 	err := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
@@ -109,6 +134,17 @@ func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string)
 			[]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroModels.Sprint{}).
+		Error
+	return err == nil
+}
+
+// IsUserAdmin ...
+func (service PermissionService) IsUserAdmin(userID uint) bool {
+	db := service.DB
+	err := db.Model(&userModels.User{}).
+		Where("users.id=?", userID).
+		Where("users.is_admin=?", true).
+		Find(&userModels.User{}).
 		Error
 	return err == nil
 }
