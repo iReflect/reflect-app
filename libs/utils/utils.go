@@ -134,19 +134,19 @@ func InterfaceSliceToStringSlice(originalSlice []interface{}) []string {
 }
 
 // RemoveDuplicatesFromSlice ...
-func RemoveDuplicatesFromSlice(list []string) string {
+func RemoveDuplicatesFromSlice(list []string) []string {
 	cleaned := []string{}
 	m := make(map[string]bool)
 
 	for _, item := range list {
+		item = strings.TrimSpace(item)
 		if item == "" {
 			continue
 		}
 		if _, ok := m[item]; !ok {
 			m[item] = true
-			cleaned = append(cleaned, strings.TrimSpace(item))
+			cleaned = append(cleaned, item)
 		}
 	}
-
-	return strings.Join(cleaned[:], ", ")
+	return cleaned
 }

@@ -56,7 +56,7 @@ func (service SprintTaskService) List(
 		}
 		var participantsSlice = strings.Split(task.TaskParticipants, ", ")
 
-		task.TaskParticipants = utils.RemoveDuplicatesFromSlice(participantsSlice)
+		task.TaskParticipants = strings.Join(utils.RemoveDuplicatesFromSlice(participantsSlice)[:], ", ")
 	}
 
 	return taskList, http.StatusOK, nil
