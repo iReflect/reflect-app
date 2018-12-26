@@ -3,10 +3,12 @@ package v1
 import (
 	"net/http"
 
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
-	"strconv"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // SprintMemberController ...
@@ -47,7 +49,11 @@ func (ctrl SprintMemberController) AddMember(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Added Sprint Member", "Sprint Member", strconv.Itoa(int(response.ID)), userID.(uint))
+	ctrl.TrailService.Add(
+		constants.AddedSprintMember,
+		constants.SprintMember,
+		strconv.Itoa(int(response.ID)),
+		userID.(uint))
 
 	c.JSON(status, response)
 }
@@ -90,7 +96,11 @@ func (ctrl SprintMemberController) RemoveMember(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Removed", "Sprint Membere", memberID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.RemovedSprintMember,
+		constants.SprintMember,
+		memberID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -115,7 +125,11 @@ func (ctrl SprintMemberController) UpdateSprintMember(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Sprint Member", "Sprint Member", sprintMemberID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.UpdatedSprintMember,
+		constants.SprintMember,
+		sprintMemberID,
+		userID.(uint))
 
 	c.JSON(status, response)
 }
