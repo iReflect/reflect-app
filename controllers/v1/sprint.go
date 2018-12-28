@@ -8,6 +8,7 @@ import (
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // SprintController ...
@@ -30,6 +31,8 @@ func (ctrl SprintController) Routes(r *gin.RouterGroup) {
 	r.POST("/:sprintID/process/", ctrl.Process)
 
 	r.GET("/:sprintID/member-summary/", ctrl.GetSprintMemberSummary)
+
+	r.GET("/:sprintID/process_history/", ctrl.GetTrails)
 }
 
 // List the sprints accessible to the user
@@ -79,7 +82,11 @@ func (ctrl SprintController) Create(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Created Sprint", "Sprint", strconv.Itoa(int(sprint.ID)), userID.(uint))
+	ctrl.TrailService.Add(
+		constants.CreatedSprint,
+		constants.Sprint,
+		strconv.Itoa(int(sprint.ID)),
+		userID.(uint))
 
 	c.JSON(http.StatusCreated, sprint)
 }
@@ -118,7 +125,11 @@ func (ctrl SprintController) Delete(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Deleted Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.DeletedSprint,
+		constants.Sprint,
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -144,7 +155,11 @@ func (ctrl SprintController) Update(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.UpdatedSprint,
+		constants.Sprint,
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, response)
 }
@@ -166,7 +181,11 @@ func (ctrl SprintController) ActivateSprint(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Activated Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.ActivatedSprint,
+		constants.Sprint,
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -188,7 +207,11 @@ func (ctrl SprintController) FreezeSprint(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Froze Sprint", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.FreezeSprint,
+		constants.Sprint,
+		sprintID,
+		userID.(uint))
 
 	c.JSON(status, nil)
 }
@@ -217,7 +240,11 @@ func (ctrl SprintController) Process(c *gin.Context) {
 
 	ctrl.SprintService.QueueSprint(uint(sprintIDInt), sprint.Status == retroModels.ActiveSprint)
 
-	ctrl.TrailService.Add("Triggered Sprint Refresh", "Sprint", sprintID, userID.(uint))
+	ctrl.TrailService.Add(
+		constants.TriggeredSprintRefresh,
+		constants.Sprint,
+		sprintID,
+		userID.(uint))
 
 	c.JSON(http.StatusNoContent, nil)
 }
@@ -240,4 +267,29 @@ func (ctrl SprintController) GetSprintMemberSummary(c *gin.Context) {
 	}
 
 	c.JSON(status, response)
+}
+
+// GetTrails is method to get the all trails related to a particular sprint
+func (ctrl SprintController) GetTrails(c *gin.Context) {
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	userID, _ := c.Get("userID")
+	sprintIDInt, errConversion := strconv.Atoi(sprintID)
+
+	if errConversion != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	trails, status, err := ctrl.TrailService.GetTrails(uint(sprintIDInt))
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	c.JSON(status, trails)
 }

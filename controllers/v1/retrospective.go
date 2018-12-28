@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // RetrospectiveController ...
@@ -115,7 +116,11 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Created Retrospective", "Retrospective", strconv.Itoa(int(retro.ID)), userID.(uint))
+	ctrl.TrailService.Add(
+		constants.CreatedRetrospective,
+		constants.Retrospective,
+		strconv.Itoa(int(retro.ID)),
+		userID.(uint))
 
 	c.JSON(status, retro)
 }
