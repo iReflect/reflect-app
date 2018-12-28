@@ -20,7 +20,9 @@ type SprintTask struct {
 	PointsEarned         float64
 	Assignee             string // Assignee of the task
 	Owner                string // Owner of the task across the sprints
+	TaskParticipants     string // Participants of the task across the sprints
 	SprintOwner          string // Owner of the task in the sprint
+	SprintParticipants   string // Participants of the task in the current sprint
 	SprintOwnerTime      uint   // Time spent on the task by the Sprint Owner in the sprint
 	SprintOwnerTotalTime uint   // Total time spent on the task by the Sprint Owner across the sprints
 	SprintTime           uint   // Time spent on the task in the sprint
