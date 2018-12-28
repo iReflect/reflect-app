@@ -23,8 +23,7 @@ type RetrospectiveService struct {
 }
 
 // List all the Retrospectives of all the teams, given user is a member of.
-func (service RetrospectiveService) List(
-	userID uint, perPageString string, pageString string, isAdmin bool) (
+func (service RetrospectiveService) List(userID uint, perPageString string, pageString string, isAdmin bool) (
 	retrospectiveList *retroSerializers.RetrospectiveListSerializer,
 	status int,
 	err error) {
@@ -50,28 +49,25 @@ func (service RetrospectiveService) List(
 	} else {
 		offset = (page - 1) * perPage
 	}
+
+	baseQuery := db.Model(&retroModels.Retrospective{}).
+		Where("retrospectives.deleted_at IS NULL").
+		Preload("CreatedBy").
+		Order("created_at DESC, title, id").
+		Limit(perPage).
+		Offset(offset).
+		Select("DISTINCT(retrospectives.*)")
+
 	if isAdmin {
-		err = db.Model(&retroModels.Retrospective{}).
-			Where("retrospectives.deleted_at IS NULL").
-			Preload("CreatedBy").
-			Order("created_at DESC, title, id").
-			Limit(perPage).
-			Offset(offset).
-			Select("DISTINCT(retrospectives.*)").
+		err = baseQuery.
 			Find(&retrospectiveList.Retrospectives).
 			Error
 
 	} else {
-		err = db.Model(&retroModels.Retrospective{}).
-			Where("retrospectives.deleted_at IS NULL").
+		err = baseQuery.
 			Scopes(retroModels.RetroJoinUserTeams).
 			Where("user_teams.user_id = ?", userID).
 			Preload("Team").
-			Preload("CreatedBy").
-			Order("created_at DESC, title, id").
-			Limit(perPage).
-			Offset(offset).
-			Select("DISTINCT(retrospectives.*)").
 			Find(&retrospectiveList.Retrospectives).
 			Error
 	}

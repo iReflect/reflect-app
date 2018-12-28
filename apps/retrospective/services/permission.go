@@ -23,8 +23,8 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinUserTeams).
-		Where("user_teams.user_id=?", userID).
-		Where("retrospectives.id=?", retroID).
+		Where("user_teams.user_id = ?", userID).
+		Where("retrospectives.id = ?", retroID).
 		Find(&retroSerializers.Retrospective{}).
 		Error
 	return err == nil
@@ -40,9 +40,9 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
-		Where("user_teams.user_id=?", userID).
-		Where("retrospectives.id=?", retroID).
-		Where("sprints.id=?", sprintID).
+		Where("user_teams.user_id = ?", userID).
+		Where("retrospectives.id = ?", retroID).
+		Where("sprints.id = ?", sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
@@ -59,9 +59,9 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 	err := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
 		Scopes(retroModels.RetroJoinSprints, retroModels.RetroJoinUserTeams).
-		Where("user_teams.user_id=?", userID).
-		Where("retrospectives.id=?", retroID).
-		Where("sprints.id=?", sprintID).
+		Where("user_teams.user_id = ?", userID).
+		Where("retrospectives.id = ?", retroID).
+		Where("sprints.id = ?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Where("(sprints.status <> ?)", retroModels.CompletedSprint).
 		Scopes(retroModels.NotDeletedSprint).
@@ -84,10 +84,10 @@ func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintI
 			retroModels.RetroJoinUserTeams,
 			retroModels.SprintJoinST,
 			retroModels.STJoinTask).
-		Where("user_teams.user_id=?", userID).
-		Where("sprint_tasks.id=?", sprintTaskID).
-		Where("retrospectives.id=?", retroID).
-		Where("sprints.id=?", sprintID).
+		Where("user_teams.user_id = ?", userID).
+		Where("sprint_tasks.id = ?", sprintTaskID).
+		Where("retrospectives.id = ?", retroID).
+		Where("sprints.id = ?", sprintID).
 		Scopes(retroModels.NotDeletedSprint).
 		Find(&retroSerializers.Retrospective{}).
 		Error
@@ -108,10 +108,10 @@ func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID 
 			retroModels.RetroJoinUserTeams,
 			retroModels.SprintJoinST,
 			retroModels.STJoinTask).
-		Where("user_teams.user_id=?", userID).
-		Where("sprint_tasks.id=?", sprintTaskID).
-		Where("retrospectives.id=?", retroID).
-		Where("sprints.id=?", sprintID).
+		Where("user_teams.user_id = ?", userID).
+		Where("sprint_tasks.id = ?", sprintTaskID).
+		Where("retrospectives.id = ?", retroID).
+		Where("sprints.id = ?", sprintID).
 		Where("(sprints.status <> ? OR sprints.created_by_id = ?)", retroModels.DraftSprint, userID).
 		Where("(sprints.status <> ?)", retroModels.CompletedSprint).
 		Scopes(retroModels.NotDeletedSprint).
@@ -129,7 +129,7 @@ func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string,
 	db := service.DB
 	err := db.Model(&retroModels.Sprint{}).
 		Where("sprints.deleted_at IS NULL").
-		Where("sprints.id=?", sprintID).
+		Where("sprints.id = ?", sprintID).
 		Where("sprints.status in (?)",
 			[]retroModels.SprintStatus{retroModels.ActiveSprint, retroModels.CompletedSprint}).
 		Scopes(retroModels.NotDeletedSprint).
@@ -142,8 +142,8 @@ func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string,
 func (service PermissionService) IsUserAdmin(userID uint) bool {
 	db := service.DB
 	err := db.Model(&userModels.User{}).
-		Where("users.id=?", userID).
-		Where("users.is_admin=?", true).
+		Where("users.id = ?", userID).
+		Where("users.is_admin = ?", true).
 		Find(&userModels.User{}).
 		Error
 	return err == nil
