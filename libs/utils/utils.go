@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -130,4 +131,22 @@ func InterfaceSliceToStringSlice(originalSlice []interface{}) []string {
 		newSlice[i] = v.(string)
 	}
 	return newSlice
+}
+
+// RemoveDuplicatesFromSlice ...
+func RemoveDuplicatesFromSlice(list []string) []string {
+	cleaned := []string{}
+	m := make(map[string]bool)
+
+	for _, item := range list {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		if _, ok := m[item]; !ok {
+			m[item] = true
+			cleaned = append(cleaned, item)
+		}
+	}
+	return cleaned
 }

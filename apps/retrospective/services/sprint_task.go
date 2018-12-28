@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
@@ -31,7 +32,7 @@ func (service SprintTaskService) List(
 		QueryExpr()
 
 	query := `
-		SELECT 
+		SELECT
 			DISTINCT(t.*),
 			CASE WHEN (t.total_points_earned > t.estimate + 0.05) THEN TRUE ELSE FALSE END AS is_invalid
 		FROM (?) AS t WHERE t.sprint_id = ?
@@ -53,6 +54,9 @@ func (service SprintTaskService) List(
 		if task.IsTrackerTask {
 			task.URL = connection.GetTaskUrl(task.Key)
 		}
+		var participantsSlice = strings.Split(task.TaskParticipants, ", ")
+
+		task.TaskParticipants = strings.Join(utils.RemoveDuplicatesFromSlice(participantsSlice)[:], ", ")
 	}
 
 	return taskList, http.StatusOK, nil
@@ -70,10 +74,10 @@ func (service SprintTaskService) Get(
 		QueryExpr()
 
 	query := `
-		SELECT 
+		SELECT
 			DISTINCT(t.*),
 			CASE WHEN (t.total_points_earned > t.estimate + 0.05) THEN TRUE ELSE FALSE END AS is_invalid
-		FROM (?) AS t WHERE t.sprint_id = ? AND t.id = ? 
+		FROM (?) AS t WHERE t.sprint_id = ? AND t.id = ?
 	`
 
 	err := db.Raw(query, dbs, sprintID, sprintTaskID).
@@ -236,9 +240,11 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 		Select(`
         DISTINCT ON (tasks.id) tasks.id AS task_id,
         users.first_name || ' ' || users.last_name          AS member_name,
+        STRING_AGG(RTRIM(CONCAT(users.first_name, ' ', users.last_name)), ', ')
+          OVER (PARTITION BY tasks.id) AS task_participants,
         SUM(sprint_member_tasks.time_spent_minutes)
-        OVER (
-          PARTITION BY tasks.id, sprint_members.member_id) AS member_time`).
+          OVER (
+            PARTITION BY tasks.id, sprint_members.member_id) AS member_time`).
 		Order("tasks.id").
 		Order("member_time DESC NULLS LAST").
 		Order("sprint_members.member_id DESC NULLS LAST")
@@ -248,6 +254,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
         tasks.id as temp_task_id,
 		users.first_name || ' ' || users.last_name			AS sprint_member_name,
 		sprint_member_tasks.time_spent_minutes,
+    STRING_AGG(RTRIM(CONCAT(users.first_name, ' ', users.last_name)), ', ')
+      OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_participants,
 		sprint_members.sprint_id,
 		sprint_members.member_id,
         MAX(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS max_sprint_task_member_time,
@@ -279,7 +287,9 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
             tasks.priority,
             tasks.assignee,
             task_owners.member_name AS owner,
+            task_owners.task_participants AS task_participants,
             sprint_task_owners.sprint_member_name as sprint_owner,
+            sprint_task_owners.sprint_participants as sprint_participants,
             sprint_task_owners.sprint_task_member_total_time as sprint_owner_total_time,
             sprint_task_owners.max_sprint_task_member_time as sprint_owner_time,
             tasks.estimate,
@@ -289,7 +299,7 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
             sprint_tasks.sprint_id,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id, sprint_members.sprint_id) AS sprint_time,
-            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned, 
+            SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id)                                AS total_points_earned,
             SUM(sprint_member_tasks.points_earned) OVER (PARTITION BY tasks.id, sprint_members.sprint_id )     AS points_earned
 		`)
 
