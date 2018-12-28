@@ -39,13 +39,14 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 }
 
 // MemberList ...
-func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool) (members *userSerializers.MembersSerializer, status int, err error) {
+func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool, isAdmin bool) (
+	members *userSerializers.MembersSerializer, status int, err error) {
 	db := service.DB
 	members = new(userSerializers.MembersSerializer)
 	activeMemberIDs := service.getTeamMemberIDs(teamID, true)
 	var memberIDs []uint
 
-	if !utils.UIntInSlice(userID, activeMemberIDs) {
+	if !isAdmin && !utils.UIntInSlice(userID, activeMemberIDs) {
 		return nil, http.StatusForbidden, errors.New("must be a member of the team")
 	}
 

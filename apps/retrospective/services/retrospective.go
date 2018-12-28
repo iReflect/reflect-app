@@ -23,7 +23,7 @@ type RetrospectiveService struct {
 }
 
 // List all the Retrospectives of all the teams, given user is a member of.
-func (service RetrospectiveService) List(userID uint, perPageString string, pageString string) (
+func (service RetrospectiveService) List(userID uint, perPageString string, pageString string, isAdmin bool) (
 	retrospectiveList *retroSerializers.RetrospectiveListSerializer,
 	status int,
 	err error) {
@@ -50,18 +50,27 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		offset = (page - 1) * perPage
 	}
 
-	err = db.Model(&retroModels.Retrospective{}).
+	baseQuery := db.Model(&retroModels.Retrospective{}).
 		Where("retrospectives.deleted_at IS NULL").
-		Scopes(retroModels.RetroJoinUserTeams).
-		Where("user_teams.user_id = ?", userID).
-		Preload("Team").
 		Preload("CreatedBy").
 		Order("created_at DESC, title, id").
 		Limit(perPage).
 		Offset(offset).
-		Select("DISTINCT(retrospectives.*)").
-		Find(&retrospectiveList.Retrospectives).
-		Error
+		Select("DISTINCT(retrospectives.*)")
+
+	if isAdmin {
+		err = baseQuery.
+			Find(&retrospectiveList.Retrospectives).
+			Error
+
+	} else {
+		err = baseQuery.
+			Scopes(retroModels.RetroJoinUserTeams).
+			Where("user_teams.user_id = ?", userID).
+			Preload("Team").
+			Find(&retrospectiveList.Retrospectives).
+			Error
+	}
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -100,13 +109,14 @@ func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (re
 }
 
 // GetTeamMembers ...
-func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint) (members *userSerializers.MembersSerializer, status int, err error) {
+func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint, isAdmin bool) (
+	members *userSerializers.MembersSerializer, status int, err error) {
 	retro, status, err := service.Get(retrospectiveID, false)
 	if err != nil {
 		return nil, status, err
 	}
 
-	members, status, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true)
+	members, status, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true, isAdmin)
 	if err != nil {
 		return nil, status, err
 	}

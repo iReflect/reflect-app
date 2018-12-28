@@ -38,7 +38,7 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 		return
 	}
 
-	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -74,7 +74,7 @@ func (ctrl SprintNoteController) List(c *gin.Context) {
 	sprintID := c.Param("sprintID")
 	retroID := c.Param("retroID")
 
-	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -110,7 +110,7 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 		return
 	}
 
-	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID) {
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
