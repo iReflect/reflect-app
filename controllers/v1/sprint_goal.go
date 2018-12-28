@@ -2,11 +2,13 @@ package v1
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
-	"net/http"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // SprintGoalController ...
@@ -59,7 +61,9 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Added Goal", "Retrospective Feedback",
+	ctrl.TrailService.Add(
+		constants.AddedGoal,
+		constants.RetrospectiveFeedback,
 		fmt.Sprint(response.ID),
 		userID.(uint))
 	c.JSON(status, response)
@@ -129,7 +133,9 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Goal", "Retrospective Feedback",
+	ctrl.TrailService.Add(
+		constants.UpdatedGoal,
+		constants.RetrospectiveFeedback,
 		goalID,
 		userID.(uint))
 
@@ -163,7 +169,9 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
-	ctrl.TrailService.Add("Resolved Goal", "Retrospective Feedback",
+	ctrl.TrailService.Add(
+		constants.ResolvedGoal,
+		constants.RetrospectiveFeedback,
 		goalID,
 		userID.(uint))
 
@@ -198,7 +206,9 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Unresolved Goal", "Retrospective Feedback",
+	ctrl.TrailService.Add(
+		constants.UnresolvedGoal,
+		constants.RetrospectiveFeedback,
 		goalID,
 		userID.(uint))
 

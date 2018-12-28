@@ -1,12 +1,14 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retroServices "github.com/iReflect/reflect-app/apps/retrospective/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 // SprintTaskController ...
@@ -89,7 +91,11 @@ func (ctrl SprintTaskController) Update(c *gin.Context) {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
-
+	ctrl.TrailService.Add(
+		constants.UpdatedSprintTask,
+		constants.SprintTask,
+		fmt.Sprint(task.ID),
+		userID.(uint))
 	c.JSON(status, task)
 }
 
@@ -111,6 +117,11 @@ func (ctrl SprintTaskController) MarkDone(c *gin.Context) {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
+	ctrl.TrailService.Add(
+		constants.MarkDoneSprintTask,
+		constants.SprintTask,
+		fmt.Sprint(task.ID),
+		userID.(uint))
 
 	c.JSON(status, task)
 }
@@ -133,6 +144,10 @@ func (ctrl SprintTaskController) MarkUndone(c *gin.Context) {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
-
+	ctrl.TrailService.Add(
+		constants.MarkUndoneSprintTask,
+		constants.SprintTask,
+		fmt.Sprint(task.ID),
+		userID.(uint))
 	c.JSON(status, task)
 }

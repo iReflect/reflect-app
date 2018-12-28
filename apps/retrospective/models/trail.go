@@ -15,3 +15,18 @@ type Trail struct {
 	ActionBy     userModels.User
 	ActionByID   uint `gorm:"not null"`
 }
+
+// TrailJoinSM ...
+func TrailJoinSM(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_members ON trails.action_item_id = sprint_members.id")
+}
+
+// TrailJoinST ...
+func TrailJoinST(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_tasks ON trails.action_item_id = sprint_tasks.id")
+}
+
+// TrailJoinSMT ...
+func TrailJoinSMT(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN sprint_member_tasks ON trails.action_item_id = sprint_member_tasks.id")
+}

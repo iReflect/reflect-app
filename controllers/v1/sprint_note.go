@@ -2,9 +2,11 @@ package v1
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
-	"net/http"
+	"github.com/iReflect/reflect-app/constants"
 
 	"github.com/gin-gonic/gin"
 	retrospectiveServices "github.com/iReflect/reflect-app/apps/retrospective/services"
@@ -57,7 +59,9 @@ func (ctrl SprintNoteController) Add(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Added Note", "Retrospective Feedback",
+	ctrl.TrailService.Add(
+		constants.AddedNote,
+		constants.RetrospectiveFeedback,
 		fmt.Sprint(response.ID),
 		userID.(uint))
 
@@ -126,7 +130,9 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 		return
 	}
 
-	ctrl.TrailService.Add("Updated Note", "Retrospective Feedback",
+	ctrl.TrailService.Add(
+		constants.UpdatedNote,
+		constants.RetrospectiveFeedback,
 		noteID,
 		userID.(uint))
 
