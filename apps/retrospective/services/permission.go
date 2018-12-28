@@ -4,8 +4,8 @@ import (
 	"github.com/jinzhu/gorm"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
 )
 
 // PermissionService ...
@@ -15,7 +15,7 @@ type PermissionService struct {
 
 // UserCanAccessRetro ...
 func (service PermissionService) UserCanAccessRetro(retroID string, userID uint) bool {
-	if service.IsUserAdmin(userID){
+	if service.IsUserAdmin(userID) {
 		return true
 	}
 
@@ -32,7 +32,7 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 
 // UserCanAccessSprint ...
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
-	if service.IsUserAdmin(userID){
+	if service.IsUserAdmin(userID) {
 		return true
 	}
 
@@ -51,7 +51,7 @@ func (service PermissionService) UserCanAccessSprint(retroID string, sprintID st
 
 // UserCanEditSprint ...
 func (service PermissionService) UserCanEditSprint(retroID string, sprintID string, userID uint) bool {
-	if service.IsUserAdmin(userID){
+	if service.IsUserAdmin(userID) {
 		return true
 	}
 
@@ -72,7 +72,7 @@ func (service PermissionService) UserCanEditSprint(retroID string, sprintID stri
 
 // UserCanAccessSprintTask ...
 func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
-	if service.IsUserAdmin(userID){
+	if service.IsUserAdmin(userID) {
 		return true
 	}
 
@@ -96,7 +96,7 @@ func (service PermissionService) UserCanAccessSprintTask(retroID string, sprintI
 
 // UserCanEditSprintTask ...
 func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID string, sprintTaskID string, userID uint) bool {
-	if service.IsUserAdmin(userID){
+	if service.IsUserAdmin(userID) {
 		return true
 	}
 
@@ -122,7 +122,7 @@ func (service PermissionService) UserCanEditSprintTask(retroID string, sprintID 
 
 // CanAccessRetrospectiveFeedback ...
 func (service PermissionService) CanAccessRetrospectiveFeedback(sprintID string, userID uint) bool {
-	if service.IsUserAdmin(userID){
+	if service.IsUserAdmin(userID) {
 		return true
 	}
 

@@ -109,7 +109,7 @@ func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (re
 }
 
 // GetTeamMembers ...
-func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint, isAdmin bool)	(
+func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint, isAdmin bool) (
 	members *userSerializers.MembersSerializer, status int, err error) {
 	retro, status, err := service.Get(retrospectiveID, false)
 	if err != nil {

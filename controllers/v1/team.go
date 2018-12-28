@@ -2,14 +2,14 @@ package v1
 
 import (
 	"github.com/gin-gonic/gin"
-	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
+	userServices "github.com/iReflect/reflect-app/apps/user/services"
 )
 
 //TeamController ...
 type TeamController struct {
-	TeamService userServices.TeamService
-	PermissionService    retrospectiveService.PermissionService
+	TeamService       userServices.TeamService
+	PermissionService retrospectiveService.PermissionService
 }
 
 // Routes for Team
