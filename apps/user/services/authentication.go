@@ -3,19 +3,21 @@ package services
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
-	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
-	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/plus/v1"
-	"net/http"
-	"os"
+	googleAPI "google.golang.org/api/oauth2/v2"
+
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 var googleOAuthConf *oauth2.Config
@@ -76,18 +78,18 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 
 	client := googleOAuthConf.Client(oAuthContext, tok)
 
-	plusService, err := plus.New(client)
+	oauthService, err := googleAPI.New(client)
 	if err != nil {
-		logrus.Error("Error occurred while creating google plus service, Error:", err)
+		logrus.Error("Error occurred while creating google oauth service, Error:", err)
 		return getInternalErrorResponse()
 	}
 
-	googleUser, err := plusService.People.Get("me").Do()
+	googleUser, err := oauthService.Userinfo.Get().Do()
 	if err != nil {
 		logrus.Error("Error occurred while getting information from google, Error:", err)
 		return getInternalErrorResponse()
 	}
-	userEmail := getAccountEmail(googleUser)
+	userEmail := googleUser.Email
 	user := userModels.User{}
 	if err := db.
 		Where("users.deleted_at IS NULL").
@@ -156,19 +158,6 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 	return http.StatusUnauthorized
 }
 
-// getAccountEmail ...
-func getAccountEmail(person *plus.Person) string {
-	personEmails := person.Emails
-
-	for _, personEmail := range personEmails {
-		if personEmail.Type == "account" {
-			return personEmail.Value
-		}
-	}
-	logrus.Error("No account email found")
-	return ""
-}
-
 // resetSession ...
 func resetSession(session sessions.Session) {
 	session.Set("user", nil)
@@ -201,9 +190,7 @@ func getGoogleOAuthConf() (*oauth2.Config, error) {
 		return nil, err
 	}
 
-	oauthConfig, err := google.ConfigFromJSON(credentials.JSON, plus.PlusMeScope,
-		plus.UserinfoEmailScope, plus.UserinfoProfileScope)
-
+	oauthConfig, err := google.ConfigFromJSON(credentials.JSON, googleAPI.UserinfoEmailScope, googleAPI.UserinfoProfileScope)
 	if err != nil {
 		logrus.Error("error loading google creds, Error", err)
 		return nil, err
