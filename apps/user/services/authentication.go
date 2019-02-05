@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	googleAPI "google.golang.org/api/oauth2/v2"
+	googleOAuthAPI "google.golang.org/api/oauth2/v2"
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
@@ -78,7 +78,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 
 	client := googleOAuthConf.Client(oAuthContext, tok)
 
-	oauthService, err := googleAPI.New(client)
+	oauthService, err := googleOAuthAPI.New(client)
 	if err != nil {
 		logrus.Error("Error occurred while creating google oauth service, Error:", err)
 		return getInternalErrorResponse()
@@ -190,7 +190,7 @@ func getGoogleOAuthConf() (*oauth2.Config, error) {
 		return nil, err
 	}
 
-	oauthConfig, err := google.ConfigFromJSON(credentials.JSON, googleAPI.UserinfoEmailScope, googleAPI.UserinfoProfileScope)
+	oauthConfig, err := google.ConfigFromJSON(credentials.JSON, googleOAuthAPI.UserinfoEmailScope, googleOAuthAPI.UserinfoProfileScope)
 	if err != nil {
 		logrus.Error("error loading google creds, Error", err)
 		return nil, err
