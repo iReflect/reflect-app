@@ -1,9 +1,11 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
-	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	userServices "github.com/iReflect/reflect-app/apps/user/services"
 )
 
 //UserAuthController ...
@@ -14,6 +16,7 @@ type UserAuthController struct {
 // Routes for UserAuthController
 func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.GET("/login/", ctrl.Login)
+	r.POST("/login/", ctrl.BasicLogin)
 	// TODO make auth get and receive request directly from google
 	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
@@ -25,6 +28,16 @@ func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 func (ctrl UserAuthController) Login(c *gin.Context) {
 	oauthRequest := ctrl.AuthService.Login(c)
 	c.JSON(http.StatusOK, oauthRequest)
+}
+
+// BasicLogin ...
+func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
+	user, status, err := ctrl.AuthService.BasicLogin(c)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err})
+		return
+	}
+	c.JSON(status, user)
 }
 
 // Auth ...

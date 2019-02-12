@@ -18,6 +18,7 @@ type User struct {
 	Email              string `gorm:"type:varchar(255); not null; unique_index"`
 	FirstName          string `gorm:"type:varchar(30); not null"`
 	LastName           string `gorm:"type:varchar(150)"`
+	Password           string `gorm:"type:varchar(255)"`
 	Active             bool   `gorm:"default:true; not null"`
 	Teams              []Team
 	Profiles           []UserProfile

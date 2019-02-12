@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -17,6 +18,7 @@ import (
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -48,6 +50,57 @@ func (service AuthenticationService) Login(c *gin.Context) map[string]string {
 	return map[string]string{
 		"LoginURL": googleOAuthConf.AuthCodeURL(state.(string)),
 	}
+}
+
+// BasicLogin ...
+func (service AuthenticationService) BasicLogin(c *gin.Context) (
+	userResponse *userSerializers.UserAuthSerializer,
+	status int,
+	err error) {
+
+	var userData userSerializers.UserLogin
+	err = c.BindJSON(&userData)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	gormDB := service.DB
+	userResponse = new(userSerializers.UserAuthSerializer)
+
+	err = gormDB.Model(&userModels.User{}).
+		Where("email = ?", userData.Email).
+		Scan(&userResponse).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, http.StatusNotFound, errors.New("username or password is incorrect")
+		}
+		return nil, http.StatusInternalServerError, err
+	}
+	userResponse.Password, err = DecryptPassword(userResponse.Password)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	if userData.Password != userResponse.Password {
+		return nil, http.StatusNotFound, errors.New("username or password is incorrect")
+	}
+
+	session := sessions.Default(c)
+	userResponse.Token = utils.RandToken()
+	session.Set("user", userResponse.ID)
+	session.Set("token", userResponse.Token)
+	session.Save()
+	return userResponse, http.StatusAccepted, nil
+}
+
+// DecryptPassword ...
+func DecryptPassword(password string) (string, error) {
+	cryptkeeper.SetCryptKey([]byte(config.GetConfig().Server.EncryptionKey))
+
+	decryptedPassword, err := cryptkeeper.Decrypt(password)
+	if err != nil {
+		return "", err
+	}
+	return decryptedPassword, nil
 }
 
 // Authorize ...
