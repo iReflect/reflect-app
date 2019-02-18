@@ -1,0 +1,16 @@
+package constants
+
+// OTPReCreationTime ...
+const OTPReCreationTime = 12
+
+// EmailUsername ...
+const EmailUsername = "sandipagarwal"
+
+// EmailPassword ...
+const EmailPassword = "alertTech123"
+
+// EmailHost ...
+const EmailHost = "smtp.sendgrid.net"
+
+// EmailHostPort ...
+const EmailHostPort = "587"

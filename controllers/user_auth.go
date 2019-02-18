@@ -17,6 +17,7 @@ type UserAuthController struct {
 func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.GET("/login/", ctrl.Login)
 	r.POST("/login/", ctrl.BasicLogin)
+	r.POST("/identify/", ctrl.Identify)
 	// TODO make auth get and receive request directly from google
 	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
@@ -34,17 +35,27 @@ func (ctrl UserAuthController) Login(c *gin.Context) {
 func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
 	user, status, err := ctrl.AuthService.BasicLogin(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(status, user)
+}
+
+// Identify ...
+func (ctrl UserAuthController) Identify(c *gin.Context) {
+	status, err := ctrl.AuthService.Identify(c)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(status, nil)
 }
 
 // Auth ...
 func (ctrl UserAuthController) Auth(c *gin.Context) {
 	user, status, err := ctrl.AuthService.Authorize(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(status, user)

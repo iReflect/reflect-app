@@ -40,3 +40,9 @@ type UserLogin struct {
 	Email    string `json:"Email"`
 	Password string `json:"Password"`
 }
+
+// Identify ...
+type Identify struct {
+	Email   string `json:"email"`
+	SendOTP bool   `json:"sendOTP"`
+}

@@ -1,10 +1,14 @@
 package services
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
+	"net/smtp"
 	"os"
+	"time"
 
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/gin-gonic/contrib/sessions"
@@ -19,6 +23,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	"github.com/iReflect/reflect-app/config"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -90,6 +95,102 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 	session.Set("token", userResponse.Token)
 	session.Save()
 	return userResponse, http.StatusAccepted, nil
+}
+
+// Identify ...
+func (service AuthenticationService) Identify(c *gin.Context) (
+	status int,
+	err error) {
+
+	var identifyData userSerializers.Identify
+	err = c.BindJSON(&identifyData)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	gormDB := service.DB
+	var userData userModels.User
+	err = gormDB.Model(&userModels.User{}).Where("email = ?", identifyData.Email).Scan(&userData).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", identifyData.Email)
+		}
+		return http.StatusInternalServerError, err
+	}
+	// when we don't need OTP to the email.
+	if !identifyData.SendOTP {
+		return http.StatusOK, nil
+	}
+	var otp userModels.OTP
+	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return http.StatusInternalServerError, err
+	}
+	if err != gorm.ErrRecordNotFound {
+		if otp.CreatedAt.Unix()+constants.OTPReCreationTime > time.Now().Unix() {
+			return http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
+		}
+		err = gormDB.Delete(&otp).Error
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+	}
+	newOTP := userModels.OTP{
+		UserID: userData.ID,
+	}
+	err = gormDB.Create(&newOTP).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	err = sendOTPAtEmail(identifyData.Email, newOTP.Code, userData.FirstName, userData.LastName)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+}
+
+func sendOTPAtEmail(email string, code string, firstName string, lastName string) error {
+	message, _ := parseTemplate("apps/user/views/mail.html", map[string]interface{}{"firstName": firstName, "lastName": lastName, "code": code})
+	subject := "Subject: " + "One Time Password" + "\n"
+	from := "From: iReflect<no-reply@ireflect.com>\n"
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	// TODO: serching for way to send both type of bodies i.e html and text mail.
+	body := []byte(subject + from + mime + "\n" + message)
+
+	// Set up authentication information.
+
+	auth := smtp.PlainAuth(
+		"",
+		constants.EmailUsername,
+		constants.EmailPassword,
+		constants.EmailHost,
+	)
+
+	// Connect to the server, authenticate, set the sender and recipient,
+	// and send the email all in one step.
+	err := smtp.SendMail(
+		fmt.Sprintf("%s:%s", constants.EmailHost, constants.EmailHostPort),
+		auth,
+		"no-reply@ireflect.com",
+		[]string{email},
+		body,
+	)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	return nil
+}
+
+func parseTemplate(fileName string, data interface{}) (string, error) {
+	t, err := template.ParseFiles(fileName)
+	if err != nil {
+		return "", err
+	}
+	buffer := new(bytes.Buffer)
+	if err = t.Execute(buffer, data); err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }
 
 // DecryptPassword ...
