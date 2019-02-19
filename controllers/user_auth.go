@@ -34,7 +34,7 @@ func (ctrl UserAuthController) Login(c *gin.Context) {
 func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
 	user, status, err := ctrl.AuthService.BasicLogin(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(status, user)
@@ -44,7 +44,7 @@ func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
 func (ctrl UserAuthController) Auth(c *gin.Context) {
 	user, status, err := ctrl.AuthService.Authorize(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(status, user)

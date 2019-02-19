@@ -1,16 +1,18 @@
 package services
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 
-	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -18,7 +20,7 @@ import (
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
-	"github.com/iReflect/reflect-app/config"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -72,35 +74,25 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 		Scan(&userResponse).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("username or password is incorrect")
+			return getInvalidEmailPasswordErrorResponse()
 		}
-		return nil, http.StatusInternalServerError, err
+		return getInternalErrorResponse()
 	}
-	userResponse.Password, err = DecryptPassword(userResponse.Password)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-	if userData.Password != userResponse.Password {
-		return nil, http.StatusNotFound, errors.New("username or password is incorrect")
+	encryptedPassword := EncryptPassword(userData.Password)
+	if !reflect.DeepEqual(encryptedPassword, userResponse.Password) || userResponse.Password == nil {
+		return getInvalidEmailPasswordErrorResponse()
 	}
 
 	session := sessions.Default(c)
 	userResponse.Token = utils.RandToken()
-	session.Set("user", userResponse.ID)
-	session.Set("token", userResponse.Token)
-	session.Save()
+	startSession(session, userResponse)
 	return userResponse, http.StatusAccepted, nil
 }
 
-// DecryptPassword ...
-func DecryptPassword(password string) (string, error) {
-	cryptkeeper.SetCryptKey([]byte(config.GetConfig().Server.EncryptionKey))
-
-	decryptedPassword, err := cryptkeeper.Decrypt(password)
-	if err != nil {
-		return "", err
-	}
-	return decryptedPassword, nil
+// EncryptPassword ...
+func EncryptPassword(password string) []byte {
+	encryptedPassword := pbkdf2.Key([]byte(password), nil, 100000, 256, sha256.New)
+	return encryptedPassword
 }
 
 // Authorize ...
@@ -163,10 +155,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 		Scan(&userResponse)
 
 	userResponse.Token = utils.RandToken()
-	session.Set("user", userResponse.ID)
-	session.Set("token", userResponse.Token)
-	session.Save()
-
+	startSession(session, userResponse)
 	logrus.Info(fmt.Sprintf("Logged in user %s", userResponse.Email))
 
 	return userResponse, http.StatusOK, nil
@@ -211,6 +200,13 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 	return http.StatusUnauthorized
 }
 
+// startSession ...
+func startSession(session sessions.Session, userResponse *userSerializers.UserAuthSerializer) {
+	session.Set("user", userResponse.ID)
+	session.Set("token", userResponse.Token)
+	session.Save()
+}
+
 // resetSession ...
 func resetSession(session sessions.Session) {
 	session.Set("user", nil)
@@ -232,6 +228,13 @@ func getNotFoundErrorResponse() (authenticatedUser *userSerializers.UserAuthSeri
 	status int,
 	err error) {
 	return nil, http.StatusNotFound, errors.New("user not found")
+}
+
+// getInvalidEmailPasswordErrorResponse ...
+func getInvalidEmailPasswordErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
+	status int,
+	err error) {
+	return nil, http.StatusNotFound, errors.New(constants.InvalidEmailOrPassword)
 }
 
 // getGoogleOAuthConf ...
