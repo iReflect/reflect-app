@@ -82,3 +82,8 @@ var ActionTypeMap = map[ActionType]string{
 	MarkDoneSprintTask:      "Marked done a task in sprint",
 	MarkUndoneSprintTask:    "Marked undone a task in sprint",
 }
+
+// constants for error messages
+const (
+	InvalidEmailOrPassword = "Invalid email or password"
+)

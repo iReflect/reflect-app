@@ -21,7 +21,7 @@ func Up00030(tx *sql.Tx) error {
 	}
 
 	type User struct {
-		Password string `gorm:"type:varchar(255)"`
+		Password []byte
 	}
 
 	gormdb.AutoMigrate(&User{})
