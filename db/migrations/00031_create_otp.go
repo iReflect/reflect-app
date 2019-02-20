@@ -22,7 +22,6 @@ func Up00031(tx *sql.Tx) error {
 	gormDB.CreateTable(&models.OTP{})
 
 	gormDB.Model(&models.OTP{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
-	gormDB.Model(models.OTP{}).Where("deleted_at IS NULL").AddUniqueIndex("user_id_key", "user_id")
 
 	return nil
 }
@@ -35,7 +34,6 @@ func Down00031(tx *sql.Tx) error {
 		return err
 	}
 
-	gormDB.Model(models.OTP{}).RemoveIndex("user_id_key")
 	gormDB.Model(&models.OTP{}).RemoveForeignKey("user_id", "users(id)")
 
 	gormDB.DropTable(&models.OTP{})

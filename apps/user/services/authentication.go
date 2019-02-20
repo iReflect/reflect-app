@@ -122,7 +122,7 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 		return http.StatusInternalServerError, err
 	}
 	if err != gorm.ErrRecordNotFound {
-		if otp.CreatedAt.Unix()+constants.OTPReCreationTime > time.Now().Unix() {
+		if otp.ExpiryAt.Unix()-constants.OTPExpiryTime+constants.OTPReCreationTime > time.Now().Unix() {
 			return http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
 		}
 		err = gormDB.Delete(&otp).Error

@@ -1,7 +1,10 @@
 package constants
 
+// OTPExpiryTime is OTP expiry time in seconds...
+const OTPExpiryTime = 300
+
 // OTPReCreationTime ...
-const OTPReCreationTime = 12
+const OTPReCreationTime = 120
 
 // EmailUsername ...
 const EmailUsername = "sandipagarwal"
