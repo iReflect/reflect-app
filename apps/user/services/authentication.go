@@ -95,39 +95,53 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 
 // Identify ...
 func (service AuthenticationService) Identify(c *gin.Context) (
+	reSendTime int,
 	status int,
 	err error) {
 
 	var identifyData userSerializers.Identify
 	err = c.BindJSON(&identifyData)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return 0, http.StatusInternalServerError, err
 	}
 	gormDB := service.DB
 	var userData userModels.User
 	err = gormDB.Model(&userModels.User{}).Where("email = ?", identifyData.Email).Scan(&userData).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", identifyData.Email)
+			return 0, http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", identifyData.Email)
 		}
-		return http.StatusInternalServerError, err
-	}
-	// when we don't need OTP to the email.
-	if !identifyData.SendOTP {
-		return http.StatusOK, nil
+		return 0, http.StatusInternalServerError, err
 	}
 	var otp userModels.OTP
 	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return http.StatusInternalServerError, err
+		return 0, http.StatusInternalServerError, err
 	}
+	// when we don't need mail the OTP.
+	if !identifyData.SendOTP {
+		if err == gorm.ErrRecordNotFound {
+			return 0, http.StatusBadRequest, errors.New("We don't find any generated OTP. Please Generate a new one")
+		}
+		// if OTP is expired.
+		if time.Now().Unix() > otp.ExpiryAt.Unix() {
+			return 0, http.StatusBadRequest, errors.New("OTP is expired. Please generate a new one")
+		}
+		reSendTime = int((otp.ExpiryAt.Unix() - constants.OTPExpiryTime + constants.OTPReCreationTime) - time.Now().Unix())
+		if reSendTime <= 0 {
+			reSendTime = 0
+		}
+		return reSendTime, http.StatusOK, nil
+	}
+
 	if err != gorm.ErrRecordNotFound {
 		if otp.ExpiryAt.Unix()-constants.OTPExpiryTime+constants.OTPReCreationTime > time.Now().Unix() {
-			return http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
+			return 0, http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
 		}
+		// deleting the old OTPs related to this email.
 		err = gormDB.Delete(&otp).Error
 		if err != nil {
-			return http.StatusInternalServerError, err
+			return 0, http.StatusInternalServerError, err
 		}
 	}
 	newOTP := userModels.OTP{
@@ -135,11 +149,47 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 	}
 	err = gormDB.Create(&newOTP).Error
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return 0, http.StatusInternalServerError, err
 	}
 	err = sendOTPAtEmail(identifyData.Email, newOTP.Code, userData.FirstName, userData.LastName)
 	if err != nil {
+		return 0, http.StatusInternalServerError, err
+	}
+	return constants.OTPReCreationTime, http.StatusOK, nil
+}
+
+// Recover ...
+func (service AuthenticationService) Recover(c *gin.Context) (
+	status int,
+	err error) {
+
+	var RecoveryData userSerializers.Recover
+	err = c.BindJSON(&RecoveryData)
+	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+	gormDB := service.DB
+	var userData userModels.User
+	err = gormDB.Model(&userModels.User{}).Where("email = ?", RecoveryData.Email).Scan(&userData).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", RecoveryData.Email)
+		}
+		return http.StatusInternalServerError, err
+	}
+	var otp userModels.OTP
+	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return http.StatusInternalServerError, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return http.StatusBadRequest, errors.New("Didn't find any OTP associated with this email. Please re-generate OTP")
+	}
+	if otp.Code != RecoveryData.OTP {
+		return http.StatusBadRequest, errors.New("Invalid OTP")
+	}
+	if otp.ExpiryAt.Unix() < time.Now().Unix() {
+		return http.StatusBadRequest, errors.New("Your OTP is expired. Please re-generate OTP")
 	}
 	return http.StatusOK, nil
 }

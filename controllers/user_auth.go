@@ -18,6 +18,7 @@ func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.GET("/login/", ctrl.Login)
 	r.POST("/login/", ctrl.BasicLogin)
 	r.POST("/identify/", ctrl.Identify)
+	r.POST("/code/", ctrl.Recover)
 	// TODO make auth get and receive request directly from google
 	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
@@ -43,7 +44,17 @@ func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
 
 // Identify ...
 func (ctrl UserAuthController) Identify(c *gin.Context) {
-	status, err := ctrl.AuthService.Identify(c)
+	reSendTime, status, err := ctrl.AuthService.Identify(c)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(status, gin.H{"reSendTime": reSendTime})
+}
+
+// Recover ...
+func (ctrl UserAuthController) Recover(c *gin.Context) {
+	status, err := ctrl.AuthService.Recover(c)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

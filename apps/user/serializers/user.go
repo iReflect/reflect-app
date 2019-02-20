@@ -37,12 +37,18 @@ type MembersSerializer struct {
 
 // UserLogin ...
 type UserLogin struct {
-	Email    string `json:"Email"`
-	Password string `json:"Password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 // Identify ...
 type Identify struct {
 	Email   string `json:"email"`
 	SendOTP bool   `json:"sendOTP"`
+}
+
+// Recover ...
+type Recover struct {
+	Email string `json:"email"`
+	OTP   string `json:"otp"`
 }
