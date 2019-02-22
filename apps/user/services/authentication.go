@@ -159,21 +159,16 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 }
 
 // Recover ...
-func (service AuthenticationService) Recover(c *gin.Context) (
+func (service AuthenticationService) Recover(recoveryData userSerializers.Recover) (
 	status int,
 	err error) {
 
-	var RecoveryData userSerializers.Recover
-	err = c.BindJSON(&RecoveryData)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
 	gormDB := service.DB
 	var userData userModels.User
-	err = gormDB.Model(&userModels.User{}).Where("email = ?", RecoveryData.Email).Scan(&userData).Error
+	err = gormDB.Model(&userModels.User{}).Where("email = ?", recoveryData.Email).Scan(&userData).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", RecoveryData.Email)
+			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", recoveryData.Email)
 		}
 		return http.StatusInternalServerError, err
 	}
@@ -185,11 +180,24 @@ func (service AuthenticationService) Recover(c *gin.Context) (
 	if err == gorm.ErrRecordNotFound {
 		return http.StatusBadRequest, errors.New("Didn't find any OTP associated with this email. Please re-generate OTP")
 	}
-	if otp.Code != RecoveryData.OTP {
+	if otp.Code != recoveryData.OTP {
 		return http.StatusBadRequest, errors.New("Invalid OTP")
 	}
 	if otp.ExpiryAt.Unix() < time.Now().Unix() {
 		return http.StatusBadRequest, errors.New("Your OTP is expired. Please re-generate OTP")
+	}
+	return http.StatusOK, nil
+}
+
+// UpdatePassword ...
+func (service AuthenticationService) UpdatePassword(userPasswordData userSerializers.Recover) (
+	status int,
+	err error) {
+
+	encryptedPassword := EncryptPassword(userPasswordData.Password)
+	err = service.DB.Model(&userModels.User{}).Where("email = ?", userPasswordData.Email).Update("password", encryptedPassword).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
 }

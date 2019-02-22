@@ -49,6 +49,7 @@ type Identify struct {
 
 // Recover ...
 type Recover struct {
-	Email string `json:"email"`
-	OTP   string `json:"otp"`
+	Email    string `json:"email"`
+	OTP      string `json:"otp"`
+	Password string `json:"password"`
 }
