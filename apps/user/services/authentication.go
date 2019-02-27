@@ -78,6 +78,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 		}
 		return getInternalErrorResponse()
 	}
+	// here we encrypt password before comparing it with stored password because we store passwords after encryption.
 	encryptedPassword := EncryptPassword(userData.Password)
 	if !reflect.DeepEqual(encryptedPassword, userResponse.Password) || userResponse.Password == nil {
 		return getInvalidEmailPasswordErrorResponse()
@@ -91,8 +92,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 
 // EncryptPassword ...
 func EncryptPassword(password string) []byte {
-	encryptedPassword := pbkdf2.Key([]byte(password), nil, 100000, 256, sha256.New)
-	return encryptedPassword
+	return pbkdf2.Key([]byte(password), []byte(constants.PasswordSalt), constants.IterationCount, constants.KeyLength, sha256.New)
 }
 
 // Authorize ...
