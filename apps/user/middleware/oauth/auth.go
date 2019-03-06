@@ -1,18 +1,20 @@
 package oauth
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/config"
-	"net/http"
 )
 
 // CookieAuthenticationMiddleware ...
 func CookieAuthenticationMiddleware(service services.AuthenticationService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !service.AuthenticateSession(c) {
-			c.AbortWithStatus(http.StatusUnauthorized)
+		status, err := service.AuthenticateSession(c)
+		if err != nil {
+			c.AbortWithStatus(status)
 			return
 		}
 
@@ -22,7 +24,8 @@ func CookieAuthenticationMiddleware(service services.AuthenticationService) gin.
 // AdminCookieAuthenticationMiddleware ...
 func AdminCookieAuthenticationMiddleware(service services.AuthenticationService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !service.AuthenticateSession(c) {
+		_, err := service.AuthenticateSession(c)
+		if err != nil {
 			c.Redirect(http.StatusFound, config.GetConfig().Server.LoginURL)
 			return
 		}
