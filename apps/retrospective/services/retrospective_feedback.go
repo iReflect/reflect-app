@@ -1,13 +1,14 @@
 package services
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"net/http"
-	"strconv"
 )
 
 // RetrospectiveFeedbackService ...
@@ -107,7 +108,9 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 		retroFeedback.ExpectedAt = feedbackData.ExpectedAt
 	}
 
-	retroFeedback.AssigneeID = feedbackData.AssigneeID
+	if feedbackData.AssigneeID != nil {
+		retroFeedback.AssigneeID = feedbackData.AssigneeID
+	}
 
 	err := db.Save(&retroFeedback).Error
 	if err != nil {
