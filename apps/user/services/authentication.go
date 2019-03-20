@@ -82,6 +82,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 		}
 		return getInternalErrorResponse()
 	}
+	// here we encrypt password before comparing it with stored password because we store passwords after encryption.
 	encryptedPassword := EncryptPassword(userData.Password)
 	if !reflect.DeepEqual(encryptedPassword, userResponse.Password) || userResponse.Password == nil {
 		return getInvalidEmailPasswordErrorResponse()
@@ -89,7 +90,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 
 	session := sessions.Default(c)
 	userResponse.Token = utils.RandToken()
-	startSession(session, userResponse)
+	setSession(session, userResponse)
 	return userResponse, http.StatusAccepted, nil
 }
 
@@ -191,8 +192,7 @@ func parseTemplate(fileName string, data interface{}) (string, error) {
 
 // EncryptPassword ...
 func EncryptPassword(password string) []byte {
-	encryptedPassword := pbkdf2.Key([]byte(password), nil, 100000, 256, sha256.New)
-	return encryptedPassword
+	return pbkdf2.Key([]byte(password), []byte(constants.PasswordSalt), constants.IterationCount, constants.KeyLength, sha256.New)
 }
 
 // Authorize ...
@@ -255,7 +255,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 		Scan(&userResponse)
 
 	userResponse.Token = utils.RandToken()
-	startSession(session, userResponse)
+	setSession(session, userResponse)
 	logrus.Info(fmt.Sprintf("Logged in user %s", userResponse.Email))
 
 	return userResponse, http.StatusOK, nil
@@ -300,8 +300,8 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 	return http.StatusUnauthorized
 }
 
-// startSession ...
-func startSession(session sessions.Session, userResponse *userSerializers.UserAuthSerializer) {
+// setSession ...
+func setSession(session sessions.Session, userResponse *userSerializers.UserAuthSerializer) {
 	session.Set("user", userResponse.ID)
 	session.Set("token", userResponse.Token)
 	session.Save()

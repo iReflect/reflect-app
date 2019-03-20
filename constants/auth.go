@@ -17,3 +17,9 @@ const EmailHost = "smtp.sendgrid.net"
 
 // EmailHostPort ...
 const EmailHostPort = "587"
+// constants for password encryption.
+const (
+	IterationCount = 100000
+	PasswordSalt   = ""
+	KeyLength      = 256
+)
