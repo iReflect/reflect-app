@@ -87,3 +87,14 @@ var ActionTypeMap = map[ActionType]string{
 const (
 	InvalidEmailOrPassword = "Invalid email or password"
 )
+
+// <----------- constants for email --------------->
+
+// OTPEmailSubject ...
+const OTPEmailSubject = "Subject: One Time Password\n"
+
+// OTPEmailFrom ...
+const OTPEmailFrom = "From: iReflect<no-reply@ireflect.com>\n"
+
+// OTPEmailMIME ...
+const OTPEmailMIME = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"

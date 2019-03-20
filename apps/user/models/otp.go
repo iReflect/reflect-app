@@ -28,7 +28,7 @@ func RegisterOTPToAdmin(Admin *admin.Admin, config admin.Config) {
 
 // BeforeCreate ...
 func (otp *OTP) BeforeCreate(scope *gorm.Scope) error {
-	//generate a hexa decimal value for "code" using time.Now().Unix().
+	//generate a hexadecimal value for "code" using time.Now().UnixNano().
 	err := scope.SetColumn("Code", fmt.Sprintf("%X", time.Now().UnixNano()))
 	if err != nil {
 		return err
