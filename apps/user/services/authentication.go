@@ -24,6 +24,7 @@ import (
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
@@ -108,7 +109,7 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 	var userData userModels.User
 	err = gormDB.Model(&userModels.User{}).Where("email = ?", identifyData.Email).Scan(&userData).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if gorm.IsRecordNotFoundError(err) {
 			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", identifyData.Email)
 		}
 		return http.StatusInternalServerError, err
@@ -119,10 +120,11 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 	}
 	var otp userModels.OTP
 	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return http.StatusInternalServerError, err
 	}
-	if err != gorm.ErrRecordNotFound {
+	// if OTP exists then check its validity.
+	if !gorm.IsRecordNotFoundError(err) {
 		if otp.ExpiryAt.Unix()-constants.OTPExpiryTime+constants.OTPReCreationTime > time.Now().Unix() {
 			return http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
 		}
@@ -147,25 +149,25 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 
 func sendOTPAtEmail(email string, code string, firstName string, lastName string) error {
 	message, _ := parseTemplate("apps/user/views/mail.html", map[string]interface{}{"firstName": firstName, "lastName": lastName, "code": code})
-	subject := "Subject: " + "One Time Password" + "\n"
-	from := "From: iReflect<no-reply@ireflect.com>\n"
-	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	to := fmt.Sprintf("To: %s\n", email)
 	// TODO: serching for way to send both type of bodies i.e html and text mail.
-	body := []byte(subject + from + mime + "\n" + message)
+	body := []byte(constants.OTPEmailSubject + constants.OTPEmailFrom + to + constants.OTPEmailMIME + "\n" + message)
 
+	// get email configrations from environment variables.
+	emailConfig := config.GetConfig().Email
 	// Set up authentication information.
-
 	auth := smtp.PlainAuth(
 		"",
-		constants.EmailUsername,
-		constants.EmailPassword,
-		constants.EmailHost,
+		emailConfig.Username,
+		emailConfig.Password,
+		emailConfig.Host,
 	)
 
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
 	err := smtp.SendMail(
-		fmt.Sprintf("%s:%s", constants.EmailHost, constants.EmailHostPort),
+		fmt.Sprintf("%s:%s", emailConfig.Host, emailConfig.Port),
 		auth,
 		"no-reply@ireflect.com",
 		[]string{email},
