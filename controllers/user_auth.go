@@ -57,12 +57,12 @@ func (ctrl UserAuthController) Identify(c *gin.Context) {
 // Recover ...
 func (ctrl UserAuthController) Recover(c *gin.Context) {
 
-	var RecoveryData userSerializers.Recover
-	err := c.BindJSON(&RecoveryData)
+	var recoveryData userSerializers.Recover
+	err := c.BindJSON(&recoveryData)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
-	status, err := ctrl.AuthService.Recover(RecoveryData)
+	status, err := ctrl.AuthService.Recover(recoveryData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

@@ -195,8 +195,24 @@ func (service AuthenticationService) UpdatePassword(userPasswordData userSeriali
 	err error) {
 
 	encryptedPassword := EncryptPassword(userPasswordData.Password)
-	err = service.DB.Model(&userModels.User{}).Where("email = ?", userPasswordData.Email).Update("password", encryptedPassword).Error
+	tx := service.DB.Begin()
+	user := userModels.User{}
+
+	err = tx.Model(&userModels.User{}).Where("email = ?", userPasswordData.Email).Update("password", encryptedPassword).Scan(&user).Error
 	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+
+	err = tx.Where("user_id = ?", user.ID).Delete(&userModels.OTP{}).Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
