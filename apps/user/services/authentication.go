@@ -86,7 +86,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 
 	session := sessions.Default(c)
 	userResponse.Token = utils.RandToken()
-	startSession(session, userResponse)
+	setSession(session, userResponse)
 	return userResponse, http.StatusAccepted, nil
 }
 
@@ -155,7 +155,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 		Scan(&userResponse)
 
 	userResponse.Token = utils.RandToken()
-	startSession(session, userResponse)
+	setSession(session, userResponse)
 	logrus.Info(fmt.Sprintf("Logged in user %s", userResponse.Email))
 
 	return userResponse, http.StatusOK, nil
@@ -200,8 +200,8 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 	return http.StatusUnauthorized
 }
 
-// startSession ...
-func startSession(session sessions.Session, userResponse *userSerializers.UserAuthSerializer) {
+// setSession ...
+func setSession(session sessions.Session, userResponse *userSerializers.UserAuthSerializer) {
 	session.Set("user", userResponse.ID)
 	session.Set("token", userResponse.Token)
 	session.Save()
