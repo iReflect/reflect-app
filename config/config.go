@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/caarlos0/env"
 	"log"
 	"os"
+
+	"github.com/caarlos0/env"
 )
 
 // Config ...
@@ -12,6 +13,7 @@ type Config struct {
 	Server      *serverConfig
 	Redis       *redisConfig
 	TimeTracker *timeTrackerConfig
+	Email       *emailConfig
 }
 
 var config Config
@@ -21,11 +23,12 @@ func init() {
 	serverConf := new(serverConfig)
 	redisConf := new(redisConfig)
 	timeTrackerConf := new(timeTrackerConfig)
+	emailConfig := new(emailConfig)
 	env.Parse(dbConf)
 	env.Parse(serverConf)
 	env.Parse(redisConf)
 	env.Parse(timeTrackerConf)
-
+	env.Parse(emailConfig)
 	googleAppCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	if len(googleAppCredential) == 0 {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "config/application_default_credentials.json")
@@ -39,12 +42,15 @@ func init() {
 	log.Println(redisConf)
 	log.Println("TimeTracker::")
 	log.Println(timeTrackerConf)
+	log.Println("Email::")
+	log.Println(emailConfig)
 
 	config = Config{
 		DB:          dbConf,
 		Server:      serverConf,
 		Redis:       redisConf,
 		TimeTracker: timeTrackerConf,
+		Email:       emailConfig,
 	}
 }
 
@@ -73,6 +79,13 @@ type timeTrackerConfig struct {
 	FnGetTimeLog      string `env:"TIMETRACKER_FN_GETTIMELOG"  envDefault:"GetProjectTimeLogs"`
 	GoogleCredentials string `env:"TIMETRACKER_CREDENTIALS"  envDefault:"config/timetracker_credentials.json"`
 	TimeZone          string `env:"TIMETRACKER_TIME_ZONE"  envDefault:"Asia/Kolkata"`
+}
+
+type emailConfig struct {
+	Username string `env:"EMAIL_USERNAME" envDefault:""`
+	Password string `env:"EMAIL_PASSWORD" envDefault:""`
+	Host     string `env:"EMAIL_HOST" envDefault:""`
+	Port     string `env:"EMAIL_PORT" envDefault:""`
 }
 
 // GetConfig ...
