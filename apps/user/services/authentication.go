@@ -122,8 +122,8 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 	}
 	// when we don't need mail the OTP.
 	if !identifyData.SendOTP {
-		if err == gorm.ErrRecordNotFound {
-			return 0, http.StatusBadRequest, errors.New("We don't find any generated OTP. Please Generate a new one")
+		if gorm.IsRecordNotFoundError(err) {
+			return 0, http.StatusBadRequest, errors.New("We didn't find any generated OTP. Please generate a new one")
 		}
 		// if OTP is expired.
 		if time.Now().Unix() > otp.ExpiryAt.Unix() {
@@ -175,19 +175,20 @@ func (service AuthenticationService) Recover(c *gin.Context) (
 	var userData userModels.User
 	err = gormDB.Model(&userModels.User{}).Where("email = ?", RecoveryData.Email).Scan(&userData).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if gorm.IsRecordNotFoundError(err) {
 			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", RecoveryData.Email)
 		}
 		return http.StatusInternalServerError, err
 	}
 	var otp userModels.OTP
 	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return http.StatusBadRequest, errors.New("Didn't find any OTP associated with this email. Please re-generate OTP")
+		}
 		return http.StatusInternalServerError, err
 	}
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusBadRequest, errors.New("Didn't find any OTP associated with this email. Please re-generate OTP")
-	}
+
 	if otp.Code != RecoveryData.OTP {
 		return http.StatusBadRequest, errors.New("Invalid OTP")
 	}
