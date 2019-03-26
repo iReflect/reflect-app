@@ -21,7 +21,7 @@ type Task struct {
 	TrackerUniqueID   string `gorm:"type:varchar(255); not null"`
 	Retrospective     Retrospective
 	RetrospectiveID   uint                 `gorm:"not null"`
-	Summary           string               `gorm:"type:varchar(255); not null"`
+	Summary           string               `gorm:"type:text; not null"`
 	Description       string               `gorm:"type:text; not null"`
 	Type              string               `gorm:"type:varchar(30); not null"`
 	Status            string               `gorm:"type:varchar(50); not null"`

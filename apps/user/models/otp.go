@@ -40,3 +40,12 @@ func (otp *OTP) BeforeCreate(scope *gorm.Scope) error {
 	}
 	return nil
 }
+
+// GetReSendTime ...
+func GetReSendTime(otp OTP) int {
+	reSendTime := int(otp.ExpiryAt.Unix() - constants.OTPExpiryTime + constants.OTPReCreationTime - time.Now().Unix())
+	if reSendTime < 0 {
+		reSendTime = 0
+	}
+	return reSendTime
+}

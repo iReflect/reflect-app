@@ -68,7 +68,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 	var userData userSerializers.UserLogin
 	err = c.BindJSON(&userData)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, http.StatusBadRequest, err
 	}
 
 	gormDB := service.DB
@@ -78,7 +78,7 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 		Where("email = ?", userData.Email).
 		Scan(&userResponse).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if gorm.IsRecordNotFoundError(err) {
 			return getInvalidEmailPasswordErrorResponse()
 		}
 		return getInternalErrorResponse()
@@ -104,10 +104,11 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 	var identifyData userSerializers.Identify
 	err = c.BindJSON(&identifyData)
 	if err != nil {
-		return 0, http.StatusInternalServerError, err
+		return 0, http.StatusBadRequest, err
 	}
 	gormDB := service.DB
 	var userData userModels.User
+
 	err = gormDB.Model(&userModels.User{}).Where("email = ?", identifyData.Email).Scan(&userData).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
@@ -115,30 +116,29 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 		}
 		return 0, http.StatusInternalServerError, err
 	}
+
 	var otp userModels.OTP
 	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	otpNotFound := gorm.IsRecordNotFoundError(err)
+	if err != nil && !otpNotFound {
 		return 0, http.StatusInternalServerError, err
 	}
-	// when we don't need mail the OTP.
-	if !identifyData.SendOTP {
-		if gorm.IsRecordNotFoundError(err) {
+
+	// when we don't need to mail the OTP.
+	if !identifyData.EmailOTP {
+		if otpNotFound {
 			return 0, http.StatusBadRequest, errors.New("We didn't find any generated OTP. Please generate a new one")
 		}
 		// if OTP is expired.
 		if time.Now().Unix() > otp.ExpiryAt.Unix() {
 			return 0, http.StatusBadRequest, errors.New("OTP is expired. Please generate a new one")
 		}
-		reSendTime = int((otp.ExpiryAt.Unix() - constants.OTPExpiryTime + constants.OTPReCreationTime) - time.Now().Unix())
-		if reSendTime <= 0 {
-			reSendTime = 0
-		}
-		return reSendTime, http.StatusOK, nil
+		return userModels.GetReSendTime(otp), http.StatusOK, nil
 	}
 
 	// if OTP exists then check its validity.
-	if !gorm.IsRecordNotFoundError(err) {
-		if otp.ExpiryAt.Unix()-constants.OTPExpiryTime+constants.OTPReCreationTime > time.Now().Unix() {
+	if !otpNotFound {
+		if userModels.GetReSendTime(otp) > 0 {
 			return 0, http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
 		}
 		// deleting the old OTPs related to this email.
@@ -147,18 +147,24 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 			return 0, http.StatusInternalServerError, err
 		}
 	}
+
 	newOTP := userModels.OTP{
 		UserID: userData.ID,
 	}
+
+	// created new OTP for the user.
 	err = gormDB.Create(&newOTP).Error
 	if err != nil {
 		return 0, http.StatusInternalServerError, err
 	}
+
+	// send this OTP via emaail.
 	err = sendOTPAtEmail(identifyData.Email, newOTP.Code, userData.FirstName, userData.LastName)
 	if err != nil {
 		return 0, http.StatusInternalServerError, err
 	}
-	return constants.OTPReCreationTime, http.StatusOK, nil
+
+	return userModels.GetReSendTime(newOTP), http.StatusOK, nil
 }
 
 // Recover ...
@@ -227,8 +233,7 @@ func sendOTPAtEmail(email string, code string, firstName string, lastName string
 
 	to := fmt.Sprintf("To: %s\n", email)
 	// TODO: serching for way to send both type of bodies i.e html and text mail.
-	body := []byte(constants.OTPEmailSubject + constants.OTPEmailFrom + to + constants.OTPEmailMIME + "\n" + message)
-
+	body := []byte(constants.OTPEmailSubject + constants.EmailFrom + to + constants.EmailMIME + "\n" + message)
 	// get email configrations from environment variables.
 	emailConfig := config.GetConfig().Email
 	// Set up authentication information.
@@ -244,7 +249,7 @@ func sendOTPAtEmail(email string, code string, firstName string, lastName string
 	err := smtp.SendMail(
 		fmt.Sprintf("%s:%s", emailConfig.Host, emailConfig.Port),
 		auth,
-		"no-reply@ireflect.com",
+		constants.IReflectEmail,
 		[]string{email},
 		body,
 	)
@@ -339,42 +344,46 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 }
 
 // AuthenticateSession ...
-func (service AuthenticationService) AuthenticateSession(c *gin.Context) bool {
+func (service AuthenticationService) AuthenticateSession(c *gin.Context) (int, error) {
 	db := service.DB
 
 	session := sessions.Default(c)
 	userID := session.Get("user")
 	if userID != nil {
 		authenticatedUser := userModels.User{}
-		if err := db.
-			Where("users.deleted_at IS NULL").
-			Where("active = true").
-			First(&authenticatedUser, userID).Error; err != nil {
-			logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
-			return false
+		err := db.Where("users.deleted_at IS NULL").Where("active = true").First(&authenticatedUser, userID).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
+				return http.StatusUnauthorized, fmt.Errorf("User with ID %s not found", userID)
+			}
+			logrus.Error(err)
+			return http.StatusInternalServerError, err
 		}
 		logrus.Info(fmt.Sprintf("Authenticated user %s", authenticatedUser.Email))
 		c.Set("user", authenticatedUser)
 		c.Set("userID", authenticatedUser.ID)
-		return true
+		return http.StatusOK, nil
 	}
 
-	return false
+	return http.StatusUnauthorized, fmt.Errorf("User with ID %s not found", userID)
 }
 
 // Logout ...
 func (service AuthenticationService) Logout(c *gin.Context) int {
 
-	if service.AuthenticateSession(c) {
-		session := sessions.Default(c)
-		currentUser, _ := c.Get("user")
-		user := currentUser.(userModels.User)
-		resetSession(session)
-		logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
-
-		return http.StatusOK
+	status, err := service.AuthenticateSession(c)
+	if err != nil {
+		return status
 	}
-	return http.StatusUnauthorized
+	session := sessions.Default(c)
+	currentUser, _ := c.Get("user")
+	user := currentUser.(userModels.User)
+	resetSession(session)
+	logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
+
+	return http.StatusOK
+
 }
 
 // setSession ...
