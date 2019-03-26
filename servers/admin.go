@@ -32,6 +32,7 @@ func (a *Admin) Router() *http.ServeMux {
 	userModels.RegisterUserProfileToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 	userModels.RegisterTeamToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 	userModels.RegisterUserTeamToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
+	userModels.RegisterOTPToAdmin(Admin, admin.Config{Menu: []string{"User Management"}})
 
 	// Retrospective Management
 	retrospectiveModels.RegisterRetrospectiveToAdmin(Admin, admin.Config{Menu: []string{"Retrospective Management"}})
