@@ -10,11 +10,11 @@ import (
 )
 
 func init() {
-	goose.AddMigration(Up00033, Down00033)
+	goose.AddMigration(Up00030, Down00030)
 }
 
-// Up00033 ...
-func Up00033(tx *sql.Tx) error {
+// Up00030 ...
+func Up00030(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	gormDB, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
@@ -25,8 +25,8 @@ func Up00033(tx *sql.Tx) error {
 	return nil
 }
 
-// Down00033 ...
-func Down00033(tx *sql.Tx) error {
+// Down00030 ...
+func Down00030(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	gormDB, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
