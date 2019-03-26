@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 )
 
@@ -19,6 +20,7 @@ func (ctrl UserAuthController) Routes(r *gin.RouterGroup) {
 	r.POST("/login/", ctrl.BasicLogin)
 	r.POST("/identify/", ctrl.Identify)
 	r.POST("/code/", ctrl.Recover)
+	r.POST("/update-password/", ctrl.UpdatePassword)
 	// TODO make auth get and receive request directly from google
 	r.POST("/auth/", ctrl.Auth)
 	r.POST("/logout/", ctrl.Logout)
@@ -54,7 +56,33 @@ func (ctrl UserAuthController) Identify(c *gin.Context) {
 
 // Recover ...
 func (ctrl UserAuthController) Recover(c *gin.Context) {
-	status, err := ctrl.AuthService.Recover(c)
+
+	var recoveryData userSerializers.Recover
+	err := c.BindJSON(&recoveryData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+	status, err := ctrl.AuthService.Recover(recoveryData)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(status, nil)
+}
+
+// UpdatePassword ...
+func (ctrl UserAuthController) UpdatePassword(c *gin.Context) {
+
+	var userPasswordData userSerializers.Recover
+	err := c.BindJSON(&userPasswordData)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+	status, err := ctrl.AuthService.Recover(userPasswordData)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+	}
+	status, err = ctrl.AuthService.UpdatePassword(userPasswordData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return

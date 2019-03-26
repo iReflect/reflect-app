@@ -119,26 +119,26 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 
 	var otp userModels.OTP
 	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
-	isOTPExists := !gorm.IsRecordNotFoundError(err)
-	if err != nil && isOTPExists {
+	otpNotFound := gorm.IsRecordNotFoundError(err)
+	if err != nil && !otpNotFound {
 		return 0, http.StatusInternalServerError, err
 	}
 
 	// when we don't need to mail the OTP.
 	if !identifyData.EmailOTP {
-		if !isOTPExists {
+		if otpNotFound {
 			return 0, http.StatusBadRequest, errors.New("We didn't find any generated OTP. Please generate a new one")
 		}
 		// if OTP is expired.
 		if time.Now().Unix() > otp.ExpiryAt.Unix() {
 			return 0, http.StatusBadRequest, errors.New("OTP is expired. Please generate a new one")
 		}
-		return getReSendTime(otp), http.StatusOK, nil
+		return otp.GetReSendTime(), http.StatusOK, nil
 	}
 
 	// if OTP exists then check its validity.
-	if isOTPExists {
-		if getReSendTime(otp) > 0 {
+	if !otpNotFound {
+		if otp.GetReSendTime() > 0 {
 			return 0, http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
 		}
 		// deleting the old OTPs related to this email.
@@ -164,25 +164,20 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 		return 0, http.StatusInternalServerError, err
 	}
 
-	return getReSendTime(newOTP), http.StatusOK, nil
+	return newOTP.GetReSendTime(), http.StatusOK, nil
 }
 
 // Recover ...
-func (service AuthenticationService) Recover(c *gin.Context) (
+func (service AuthenticationService) Recover(recoveryData userSerializers.Recover) (
 	status int,
 	err error) {
 
-	var RecoveryData userSerializers.Recover
-	err = c.BindJSON(&RecoveryData)
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
 	gormDB := service.DB
 	var userData userModels.User
-	err = gormDB.Model(&userModels.User{}).Where("email = ?", RecoveryData.Email).Scan(&userData).Error
+	err = gormDB.Model(&userModels.User{}).Where("email = ?", recoveryData.Email).Scan(&userData).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", RecoveryData.Email)
+			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", recoveryData.Email)
 		}
 		return http.StatusInternalServerError, err
 	}
@@ -195,7 +190,7 @@ func (service AuthenticationService) Recover(c *gin.Context) (
 		return http.StatusInternalServerError, err
 	}
 
-	if otp.Code != RecoveryData.OTP {
+	if otp.Code != recoveryData.OTP {
 		return http.StatusBadRequest, errors.New("Invalid OTP")
 	}
 	if otp.ExpiryAt.Unix() < time.Now().Unix() {
@@ -204,12 +199,33 @@ func (service AuthenticationService) Recover(c *gin.Context) (
 	return http.StatusOK, nil
 }
 
-func getReSendTime(otp userModels.OTP) int {
-	reSendTime := int(otp.ExpiryAt.Unix() - constants.OTPExpiryTime + constants.OTPReCreationTime - time.Now().Unix())
-	if reSendTime < 0 {
-		reSendTime = 0
+// UpdatePassword ...
+func (service AuthenticationService) UpdatePassword(userPasswordData userSerializers.Recover) (
+	status int,
+	err error) {
+
+	encryptedPassword := EncryptPassword(userPasswordData.Password)
+	tx := service.DB.Begin()
+	user := userModels.User{}
+
+	err = tx.Model(&userModels.User{}).Where("email = ?", userPasswordData.Email).Update("password", encryptedPassword).Scan(&user).Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
 	}
-	return reSendTime
+
+	err = tx.Where("user_id = ?", user.ID).Delete(&userModels.OTP{}).Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
 }
 
 func sendOTPAtEmail(email string, code string, firstName string, lastName string) error {
