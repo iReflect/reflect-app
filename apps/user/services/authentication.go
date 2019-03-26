@@ -162,42 +162,46 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 }
 
 // AuthenticateSession ...
-func (service AuthenticationService) AuthenticateSession(c *gin.Context) bool {
+func (service AuthenticationService) AuthenticateSession(c *gin.Context) (int, error) {
 	db := service.DB
 
 	session := sessions.Default(c)
 	userID := session.Get("user")
 	if userID != nil {
 		authenticatedUser := userModels.User{}
-		if err := db.
-			Where("users.deleted_at IS NULL").
-			Where("active = true").
-			First(&authenticatedUser, userID).Error; err != nil {
-			logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
-			return false
+		err := db.Where("users.deleted_at IS NULL").Where("active = true").First(&authenticatedUser, userID).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				logrus.Error(fmt.Sprintf("User with ID %s not found. Error: %s", userID, err))
+				return http.StatusUnauthorized, fmt.Errorf("User with ID %s not found", userID)
+			}
+			logrus.Error(err)
+			return http.StatusInternalServerError, err
 		}
 		logrus.Info(fmt.Sprintf("Authenticated user %s", authenticatedUser.Email))
 		c.Set("user", authenticatedUser)
 		c.Set("userID", authenticatedUser.ID)
-		return true
+		return http.StatusOK, nil
 	}
 
-	return false
+	return http.StatusUnauthorized, fmt.Errorf("User with ID %s not found", userID)
 }
 
 // Logout ...
 func (service AuthenticationService) Logout(c *gin.Context) int {
 
-	if service.AuthenticateSession(c) {
-		session := sessions.Default(c)
-		currentUser, _ := c.Get("user")
-		user := currentUser.(userModels.User)
-		resetSession(session)
-		logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
-
-		return http.StatusOK
+	status, err := service.AuthenticateSession(c)
+	if err != nil {
+		return status
 	}
-	return http.StatusUnauthorized
+	session := sessions.Default(c)
+	currentUser, _ := c.Get("user")
+	user := currentUser.(userModels.User)
+	resetSession(session)
+	logrus.Info(fmt.Sprintf("Logged out user %s", user.Email))
+
+	return http.StatusOK
+
 }
 
 // setSession ...
