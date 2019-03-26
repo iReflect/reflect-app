@@ -133,12 +133,12 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 		if time.Now().Unix() > otp.ExpiryAt.Unix() {
 			return 0, http.StatusBadRequest, errors.New("OTP is expired. Please generate a new one")
 		}
-		return userModels.GetReSendTime(otp), http.StatusOK, nil
+		return otp.GetReSendTime(), http.StatusOK, nil
 	}
 
 	// if OTP exists then check its validity.
 	if !otpNotFound {
-		if userModels.GetReSendTime(otp) > 0 {
+		if otp.GetReSendTime() > 0 {
 			return 0, http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
 		}
 		// deleting the old OTPs related to this email.
@@ -164,7 +164,7 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 		return 0, http.StatusInternalServerError, err
 	}
 
-	return userModels.GetReSendTime(newOTP), http.StatusOK, nil
+	return newOTP.GetReSendTime(), http.StatusOK, nil
 }
 
 // Recover ...
