@@ -68,7 +68,8 @@ func (service AuthenticationService) BasicLogin(c *gin.Context) (
 	var userData userSerializers.UserLogin
 	err = c.BindJSON(&userData)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		return
 	}
 
 	gormDB := service.DB
@@ -103,7 +104,8 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 	var identifyData userSerializers.Identify
 	err = c.BindJSON(&identifyData)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		return
 	}
 	gormDB := service.DB
 	var userData userModels.User
@@ -115,11 +117,12 @@ func (service AuthenticationService) Identify(c *gin.Context) (
 		return http.StatusInternalServerError, err
 	}
 	// when we don't need OTP to the email.
-	if !identifyData.SendOTP {
+	if !identifyData.EmailOTP {
 		return http.StatusOK, nil
 	}
 	var otp userModels.OTP
 	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
+	// when there is some internal DB error.
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return http.StatusInternalServerError, err
 	}
@@ -152,8 +155,7 @@ func sendOTPAtEmail(email string, code string, firstName string, lastName string
 
 	to := fmt.Sprintf("To: %s\n", email)
 	// TODO: serching for way to send both type of bodies i.e html and text mail.
-	body := []byte(constants.OTPEmailSubject + constants.OTPEmailFrom + to + constants.OTPEmailMIME + "\n" + message)
-
+	body := []byte(constants.OTPEmailSubject + constants.EmailFrom + to + constants.EmailMIME + "\n" + message)
 	// get email configrations from environment variables.
 	emailConfig := config.GetConfig().Email
 	// Set up authentication information.
@@ -169,7 +171,7 @@ func sendOTPAtEmail(email string, code string, firstName string, lastName string
 	err := smtp.SendMail(
 		fmt.Sprintf("%s:%s", emailConfig.Host, emailConfig.Port),
 		auth,
-		"no-reply@ireflect.com",
+		constants.IReflectEmail,
 		[]string{email},
 		body,
 	)
