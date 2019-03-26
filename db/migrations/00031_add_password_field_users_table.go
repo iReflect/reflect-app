@@ -10,35 +10,35 @@ import (
 )
 
 func init() {
-	goose.AddMigration(Up00030, Down00030)
+	goose.AddMigration(Up00031, Down00031)
 }
 
-// Up00030 ...
-func Up00030(tx *sql.Tx) error {
+// Up00031 ...
+func Up00031(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
-	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
+	gormDB, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
 	}
 
 	type User struct {
-		Password []byte
+		Password []byte `gorm:"type:bytea"`
 	}
 
-	gormdb.AutoMigrate(&User{})
+	gormDB.AutoMigrate(&User{})
 
 	return nil
 }
 
-// Down00030 ...
-func Down00030(tx *sql.Tx) error {
+// Down00031 ...
+func Down00031(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
-	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
+	gormDB, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
 	}
 
-	gormdb.Model(&models.User{}).DropColumn("password")
+	gormDB.Model(&models.User{}).DropColumn("password")
 
 	return nil
 }
