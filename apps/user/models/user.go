@@ -15,14 +15,15 @@ import (
 // User represent the app user in system
 type User struct {
 	gorm.Model
-	Email              string `gorm:"type:varchar(255); not null; unique_index"`
-	FirstName          string `gorm:"type:varchar(30); not null"`
-	LastName           string `gorm:"type:varchar(150)"`
-	Active             bool   `gorm:"default:true; not null"`
-	Teams              []Team
-	Profiles           []UserProfile
+	Email              string       `gorm:"type:varchar(255); not null; unique_index"`
+	FirstName          string       `gorm:"type:varchar(30); not null"`
+	LastName           string       `gorm:"type:varchar(150)"`
+	Password           []byte       `gorm:"type:bytea"`
+	Active             bool         `gorm:"default:true; not null"`
 	TimeProviderConfig fields.JSONB `gorm:"type:jsonb; not null; default:'{}'::jsonb"`
 	IsAdmin            bool         `gorm:"default:false; not null"`
+	Teams              []Team
+	Profiles           []UserProfile
 }
 
 // Stringify ...
@@ -41,10 +42,10 @@ func RegisterUserToAdmin(Admin *admin.Admin, config admin.Config) {
 	timeProviderConfigMeta := getTimeProviderConfigMetaFieldMeta()
 	user.Meta(&timeProviderConfigMeta)
 
-	user.IndexAttrs("-Teams", "-Profiles")
-	user.NewAttrs("-Teams", "-Profiles")
-	user.EditAttrs("-Teams", "-Profiles")
-	user.ShowAttrs("-Teams", "-Profiles")
+	user.IndexAttrs("-Teams", "-Profiles", "-Password")
+	user.NewAttrs("-Teams", "-Profiles", "-Password")
+	user.EditAttrs("-Teams", "-Profiles", "-Password")
+	user.ShowAttrs("-Teams", "-Profiles", "-Password")
 }
 
 // GetUserFieldMeta ...

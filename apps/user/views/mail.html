@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>One Time Password</title>
+    <style type="text/css">
+      body{
+        margin: 0 auto;
+        padding: 0;
+        min-width: 100%;
+        font-family: sans-serif;
+      }
+      table{
+        margin: 50px 0 50px 0;
+      }
+      .content{
+        height: 100px;
+        font-size: 18px;
+        line-height: 30px;
+      }
+      .content b{
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr class="content">
+        <td>
+          <br>
+            Hi <b> {{.firstName}} {{.lastName}}</b>, <br/>
+            <b>{{.code}}</b> is your one time password (OTP). Please enter the OTP to proceed.<br/><br/>
+            Thank You,<br/>
+            Team iReflect.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
