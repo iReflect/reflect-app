@@ -1,15 +1,22 @@
 package services
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
+	"net/smtp"
 	"os"
+	"reflect"
+	"time"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -17,6 +24,8 @@ import (
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/config"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -48,6 +57,224 @@ func (service AuthenticationService) Login(c *gin.Context) map[string]string {
 	return map[string]string{
 		"LoginURL": googleOAuthConf.AuthCodeURL(state.(string)),
 	}
+}
+
+// BasicLogin ...
+func (service AuthenticationService) BasicLogin(c *gin.Context) (
+	userResponse *userSerializers.UserAuthSerializer,
+	status int,
+	err error) {
+
+	var userData userSerializers.UserLogin
+	err = c.BindJSON(&userData)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	gormDB := service.DB
+	userResponse = new(userSerializers.UserAuthSerializer)
+
+	err = gormDB.Model(&userModels.User{}).
+		Where("email = ?", userData.Email).
+		Scan(&userResponse).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return getInvalidEmailPasswordErrorResponse()
+		}
+		return getInternalErrorResponse()
+	}
+	// here we encrypt password before comparing it with stored password because we store passwords after encryption.
+	encryptedPassword := EncryptPassword(userData.Password)
+	if !reflect.DeepEqual(encryptedPassword, userResponse.Password) || userResponse.Password == nil {
+		return getInvalidEmailPasswordErrorResponse()
+	}
+
+	session := sessions.Default(c)
+	userResponse.Token = utils.RandToken()
+	setSession(session, userResponse)
+	return userResponse, http.StatusAccepted, nil
+}
+
+// Identify ...
+func (service AuthenticationService) Identify(c *gin.Context) (
+	reSendTime int,
+	status int,
+	err error) {
+
+	var identifyData userSerializers.Identify
+	err = c.BindJSON(&identifyData)
+	if err != nil {
+		return 0, http.StatusBadRequest, err
+	}
+	gormDB := service.DB
+	var userData userModels.User
+
+	err = gormDB.Model(&userModels.User{}).Where("email = ?", identifyData.Email).Scan(&userData).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return 0, http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", identifyData.Email)
+		}
+		return 0, http.StatusInternalServerError, err
+	}
+
+	var otp userModels.OTP
+	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
+	otpNotFound := gorm.IsRecordNotFoundError(err)
+	if err != nil && !otpNotFound {
+		return 0, http.StatusInternalServerError, err
+	}
+
+	// when we don't need to mail the OTP.
+	if !identifyData.EmailOTP {
+		if otpNotFound {
+			return 0, http.StatusBadRequest, errors.New("We didn't find any generated OTP. Please generate a new one")
+		}
+		// if OTP is expired.
+		if time.Now().Unix() > otp.ExpiryAt.Unix() {
+			return 0, http.StatusBadRequest, errors.New("OTP is expired. Please generate a new one")
+		}
+		return otp.GetReSendTime(), http.StatusOK, nil
+	}
+
+	// if OTP exists then check its validity.
+	if !otpNotFound {
+		if otp.GetReSendTime() > 0 {
+			return 0, http.StatusBadRequest, errors.New("You just generated a OTP. Please try again after sometime")
+		}
+		// deleting the old OTPs related to this email.
+		err = gormDB.Delete(&otp).Error
+		if err != nil {
+			return 0, http.StatusInternalServerError, err
+		}
+	}
+
+	newOTP := userModels.OTP{
+		UserID: userData.ID,
+	}
+
+	// created new OTP for the user.
+	err = gormDB.Create(&newOTP).Error
+	if err != nil {
+		return 0, http.StatusInternalServerError, err
+	}
+
+	// send this OTP via emaail.
+	err = sendOTPAtEmail(identifyData.Email, newOTP.Code, userData.FirstName, userData.LastName)
+	if err != nil {
+		return 0, http.StatusInternalServerError, err
+	}
+
+	return newOTP.GetReSendTime(), http.StatusOK, nil
+}
+
+// Recover ...
+func (service AuthenticationService) Recover(recoveryData userSerializers.Recover) (
+	status int,
+	err error) {
+
+	gormDB := service.DB
+	var userData userModels.User
+	err = gormDB.Model(&userModels.User{}).Where("email = ?", recoveryData.Email).Scan(&userData).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return http.StatusBadRequest, fmt.Errorf("We couldn't find a iReflect account associated with %s", recoveryData.Email)
+		}
+		return http.StatusInternalServerError, err
+	}
+	var otp userModels.OTP
+	err = gormDB.Model(&userModels.OTP{}).Where("user_id = ?", userData.ID).Scan(&otp).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return http.StatusBadRequest, errors.New("Didn't find any OTP associated with this email. Please re-generate OTP")
+		}
+		return http.StatusInternalServerError, err
+	}
+
+	if otp.Code != recoveryData.OTP {
+		return http.StatusBadRequest, errors.New("Invalid OTP")
+	}
+	if otp.ExpiryAt.Unix() < time.Now().Unix() {
+		return http.StatusBadRequest, errors.New("Your OTP is expired. Please re-generate OTP")
+	}
+	return http.StatusOK, nil
+}
+
+// UpdatePassword ...
+func (service AuthenticationService) UpdatePassword(userPasswordData userSerializers.Recover) (
+	status int,
+	err error) {
+
+	encryptedPassword := EncryptPassword(userPasswordData.Password)
+	tx := service.DB.Begin()
+	user := userModels.User{}
+
+	err = tx.Model(&userModels.User{}).Where("email = ?", userPasswordData.Email).Update("password", encryptedPassword).Scan(&user).Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+
+	err = tx.Where("user_id = ?", user.ID).Delete(&userModels.OTP{}).Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+}
+
+func sendOTPAtEmail(email string, code string, firstName string, lastName string) error {
+	message, _ := parseTemplate("apps/user/views/mail.html", map[string]interface{}{"firstName": firstName, "lastName": lastName, "code": code})
+
+	to := fmt.Sprintf("To: %s\n", email)
+	// TODO: serching for way to send both type of bodies i.e html and text mail.
+	body := []byte(constants.OTPEmailSubject + constants.EmailFrom + to + constants.EmailMIME + "\n" + message)
+	// get email configrations from environment variables.
+	emailConfig := config.GetConfig().Email
+	// Set up authentication information.
+	auth := smtp.PlainAuth(
+		"",
+		emailConfig.Username,
+		emailConfig.Password,
+		emailConfig.Host,
+	)
+
+	// Connect to the server, authenticate, set the sender and recipient,
+	// and send the email all in one step.
+	err := smtp.SendMail(
+		fmt.Sprintf("%s:%s", emailConfig.Host, emailConfig.Port),
+		auth,
+		constants.IReflectEmail,
+		[]string{email},
+		body,
+	)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	return nil
+}
+
+func parseTemplate(fileName string, data interface{}) (string, error) {
+	t, err := template.ParseFiles(fileName)
+	if err != nil {
+		return "", err
+	}
+	buffer := new(bytes.Buffer)
+	if err = t.Execute(buffer, data); err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
+
+// EncryptPassword ...
+func EncryptPassword(password string) []byte {
+	return pbkdf2.Key([]byte(password), []byte(constants.PasswordSalt), constants.IterationCount, constants.KeyLength, sha256.New)
 }
 
 // Authorize ...
@@ -110,10 +337,7 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 		Scan(&userResponse)
 
 	userResponse.Token = utils.RandToken()
-	session.Set("user", userResponse.ID)
-	session.Set("token", userResponse.Token)
-	session.Save()
-
+	setSession(session, userResponse)
 	logrus.Info(fmt.Sprintf("Logged in user %s", userResponse.Email))
 
 	return userResponse, http.StatusOK, nil
@@ -162,6 +386,13 @@ func (service AuthenticationService) Logout(c *gin.Context) int {
 
 }
 
+// setSession ...
+func setSession(session sessions.Session, userResponse *userSerializers.UserAuthSerializer) {
+	session.Set("user", userResponse.ID)
+	session.Set("token", userResponse.Token)
+	session.Save()
+}
+
 // resetSession ...
 func resetSession(session sessions.Session) {
 	session.Set("user", nil)
@@ -183,6 +414,13 @@ func getNotFoundErrorResponse() (authenticatedUser *userSerializers.UserAuthSeri
 	status int,
 	err error) {
 	return nil, http.StatusNotFound, errors.New("user not found")
+}
+
+// getInvalidEmailPasswordErrorResponse ...
+func getInvalidEmailPasswordErrorResponse() (authenticatedUser *userSerializers.UserAuthSerializer,
+	status int,
+	err error) {
+	return nil, http.StatusNotFound, errors.New(constants.InvalidEmailOrPassword)
 }
 
 // getGoogleOAuthConf ...

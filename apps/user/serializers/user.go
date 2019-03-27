@@ -34,3 +34,22 @@ type TeamsSerializer struct {
 type MembersSerializer struct {
 	Members []User
 }
+
+// UserLogin ...
+type UserLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// Identify ...
+type Identify struct {
+	Email    string `json:"email"`
+	EmailOTP bool   `json:"emailOTP"`
+}
+
+// Recover ...
+type Recover struct {
+	Email    string `json:"email"`
+	OTP      string `json:"otp"`
+	Password string `json:"password"`
+}
