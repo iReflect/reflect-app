@@ -108,7 +108,11 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 		retroFeedback.ExpectedAt = feedbackData.ExpectedAt
 	}
 
-	if feedbackData.AssigneeID != nil {
+	if feedbackData.AssigneeID != nil && *feedbackData.AssigneeID == 0 {
+		retroFeedback.AssigneeID = nil
+	}
+
+	if feedbackData.AssigneeID != nil && *feedbackData.AssigneeID != 0 {
 		retroFeedback.AssigneeID = feedbackData.AssigneeID
 	}
 
