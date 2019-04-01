@@ -1,7 +1,5 @@
 package constants
 
-import "fmt"
-
 // CustomDateFormat is a date format used in the application to parse date string/object into a usable format
 const CustomDateFormat = "2006-01-02"
 
@@ -93,13 +91,7 @@ const (
 // <----------- constants for email --------------->
 
 // OTPEmailSubject ...
-const OTPEmailSubject = "Subject: One Time Password\n"
-
-// IReflectEmail ...
-const IReflectEmail = "iReflect<no-reply@ireflect.com>"
-
-// EmailFrom ...
-var EmailFrom = fmt.Sprintf("From: %s\n", IReflectEmail)
+const OTPEmailSubject = "One Time Password"
 
 // EmailMIME ...
 const EmailMIME = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"

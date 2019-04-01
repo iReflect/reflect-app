@@ -229,13 +229,19 @@ func (service AuthenticationService) UpdatePassword(userPasswordData userSeriali
 }
 
 func sendOTPAtEmail(email string, code string, firstName string, lastName string) error {
-	message, _ := parseTemplate("apps/user/views/mail.html", map[string]interface{}{"firstName": firstName, "lastName": lastName, "code": code})
-
-	to := fmt.Sprintf("To: %s\n", email)
-	// TODO: serching for way to send both type of bodies i.e html and text mail.
-	body := []byte(constants.OTPEmailSubject + constants.EmailFrom + to + constants.EmailMIME + "\n" + message)
+	message, err := parseTemplate("apps/user/views/mail.html", map[string]interface{}{"firstName": firstName, "lastName": lastName, "code": code})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
 	// get email configrations from environment variables.
 	emailConfig := config.GetConfig().Email
+	subject := fmt.Sprintf("Subject: %s\n", constants.OTPEmailSubject)
+	emailFrom := fmt.Sprintf("From: %s\n", emailConfig.EmailFrom)
+	to := fmt.Sprintf("To: %s\n", email)
+	// TODO: serching for way to send both type of bodies i.e html and text mail.
+	body := []byte(fmt.Sprintf("%s%s%s%s%s", subject, emailFrom, to, constants.EmailMIME, message))
+
 	// Set up authentication information.
 	auth := smtp.PlainAuth(
 		"",
@@ -246,10 +252,10 @@ func sendOTPAtEmail(email string, code string, firstName string, lastName string
 
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
-	err := smtp.SendMail(
+	err = smtp.SendMail(
 		fmt.Sprintf("%s:%s", emailConfig.Host, emailConfig.Port),
 		auth,
-		constants.IReflectEmail,
+		emailConfig.EmailFrom,
 		[]string{email},
 		body,
 	)
