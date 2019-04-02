@@ -353,6 +353,10 @@ func (service AuthenticationService) Authorize(c *gin.Context) (
 func (service AuthenticationService) AuthenticateSession(c *gin.Context) (int, error) {
 	db := service.DB
 
+	// Quick Admin Access from backend hack -- if you don't want to login via webapp or manually set cookie
+	//var userID interface {}
+	//userID = 2
+
 	session := sessions.Default(c)
 	userID := session.Get("user")
 	if userID != nil {

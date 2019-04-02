@@ -1,0 +1,1584 @@
+swagger: "2.0"
+host: localhost:3000
+basePath: /api/v1
+info:
+  title: "IReflect Swagger"
+  description: "Swagger for IReflect APP. Does not include Admin, feedback and Auth Modules"
+  version: "1.0"
+schemes:
+- http
+consumes:
+- application/json
+produces:
+- application/json
+definitions:
+  Goal:
+    allOf:
+    - $ref: '#/definitions/RetrospectiveFeedback'
+    - type: object
+      required:
+      - id
+      properties:
+        ID:
+          type: integer
+          readOnly: true
+  Goals:
+    type: object
+    properties:
+      Feedbacks:
+        type: array
+        items:
+          $ref: '#/definitions/Goal'
+  Highlight:
+    allOf:
+    - $ref: '#/definitions/RetrospectiveFeedback'
+    - type: object
+      required:
+      - id
+      properties:
+        ID:
+          type: integer
+          readOnly: true
+  Highlights:
+    type: object
+    properties:
+      Feedbacks:
+        type: array
+        items:
+          $ref: '#/definitions/Highlight'
+  MemberAdd:
+    type: object
+    required:
+    - memberID
+    properties:
+      memberID:
+        type: integer
+        resource: user
+  Member:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      Email:
+        type: string
+        format: email
+      FirstName:
+        type: string
+      LastName:
+        type: string
+      Active:
+        type: boolean
+  Members:
+    type: object
+    properties:
+      Members:
+        type: array
+        items:
+          $ref: '#/definitions/Member'
+  Note:
+    allOf:
+    - $ref: '#/definitions/RetrospectiveFeedback'
+    - type: object
+      required:
+      - id
+      properties:
+        ID:
+          type: integer
+          readOnly: true
+  Notes:
+    type: object
+    properties:
+      Feedbacks:
+        type: array
+        items:
+          $ref: '#/definitions/Note'
+  Retrospective:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      Title:
+        type: string
+      ProjectName:
+        type: string
+      Team:
+        $ref: '#/definitions/Team'
+      TeamID:
+        type: integer
+        resource: team
+      UpdatedAt:
+        type: string
+        format: date-time
+      CreatedBy:
+        $ref: '#/definitions/User'
+      CreatedByID:
+        type: integer
+        resource: user
+      CreatedAt:
+        type: string
+        format: date-time
+      TaskProviderConfig:
+        type: string
+        format: json
+      StoryPointPerWeek:
+        type: number
+  RetrospectiveCreate:
+    type: object
+    required:
+    - title
+    - projectName
+    - taskProvider
+    - team
+    - storyPointPerWeek
+    properties:
+      title:
+        type: string
+      projectName:
+        type: string
+      team:
+        type: integer
+        resource: team
+      taskProvider:
+        type: string
+        format: json
+      storyPointPerWeek:
+        type: number
+  RetrospectiveFeedback:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      SubType:
+        type: string
+      Type:
+        $ref: '#/definitions/RetrospectiveFeedbackType'
+      RetrospectiveID:
+        type: integer
+        resource: retrospective
+      Text:
+        type: string
+      Scope:
+        $ref: '#/definitions/RetrospectiveFeedbackScope'
+      AssigneeID:
+        type: integer
+        resource: user
+      Assignee:
+        $ref: '#/definitions/User'
+      CreatedByID:
+        type: integer
+        resource: user
+      CreatedBy:
+        $ref: '#/definitions/User'
+      AddedAt:
+        type: string
+        format: date-time
+      ResolvedAt:
+        type: string
+        format: date-time
+      ExpectedAt:
+        type: string
+        format: date-time
+  RetrospectiveFeedbackCreate:
+    type: object
+    required:
+    - subType
+    properties:
+      subType:
+        type: string
+  RetrospectiveFeedbackList:
+    type: object
+    properties:
+      Feedbacks:
+        type: array
+        items:
+          $ref: '#/definitions/RetrospectiveFeedback'
+  RetrospectiveFeedbackUpdate:
+    type: object
+    properties:
+      Text:
+        type: string
+      Scope:
+        type: integer
+        enum:
+        - 0
+        - 1
+      AssigneeID:
+        type: integer
+        resource: user
+      ExpectedAt:
+        type: string
+        format: date-time
+  RetrospectiveFeedbackScope:
+    type: integer
+    enum:
+    - 0
+    - 1
+  RetrospectiveFeedbackType:
+    type: integer
+  Retrospectives:
+    type: object
+    properties:
+      Retrospectives:
+        type: array
+        items:
+          $ref: '#/definitions/Retrospective'
+  Sprint:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+        resource: sprint
+      Title:
+        type: string
+      SprintID:
+        type: string
+      Status:
+        $ref: '#/definitions/SprintStatus'
+      StartDate:
+        type: string
+        format: date-time
+      EndDate:
+        type: string
+        format: date-time
+      LastSyncedAt:
+        type: string
+        format: date-time
+      SyncStatus:
+        type: integer
+      CreatedBy:
+        $ref: '#/definitions/User'
+      CreatedByID:
+        type: integer
+        resource: user
+      RetrospectiveID:
+        type: integer
+        resource: retrospective
+      Summary:
+        $ref: '#/definitions/SprintSummary'
+      Editable:
+        type: boolean
+      Deletable:
+        type: boolean
+  SprintCreate:
+    type: object
+    required:
+    - title
+    properties:
+      title:
+        type: string
+      sprintID:
+        type: integer
+      startDate:
+        type: string
+        format: date-time
+      endDate:
+        type: string
+        format: date-time
+  SprintMemberSummary:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      FirstName:
+        type: string
+      LastName:
+        type: string
+      AllocationPercent:
+        type: number
+      ExpectationPercent:
+        type: number
+      Vacations:
+        type: number
+      Rating:
+        type: integer
+      Comment:
+        type: string
+      ActualStoryPoint:
+        type: number
+      TotalTimeSpentInMin:
+        type: number
+      ExpectedStoryPoint:
+        type: number
+  SprintMemberSummaryList:
+    type: array
+    items:
+      $ref: '#/definitions/SprintMemberSummary'
+  SprintMemberUpdate:
+    type: object
+    properties:
+      Comment:
+        type: string
+      Vacations:
+        type: number
+      AllocationPercent:
+        type: number
+      ExpectationPercent:
+        type: number
+  SprintStatus:
+    type: integer
+  SprintSummary:
+    type: object
+    properties:
+      MemberCount:
+        type: integer
+      TotalAllocation:
+        type: number
+      TotalExpectation:
+        type: number
+      TotalOutput:
+        type: number
+      Holidays:
+        type: number
+      TotalVacations:
+        type: number
+      TargetSP:
+        type: number
+      TaskSummary:
+        $ref: '#/definitions/SprintTaskSummary'
+  SprintTask:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      Key:
+        type: string
+      URL:
+        type: string
+      Summary:
+        type: string
+      Description:
+        type: string
+      Type:
+        type: string
+      Status:
+        type: string
+      Priority:
+        type: string
+      IsTrackerTask:
+        type: boolean
+      IsInvalid:
+        type: boolean
+      Rating:
+        type: integer
+      Estimate:
+        type: number
+      TotalPointsEarned:
+        type: number
+      PointsEarned:
+        type: number
+      Assignee:
+        type: string
+      Owner:
+        type: string
+      SprintOwner:
+        type: string
+      SprintOwnerTime:
+        type: integer
+      SprintOwnerTotalTime:
+        type: integer
+      SprintTime:
+        type: integer
+      TotalTime:
+        type: integer
+      DoneAt:
+        type: string
+        format: date-time
+  SprintTaskSummary:
+    type: object
+    properties:
+      Count:
+        type: integer
+      TotalCount:
+        type: integer
+      PointsEarned:
+        type: number
+      TotalPointsEarned:
+        type: number
+  SprintTaskUpdate:
+    type: object
+    properties:
+      BaseRating:
+        type: integer
+  SprintTasks:
+    type: array
+    items:
+      $ref: '#/definitions/SprintTask'
+  Sprints:
+    type: object
+    properties:
+      Sprints:
+        type: array
+        items:
+          $ref: '#/definitions/Sprint'
+  TaskMember:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      FirstName:
+        type: string
+      LastName:
+        type: string
+      TotalTime:
+        type: integer
+      SprintTime:
+        type: integer
+      TotalPoints:
+        type: number
+      SprintPoints:
+        type: number
+      Rating:
+        type: integer
+      Role:
+        type: integer
+      Comment:
+        type: string
+      Current:
+        type: boolean
+  TaskMemberAdd:
+    type: object
+    required:
+    - memberID
+    properties:
+      memberID:
+        type: integer
+        resource: member
+  TaskMemberUpdate:
+    type: object
+    properties:
+      SprintPoints:
+        type: number
+      Comment:
+        type: string
+      Role:
+        type: integer
+  TaskMembers:
+    type: array
+    items:
+      $ref: '#/definitions/TaskMember'
+  Team:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      Name:
+        type: string
+      Description:
+        type: string
+      Active:
+        type: boolean
+  TeamMembers:
+    type: object
+    properties:
+      Members:
+        type: array
+        items:
+          $ref: '#/definitions/User'
+  Teams:
+    type: object
+    properties:
+      Teams:
+        type: array
+        items:
+          $ref: '#/definitions/Team'
+  User:
+    type: object
+    properties:
+      ID:
+        type: integer
+        readOnly: true
+      Email:
+        type: string
+        format: email
+      FirstName:
+        type: string
+      LastName:
+        type: string
+      Active:
+        type: boolean
+paths:
+  /users/current/:
+    get:
+      description: "Get Current User"
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+        '401':
+          description: 'Unauthorized User'
+        '404':
+          description: "Not found"
+      tags:
+      - user
+  /teams/:
+    get:
+      description: "Get all teams of logged in user"
+      responses:
+        '500':
+          description: "Failed to get the teams"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Teams'
+        '401':
+          description: 'Unauthorized User'
+      tags:
+      - team
+  /teams/{team_id}/members/:
+    parameters:
+    - in: path
+      name: team_id
+      required: true
+      type: string
+    get:
+      description: "Get Member list for the team"
+      parameters:
+      - in: query
+        name: all
+        default: false
+        type: boolean
+        required: false
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "Must be active member of team to hit the API"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/TeamMembers'
+      tags:
+      - team
+  /retrospectives/:
+    get:
+      description: "List Retrospectives"
+      parameters:
+      - in: query
+        name: perPage
+        default: ""
+        type: integer
+        required: false
+      - in: query
+        name: page
+        default: ""
+        type: integer
+        required: false
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Retrospectives'
+        '204':
+          description: "No content. If page>1, and per_page < 0"
+        '401':
+          description: 'Unauthorized User'
+        '500':
+          description: "Internal Server Error"
+      tags:
+      - retrospective
+    post:
+      description: "Creates the Retro"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveCreate'
+      responses:
+        '403':
+          description: 'User does not have permission to create Retro'
+        '400':
+          description: "Invalid Config"
+        '401':
+          description: 'Unauthorized User'
+        '500':
+          description: "Internal Server Error. Failed to create retrospective"
+        '201':
+          description: "Retro Created"
+          schema:
+            $ref: '#/definitions/Retrospective'
+      tags:
+      - retrospective
+  /retrospectives/{retro_id}/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    get:
+      description: "Get Retrospective by ID"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User is forbidden to access this retro"
+        '404':
+          description: "Retrospective not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Retrospective'
+      tags:
+      - retrospective
+  /retrospectives/{retro_id}/team-members/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    get:
+      description: "Get Retrospective Team Members"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User is forbidden to access this retro"
+        '404':
+          description: "Retrospective not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/TeamMembers'
+      tags:
+      - retrospective
+  /retrospectives/{retro_id}/latest-sprint/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    get:
+      description: "Returns latest active/frozen sprint"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User is forbidden to access this retro"
+        '404':
+          description: "Retrospective not found/ Retro does not have any Sprints"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Sprint'
+      tags:
+      - retrospective
+  /retrospectives/{retro_id}/sprints/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    get:
+      description: "List all sprints accessible to current user"
+      parameters:
+      - in: query
+        name: after
+        description: "Date after which to get Sprint List"
+        type: string
+        format: date-time
+        required: false
+      - in: query
+        name: count
+        description: "Per Page Count"
+        type: integer
+        required: false
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retro"
+        '404':
+          description: "Retro does not exist"
+        '500':
+          description: "Internal Server Error. Failed to get sprints"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Sprints'
+      tags:
+      - sprint
+    post:
+      description: "Create a new draft sprint for retro"
+      parameters:
+      - in: body
+        name: data
+        required:  true
+        schema:
+          $ref: '#/definitions/SprintCreate'
+      responses:
+        '400':
+          description: "Invalid Request Data"
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retro"
+        '404':
+          description: "Retro does not exist"
+        '422':
+          description: "Bad Data"
+        '500':
+          description: "Internal Server Error. Failed to get sprints"
+        '201':
+          description: "Successfully created sprint"
+          schema:
+            $ref: '#/definitions/Sprint'
+      tags:
+      - sprint
+  /retrospectives/{retro_id}/sprints/{sprint_id}/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      description: "Get Sprint Data"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error. Failed to get sprint"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Sprint'
+      tags:
+      - sprint
+    put:
+      description: "Updates a sprint"
+      responses:
+        '400':
+          description: "Invalid request data"
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Sprint'
+      tags:
+      - sprint
+    delete:
+      description: "Delete sprint"
+      responses:
+        '400':
+          description: "This sprint cannot be deleted"
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error"
+        '204':
+          description: "Successfully deleted sprint"
+      tags:
+      - sprint
+  /retrospectives/{retro_id}/sprints/{sprint_id}/activate/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    post:
+      description: "Activates the sprint"
+      responses:
+        '400':
+          description: "Cannot activate an invalid draft sprint"
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error"
+        '204':
+          description: "Successfully activated sprint"
+      tags:
+      - sprint
+  /retrospectives/{retro_id}/sprints/{sprint_id}/freeze/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    post:
+      description: "Freezes the given sprint"
+      responses:
+        '400':
+          description: "Can not freeze an invalid active sprint"
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error"
+        '204':
+          description: "Successfully froze sprint"
+      tags:
+      - sprint
+  /retrospectives/{retro_id}/sprints/{sprint_id}/process/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    post:
+      description: "Activates the sprint"
+      responses:
+        '400':
+          description: "Invalid Sprint"
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error"
+        '204':
+          description: ""
+      tags:
+      - sprint
+  /retrospectives/{retro_id}/sprints/{sprint_id}/member-summary/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      description: "Returns the sprint member summary list"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Sprint"
+        '404':
+          description: "Sprint does not exist"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SprintMemberSummaryList'
+      tags:
+      - sprint
+  /retrospectives/{retro_id}/sprints/{sprint_id}/members/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      description: "Returns the sprint member list"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Sprint"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Members'
+      tags:
+      - sprint-member
+    post:
+      description: "Add member to a sprint"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MemberAdd'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint does not exist/ Member not found in sprint"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SprintMemberSummary'
+      tags:
+      - sprint-member
+  /retrospectives/{retro_id}/sprints/{sprint_id}/members/{member_id}/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    - in: path
+      name: member_id
+      required: true
+      type: string
+    patch:
+      description: "Updates the sprint member"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/SprintMemberUpdate'
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint member not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SprintMemberSummary'
+      tags:
+      - sprint-member
+    delete:
+      description: "Deletes the member from sprint"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot edit Sprint"
+        '404':
+          description: "Sprint Member not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+      tags:
+      - sprint-member
+  /retrospectives/{retro_id}/sprints/{sprint_id}/highlights/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      description: "List highlights associated with sprint retrospective"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or access sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Highlights'
+      tags:
+      - sprint-highlight
+    post:
+      description: "Add highlight to a sprint retrospective"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveFeedbackCreate'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Highlight'
+      tags:
+      - sprint-highlight
+  /retrospectives/{retro_id}/sprints/{sprint_id}/highlights/{highlight_id}/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    - in: path
+      name: highlight_id
+      required: true
+      type: string
+    patch:
+      description: "Updates highlight associated with sprint retrospective"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveFeedbackUpdate'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Highlight'
+      tags:
+      - sprint-highlight
+  /retrospectives/{retro_id}/sprints/{sprint_id}/goals/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      parameters:
+      - in: query
+        name: goalType
+        required: true
+        enum:
+        - added
+        - pending
+        - completed
+        type: string
+      description: "List goals associated with sprint retrospective"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or access sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Goals'
+      tags:
+      - sprint-goal
+    post:
+      description: "Add goal to a sprint retrospective"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveFeedbackCreate'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Goal'
+      tags:
+      - sprint-goal
+  /retrospectives/{retro_id}/sprints/{sprint_id}/goals/{goal_id}/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    - in: path
+      name: goal_id
+      required: true
+      type: string
+    patch:
+      description: "Updates goal associated with sprint retrospective"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveFeedbackUpdate'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Goal'
+      tags:
+      - sprint-goal
+  /retrospectives/{retro_id}/sprints/{sprint_id}/goals/{goal_id}/resolve/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    - in: path
+      name: goal_id
+      required: true
+      type: string
+    post:
+      description: 'Resolves the goal'
+      responses:
+        '400':
+          description: 'Only Goal Typed retrospectives could be resolved/unresolved'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Goal'
+      tags:
+      - sprint-goal
+    delete:
+      description: 'Un-resolves the goal'
+      responses:
+        '400':
+          description: 'Only Goal Typed retrospectives could be resolved/unresolved'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Goal'
+      tags:
+      - sprint-goal
+  /retrospectives/{retro_id}/sprints/{sprint_id}/notes/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      description: "List notes associated with sprint retrospective"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or access sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Notes'
+      tags:
+      - sprint-note
+    post:
+      description: "Add note to a sprint retrospective"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveFeedbackCreate'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Note'
+      tags:
+      - sprint-note
+  /retrospectives/{retro_id}/sprints/{sprint_id}/notes/{note_id}/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    - in: path
+      name: note_id
+      required: true
+      type: string
+    patch:
+      description: "Updates note associated with sprint retrospective"
+      parameters:
+      - in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/RetrospectiveFeedbackUpdate'
+      responses:
+        '400':
+          description: 'Invalid request data'
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access Retrospective feedback and/or edit sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RetrospectiveFeedback'
+      tags:
+      - sprint-note
+  /retrospectives/{retro_id}/sprints/{sprint_id}/tasks/:
+    parameters:
+    - in: path
+      name: retro_id
+      required: true
+      type: string
+    - in: path
+      name: sprint_id
+      required: true
+      type: string
+    get:
+      description: "List of all tasks"
+      responses:
+        '401':
+          description: 'Unauthorized User'
+        '403':
+          description: "User cannot access sprint"
+        '404':
+          description: "Sprint not found"
+        '500':
+          description: "Internal Server Error"
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SprintTasks'
+      tags:
+      - sprint-task
+  #  /retrospectives/{retro_id}/sprints/{sprint_id}/tasks/{task_id}/:
+  #      parameters:
+  #      - in: path
+  #        name: retro_id
+  #        required: true
+  #        type: string
+  #      - in: path
+  #        name: sprint_id
+  #        required: true
+  #        type: string
+  #      - in: path
+  #        name: task_id
+  #        required: true
+  #        type: string
+  #      patch:
+  #        description: "Updates Task"
+  #        parameters:
+  #        - in: body
+  #          name: data
+  #          required: true
+  #          schema:
+  #            $ref: '#/definitions/SprintTaskUpdate'
+  #        responses:
+  #          '401':
+  #            description: 'Unauthorized User'
+  #          '403':
+  #            description: "User cannot edit sprint"
+  #          '404':
+  #            description: "Sprint Task not found"
+  #          '500':
+  #            description: "Internal Server Error"
+  #          '200':
+  #            description: ''
+  #            schema:
+  #              $ref: '#/definitions/SprintTask'
+  #        tags:
+  #        - sprint-task
+  #      get:
+  #        description: "Retrieve Task"
+  #        responses:
+  #          '401':
+  #            description: 'Unauthorized User'
+  #          '403':
+  #            description: "User cannot access sprint"
+  #          '404':
+  #            description: "Sprint not found"
+  #          '500':
+  #            description: "Internal Server Error"
+  #          '200':
+  #            description: ''
+  #            schema:
+  #              $ref: '#/definitions/SprintTask'
+  #        tags:
+  #        - sprint-task
+  #  /retrospectives/{retro_id}/sprints/{sprint_id}/tasks/{task_id}/done/:
+  #    parameters:
+  #    - in: path
+  #      name: retro_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: sprint_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: task_id
+  #      required: true
+  #      type: string
+  #    post:
+  #      description: "Mark Sprint Task done"
+  #      responses:
+  #        '401':
+  #          description: 'Unauthorized User'
+  #        '403':
+  #          description: "User cannot edit sprint"
+  #        '404':
+  #          description: "Sprint Task not found"
+  #        '500':
+  #          description: "Internal Server Error"
+  #        '200':
+  #          description: ''
+  #          schema:
+  #            $ref: '#/definitions/SprintTask'
+  #      tags:
+  #      - sprint-task
+  #    delete:
+  #      description: "Mark Sprint Task un-done"
+  #      responses:
+  #        '401':
+  #          description: 'Unauthorized User'
+  #        '403':
+  #          description: "User cannot edit sprint"
+  #        '404':
+  #          description: "Sprint Task not found"
+  #        '500':
+  #          description: "Internal Server Error"
+  #        '200':
+  #          description: ''
+  #          schema:
+  #            $ref: '#/definitions/SprintTask'
+  #      tags:
+  #      - sprint-task
+  #  /retrospectives/{retro_id}/sprints/{sprint_id}/tasks/{task_id}/members/:
+  #    parameters:
+  #    - in: path
+  #      name: retro_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: sprint_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: task_id
+  #      required: true
+  #      type: string
+  #    post:
+  #      description: "Adds a members to sprint task"
+  #      parameters:
+  #      - in: body
+  #        name: data
+  #        required: true
+  #        schema:
+  #          $ref: '#/definitions/TaskMemberAdd'
+  #      responses:
+  #        '400':
+  #          description: "Invalid Request Data"
+  #        '401':
+  #          description: 'Unauthorized User'
+  #        '403':
+  #          description: "User cannot edit sprint task"
+  #        '404':
+  #          description: "Member is not part of this sprint"
+  #        '500':
+  #          description: "Internal Server Error"
+  #        '200':
+  #          description: ''
+  #          schema:
+  #            $ref: '#/definitions/TaskMember'
+  #      tags:
+  #      - sprint-task-member
+  #    get:
+  #      description: "List of all members related to task"
+  #      responses:
+  #        '401':
+  #          description: 'Unauthorized User'
+  #        '403':
+  #          description: "User cannot access sprint task"
+  #        '500':
+  #          description: "Internal Server Error"
+  #        '200':
+  #          description: ''
+  #          schema:
+  #            $ref: '#/definitions/TaskMembers'
+  #      tags:
+  #      - sprint-task-member
+  #  /retrospectives/{retro_id}/sprints/{sprint_id}/tasks/{task_id}/members/{sprint_task_member_id}/:
+  #    parameters:
+  #    - in: path
+  #      name: retro_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: sprint_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: task_id
+  #      required: true
+  #      type: string
+  #    - in: path
+  #      name: sprint_task_member_id
+  #      required: true
+  #      type: string
+  #    patch:
+  #      description: "Updates a members for sprint task"
+  #      parameters:
+  #      - in: body
+  #        name: data
+  #        required: true
+  #        schema:
+  #          $ref: '#/definitions/TaskMemberUpdate'
+  #      responses:
+  #        '400':
+  #          description: "Invalid Request Data"
+  #        '401':
+  #          description: 'Unauthorized User'
+  #        '403':
+  #          description: "User cannot edit sprint task"
+  #        '404':
+  #          description: "Task Member not found"
+  #        '500':
+  #          description: "Internal Server Error"
+  #        '200':
+  #          description: ''
+  #          schema:
+  #            $ref: '#/definitions/TaskMember'
+  #      tags:
+  #      - sprint-task-member
+  /task-tracker/config-list/:
+    get:
+      description: "List task tracker configurations"
+      responses:
+        '200':
+          description: ''
+      tags:
+      - task-tracker
