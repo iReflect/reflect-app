@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/iReflect/reflect-app/apps/timetracker"
+
 	"github.com/gin-gonic/gin"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
@@ -110,6 +112,8 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
+	retrospectiveData.TimeProviderName = timetracker.GetTimeProvideNameFromDisplayName(retrospectiveData.TimeProviderName)
+
 	retro, status, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})

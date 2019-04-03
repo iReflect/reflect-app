@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"encoding/json"
+
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 )
 
@@ -19,9 +20,36 @@ type Connection interface {
 
 var timeProviders = make(map[string]TimeProvider)
 
+// TimeProvidersDisplayNameMap ...
+var TimeProvidersDisplayNameMap = make(map[string]string)
+
 // RegisterTimeProvider ...
 func RegisterTimeProvider(name string, newProvider TimeProvider) {
 	timeProviders[name] = newProvider
+}
+
+// RegisterTimeProviderDisplayName ...
+func RegisterTimeProviderDisplayName(name string, displayName string) {
+	TimeProvidersDisplayNameMap[name] = displayName
+}
+
+// GetTimeProvideNameFromDisplayName ...
+func GetTimeProvideNameFromDisplayName(displayName string) string {
+	for name, display := range TimeProvidersDisplayNameMap {
+		if display == displayName {
+			return name
+		}
+	}
+	return ""
+}
+
+// GetTimeProvidersList ...
+func GetTimeProvidersList() []string {
+	var keys []string
+	for key := range timeProviders {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 // GetTimeProvider ...

@@ -10,6 +10,7 @@ import (
 	"github.com/qor/qor/resource"
 
 	"github.com/iReflect/reflect-app/apps/tasktracker"
+	"github.com/iReflect/reflect-app/apps/timetracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/iReflect/reflect-app/db/models/fields"
 	"github.com/iReflect/reflect-app/libs/utils"
@@ -21,6 +22,7 @@ type Retrospective struct {
 	Title              string       `gorm:"type:varchar(255); not null"`
 	ProjectName        string       `gorm:"type:varchar(255); not null"`
 	TaskProviderConfig fields.JSONB `gorm:"type:jsonb; not null; default:'[]'::jsonb"`
+	TimeProviderName   string       `gorm:"not null"`
 	Team               userModels.Team
 	TeamID             uint `gorm:"not null"`
 	Sprints            []Sprint
@@ -40,7 +42,17 @@ func (retrospective *Retrospective) Validate(db *gorm.DB) (err error) {
 
 // BeforeSave ...
 func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
-	return retrospective.Validate(db)
+	err = retrospective.Validate(db)
+	if err != nil {
+		return err
+	}
+	keys := timetracker.GetTimeProvidersList()
+	for _, key := range keys {
+		if retrospective.TimeProviderName == key {
+			return nil
+		}
+	}
+	return errors.New("Invalid time provider name")
 }
 
 // BeforeUpdate ...
