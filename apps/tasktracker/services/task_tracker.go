@@ -42,10 +42,12 @@ func (service TaskTrackerService) SupportedTimeTrackersList(taskTracker string, 
 		if team.TimeProviderName == genricTimetracker {
 			isGenericTimeTracker = true
 			continue
+		} else {
+			timeTrackerList.TimeProviders = append(timeTrackerList.TimeProviders, serializers.TimeProvider{
+				Name:        genricTimetracker,
+				DisplayName: timetracker.TimeProvidersDisplayNameMap[genricTimetracker],
+			})
 		}
-		timeTrackerList.TimeProviders = append(timeTrackerList.TimeProviders, serializers.TimeProvider{
-			Name:        genricTimetracker,
-			DisplayName: timetracker.TimeProvidersDisplayNameMap[genricTimetracker]})
 	}
 	if taskTracker != team.TimeProviderName && isGenericTimeTracker {
 		teamTaskTracker := serializers.TimeProvider{

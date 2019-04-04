@@ -353,6 +353,11 @@ func (service SprintService) GetTimeTrackerData(sprint retroModels.Sprint, taskP
 
 	if sprint.Retrospective.TimeProviderName == constants.JIRA {
 		timeTrackerTaskKeys, timeLogs, err = service.GetSprintMemberTimeTrackerData(taskProviderConfig, sprint)
+		if err != nil {
+			utils.LogToSentry(err)
+			service.SetSyncFailed(sprint.ID)
+			return nil, nil, err
+		}
 		memberEmailTimeLogs := make(map[string][]timeTrackerSerializers.TimeLog)
 		for _, timeLog := range timeLogs {
 			memberEmailTimeLogs[timeLog.Email] = append(memberEmailTimeLogs[timeLog.Email], timeLog)
@@ -364,13 +369,13 @@ func (service SprintService) GetTimeTrackerData(sprint retroModels.Sprint, taskP
 		for _, sprintMember := range sprint.SprintMembers {
 			var memberTaskKeys []string
 			memberTaskKeys, timeLogs, err = service.GetSprintMemberTimeTrackerData(sprintMember.Member.TimeProviderConfig, sprint)
-			sprintMemberTimeLogs[sprintMember.ID] = timeLogs
-			timeTrackerTaskKeys = append(timeTrackerTaskKeys, memberTaskKeys...)
 			if err != nil {
 				utils.LogToSentry(err)
 				service.SetSyncFailed(sprint.ID)
 				return nil, nil, err
 			}
+			sprintMemberTimeLogs[sprintMember.ID] = timeLogs
+			timeTrackerTaskKeys = append(timeTrackerTaskKeys, memberTaskKeys...)
 		}
 	}
 
@@ -390,6 +395,7 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 
 	if err != nil {
 		utils.LogToSentry(err)
+		service.SetSyncFailed(sprint.ID)
 		return nil, nil, err
 	}
 	sprintMemberEmailMap := make(map[string]uint)
@@ -402,10 +408,6 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 			continue
 		}
 		ticketKeys = append(ticketKeys, timeLog.TaskKey)
-		if err != nil {
-			utils.LogToSentry(err)
-			return nil, nil, err
-		}
 	}
 	return ticketKeys, timeLogs, nil
 }

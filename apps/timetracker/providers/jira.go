@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 	"time"
 
@@ -152,5 +153,8 @@ func (jiraConnection *JIRAConnection) GetProjectTimeLogs(project string, startTi
 			})
 		}
 	}
+
+	log.Println("Result : ", timeLogs)
+
 	return timeLogs
 }

@@ -138,6 +138,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 				TaskKey: logData.TaskID,
 				Logger:  "GSheets",
 				Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
+				Email:   m.config.Email,
 			})
 		}
 	}
