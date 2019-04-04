@@ -45,8 +45,8 @@ type JiraTimeResult struct {
 
 // TimeProviderJira ...
 const (
-	TimeProviderJira            = "jira"
-	TimeProviderJiraDisplayName = "JIRA"
+	TimeProviderJira            = constants.JIRA
+	TimeProviderJiraDisplayName = constants.JIRADisplayName
 )
 
 func init() {

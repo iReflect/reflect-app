@@ -37,6 +37,9 @@ func (retrospective *Retrospective) Validate(db *gorm.DB) (err error) {
 		err = errors.New("story points per week cannot be negative")
 		return err
 	}
+	if _, exists := timetracker.TimeProvidersDisplayNameMap[retrospective.TimeProviderName]; !exists {
+		return errors.New("Invalid time provider name")
+	}
 	return
 }
 
@@ -46,13 +49,7 @@ func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
 	if err != nil {
 		return err
 	}
-	keys := timetracker.GetTimeProvidersList()
-	for _, key := range keys {
-		if retrospective.TimeProviderName == key {
-			return nil
-		}
-	}
-	return errors.New("Invalid time provider name")
+	return nil
 }
 
 // BeforeUpdate ...
@@ -65,7 +62,9 @@ func RegisterRetrospectiveToAdmin(Admin *admin.Admin, config admin.Config) {
 	retrospective := Admin.AddResource(&Retrospective{}, &config)
 	taskProviderConfigMeta := getTaskProviderConfigMetaFieldMeta()
 	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+	providerNameMeta := getTimeProviderMeta()
 
+	retrospective.Meta(&providerNameMeta)
 	retrospective.Meta(&taskProviderConfigMeta)
 	retrospective.Meta(&createdByMeta)
 
@@ -89,6 +88,33 @@ func getTaskProviderConfigMetaFieldMeta() admin.Meta {
 			value := metaValue.Value.([]string)[0]
 			retrospective.TaskProviderConfig = fields.JSONB(value)
 		}}
+}
+
+// getTimeProviderMeta ...
+func getTimeProviderMeta() admin.Meta {
+	return admin.Meta{
+		Name: "TimeProviderName",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			retrospective := value.(*Retrospective)
+			return retrospective.TimeProviderName
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			retrospective := value.(*Retrospective)
+			return timetracker.TimeProvidersDisplayNameMap[retrospective.TimeProviderName]
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			retrospective := resource.(*Retrospective)
+			value := metaValue.Value.([]string)[0]
+			retrospective.TimeProviderName = value
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for key, value := range timetracker.TimeProvidersDisplayNameMap {
+				results = append(results, []string{key, value})
+			}
+			return
+		},
+	}
 }
 
 // RetroJoinSprints ...

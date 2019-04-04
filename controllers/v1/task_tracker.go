@@ -37,10 +37,10 @@ func (ctrl TaskTrackerController) SupportedTimeTrackersList(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.TeamIDIsMustError})
 		return
 	}
-	timeTrackerList, err := ctrl.TaskTrackerService.SupportedTimeTrackersList(taskTracker, team)
+	timeTrackers, err := ctrl.TaskTrackerService.SupportedTimeTrackersList(taskTracker, team)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"timeProviderList": timeTrackerList})
+	c.JSON(http.StatusOK, timeTrackers)
 }
