@@ -1,8 +1,10 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -11,6 +13,17 @@ import (
 
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
+
+//Email ...
+type Email struct {
+	Email string `json:"email"`
+}
+
+//TimeProviderConfig ...
+type TimeProviderConfig struct {
+	Data Email  `json:"data"`
+	Type string `json:"type"`
+}
 
 // User represent the app user in system
 type User struct {
@@ -24,6 +37,20 @@ type User struct {
 	IsAdmin            bool         `gorm:"default:false; not null"`
 	Teams              []Team
 	Profiles           []UserProfile
+}
+
+//BeforeSave ...
+func (user *User) BeforeSave() {
+	var timeconfig []TimeProviderConfig
+
+	user.FirstName = strings.TrimSpace(user.FirstName)
+	user.LastName = strings.TrimSpace(user.LastName)
+	user.Email = strings.TrimSpace(user.Email)
+
+	json.Unmarshal([]byte(user.TimeProviderConfig), &timeconfig)
+	timeconfig[0].Data.Email = strings.TrimSpace(timeconfig[0].Data.Email)
+	timeconfig[0].Type = strings.TrimSpace(timeconfig[0].Type)
+	user.TimeProviderConfig, _ = json.Marshal(timeconfig)
 }
 
 // Stringify ...

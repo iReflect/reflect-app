@@ -8,6 +8,11 @@ const CustomDateFormat = "2006-01-02"
 // ActionItemType is datatype for ActionItems's
 type ActionItemType string
 
+// constats to be used for task providers
+const (
+	PivotalTracker = "pivotal"
+)
+
 // constants defined to use in ActionItemTypeMap
 const (
 	Retrospective         ActionItemType = "Retrospective"

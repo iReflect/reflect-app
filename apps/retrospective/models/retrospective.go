@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -40,6 +41,8 @@ func (retrospective *Retrospective) Validate(db *gorm.DB) (err error) {
 
 // BeforeSave ...
 func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
+	retrospective.Title = strings.TrimSpace(retrospective.Title)
+	retrospective.ProjectName = strings.TrimSpace(retrospective.ProjectName)
 	return retrospective.Validate(db)
 }
 

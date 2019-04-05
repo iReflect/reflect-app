@@ -3,12 +3,13 @@ package services
 // TODO Refactor this service and migrate to SprintSync service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 
 	"github.com/gocraft/work"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
@@ -16,6 +17,7 @@ import (
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 	"github.com/jinzhu/gorm"
@@ -63,9 +65,29 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 	var timeTrackerTaskKeys []string
 	var timeLogs []timeTrackerSerializers.TimeLog
 	sprintMemberTimeLogs := map[uint][]timeTrackerSerializers.TimeLog{}
+	var taskProviderConfigList []interface{}
+
+	json.Unmarshal(taskProviderConfig, &taskProviderConfigList)
+	tpConfig := taskProviderConfigList[0]
+	tp := tpConfig.(map[string]interface{})
+
 	for _, sprintMember := range sprint.SprintMembers {
 		var memberTaskKeys []string
 		memberTaskKeys, timeLogs, err = service.GetSprintMemberTimeTrackerData(sprintMember, sprint)
+
+		if tp["type"].(string) == constants.PivotalTracker {
+			for index, value := range memberTaskKeys {
+				memberTaskKeys[index] = strings.TrimPrefix(value, "#")
+			}
+			for index, value := range timeLogs {
+				timeLogs[index] = timeTrackerSerializers.TimeLog{
+					Project: value.Project,
+					TaskKey: strings.TrimPrefix(value.TaskKey, "#"),
+					Logger:  value.Logger,
+					Minutes: value.Minutes,
+				}
+			}
+		}
 		sprintMemberTimeLogs[sprintMember.ID] = timeLogs
 		timeTrackerTaskKeys = append(timeTrackerTaskKeys, memberTaskKeys...)
 		if err != nil {
@@ -74,7 +96,6 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 			return err
 		}
 	}
-
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
 		sprint,
 		sprint.RetrospectiveID,
@@ -86,7 +107,6 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		service.SetSyncFailed(sprint.ID)
 		return err
 	}
-
 	err = service.updateMissingTimeTrackerTask(sprint,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
@@ -218,7 +238,25 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 		service.SetSyncFailed(sprint.ID)
 		return err
 	}
+	var taskProviderConfigList []interface{}
 
+	json.Unmarshal(taskProviderConfig, &taskProviderConfigList)
+	tpConfig := taskProviderConfigList[0]
+	tp := tpConfig.(map[string]interface{})
+
+	if tp["type"].(string) == constants.PivotalTracker {
+		for index, value := range timeTrackerTaskKeys {
+			timeTrackerTaskKeys[index] = strings.TrimPrefix(value, "#")
+		}
+		for index, value := range timeLogs {
+			timeLogs[index] = timeTrackerSerializers.TimeLog{
+				Project: value.Project,
+				TaskKey: strings.TrimPrefix(value.TaskKey, "#"),
+				Logger:  value.Logger,
+				Minutes: value.Minutes,
+			}
+		}
+	}
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
 		sprint,
 		sprint.RetrospectiveID,

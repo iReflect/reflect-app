@@ -2,12 +2,14 @@ package models
 
 import (
 	"errors"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/iReflect/reflect-app/config"
 	customErrors "github.com/iReflect/reflect-app/libs"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"log"
-	"strconv"
-	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -146,6 +148,7 @@ func (sprint *Sprint) validateDateContinuity(baseQuery *gorm.DB, statuses []Spri
 
 // BeforeSave ...
 func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
+	sprint.SprintID = strings.TrimSpace(sprint.SprintID)
 	return sprint.Validate(db)
 }
 
