@@ -8,6 +8,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 
+	"strings"
+
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -16,7 +18,6 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	customErrors "github.com/iReflect/reflect-app/libs"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strings"
 )
 
 // SprintService ...
@@ -339,7 +340,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 		QueryExpr()
 
 	taskQuery := taskList.Select(
-		"COUNT(DISTINCT(tasks.id)) AS total_count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS total_points_earned").
+		"COUNT(DISTINCT(tasks.id)) AS total_count, COALESCE(SUM(sprint_member_tasks.points_earned),0) AS total_points_earned, COALESCE(SUM(sprint_member_tasks.time_spent_minutes),0) AS actual_hours").
 		QueryExpr()
 	err := db.Raw("SELECT * FROM (?) AS total CROSS JOIN (?) AS done", taskQuery, doneTaskQuery).
 		Scan(&summary).Error
