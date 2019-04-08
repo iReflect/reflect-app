@@ -57,6 +57,10 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 		retroFeedback.ResolvedAt = sprint.EndDate
 	}
 
+	if feedbackType == models.GoalType {
+		retroFeedback.ExpectedAt = sprint.EndDate
+	}
+
 	err = db.Create(&retroFeedback).Error
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
