@@ -132,6 +132,13 @@ func (service SprintTaskService) Update(sprintTaskID string, retroID string, spr
 	return service.Get(sprintTaskID, retroID, sprintID)
 }
 
+// Delete ...
+func (service SprintTaskService) Delete(sprintTaskID string, retroID string, sprintID string) (int, error) {
+	fmt.Println(retroID, sprintID, sprintTaskID)
+
+	return http.StatusOK, nil
+}
+
 // MarkDone ...
 func (service SprintTaskService) MarkDone(
 	sprintTaskID string,
