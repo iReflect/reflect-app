@@ -13,9 +13,10 @@ import (
 
 // SprintTaskController ...
 type SprintTaskController struct {
-	SprintTaskService retroServices.SprintTaskService
-	PermissionService retroServices.PermissionService
-	TrailService      retroServices.TrailService
+	SprintTaskService       retroServices.SprintTaskService
+	SprintTaskMemberService retroServices.SprintTaskMemberService
+	PermissionService       retroServices.PermissionService
+	TrailService            retroServices.TrailService
 }
 
 // Routes for Tasks
@@ -39,7 +40,7 @@ func (ctrl SprintTaskController) List(c *gin.Context) {
 	}
 
 	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID)
-
+	tasks = ctrl.SprintTaskMemberService.AddSprintActiveMember(tasks, userID.(uint), retroID, sprintID)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
