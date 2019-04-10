@@ -24,3 +24,6 @@ goose
 test
 
 config/*_credentials.json
+
+# DB output
+.rdb
