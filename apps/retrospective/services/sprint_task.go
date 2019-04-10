@@ -134,8 +134,43 @@ func (service SprintTaskService) Update(sprintTaskID string, retroID string, spr
 
 // Delete ...
 func (service SprintTaskService) Delete(sprintTaskID string, retroID string, sprintID string) (int, error) {
-	fmt.Println(retroID, sprintID, sprintTaskID)
+	gormDB := service.DB
 
+	var sprintTask retroModels.SprintTask
+	err := gormDB.Model(retroModels.SprintTask{}).Where("id = ?", sprintTaskID).Scan(&sprintTask).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	var sprintTasksCount int
+	err = gormDB.Model(&retroModels.SprintTask{}).Where("task_id = ?", sprintTask.TaskID).Count(&sprintTasksCount).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	// delete sprintTask.
+	err = gormDB.Where("id = ?", sprintTaskID).Delete(retroModels.SprintTask{}).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	// delete sprintMemberTask
+	err = gormDB.Where("sprint_task_id = ?", sprintTaskID).Delete(retroModels.SprintMemberTask{}).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	// if no other sprint contains this task then delete task and taskKeyMap.
+	if sprintTasksCount == 1 {
+		// Delete task.
+		err = gormDB.Where("id = ?", sprintTask.TaskID).Delete(retroModels.Task{}).Error
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		// Delete task key map.
+		err = gormDB.Where("task_id = ?", sprintTask.TaskID).Delete(retroModels.TaskKeyMap{}).Error
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+	}
 	return http.StatusOK, nil
 }
 
