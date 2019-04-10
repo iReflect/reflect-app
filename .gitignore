@@ -25,5 +25,5 @@ test
 
 config/*_credentials.json
 
-# DB output
-.rdb
+# redis DB output
+dump.rdb
