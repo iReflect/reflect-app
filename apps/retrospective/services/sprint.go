@@ -342,7 +342,7 @@ func (service SprintService) getSprintTaskTypeSummary(
 	taskQuery := taskList.Select(
 		`COUNT(DISTINCT(tasks.id)) AS total_count, 
 	   COALESCE(SUM(sprint_member_tasks.points_earned),0) AS total_points_earned,
-		 COALESCE(SUM(sprint_member_tasks.time_spent_minutes),0) AS actual_hours`).
+	   COALESCE(SUM(sprint_member_tasks.time_spent_minutes),0) AS actual_hours`).
 		QueryExpr()
 	err := db.Raw("SELECT * FROM (?) AS total CROSS JOIN (?) AS done", taskQuery, doneTaskQuery).
 		Scan(&summary).Error
