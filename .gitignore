@@ -24,3 +24,6 @@ goose
 test
 
 config/*_credentials.json
+
+# redis DB output
+dump.rdb
