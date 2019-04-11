@@ -3,8 +3,11 @@ package services
 import (
 	"encoding/json"
 	"errors"
-	"github.com/jinzhu/gorm"
 	"strconv"
+
+	"github.com/jinzhu/gorm"
+
+	"net/http"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -13,7 +16,6 @@ import (
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 // RetrospectiveService ...
@@ -30,7 +32,8 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	db := service.DB
 
 	retrospectiveList = &retroSerializers.RetrospectiveListSerializer{}
-	retrospectiveList.Retrospectives = []retroSerializers.Retrospective{}
+	retrospectiveList.MyRetrospectives = []retroSerializers.Retrospective{}
+	retrospectiveList.OthersRetrospectives = []retroSerializers.Retrospective{}
 
 	perPage, err := strconv.Atoi(perPageString)
 	if err != nil {
@@ -58,19 +61,25 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		Offset(offset).
 		Select("DISTINCT(retrospectives.*)")
 
+	userTeamQuery := db.Model(&userModels.UserTeam{}).
+		Select("team_id").
+		Where("user_teams.deleted_at IS NULL").
+		Where("user_id = ? and leaved_at IS NULL", userID).
+		QueryExpr()
+
 	if isAdmin {
 		err = baseQuery.
-			Find(&retrospectiveList.Retrospectives).
+			Where("retrospectives.team_id NOT IN (?)", userTeamQuery).
+			Preload("Team").
+			Find(&retrospectiveList.OthersRetrospectives).
 			Error
 
-	} else {
-		err = baseQuery.
-			Scopes(retroModels.RetroJoinUserTeams).
-			Where("user_teams.user_id = ?", userID).
-			Preload("Team").
-			Find(&retrospectiveList.Retrospectives).
-			Error
 	}
+	err = baseQuery.
+		Where("retrospectives.team_id IN (?)", userTeamQuery).
+		Preload("Team").
+		Find(&retrospectiveList.MyRetrospectives).
+		Error
 
 	if err != nil {
 		utils.LogToSentry(err)
