@@ -14,15 +14,10 @@ import (
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
-//Email ...
-type Email struct {
-	Email string `json:"email"`
-}
-
-//TimeProviderConfig ...
+// TimeProviderConfig ...
 type TimeProviderConfig struct {
-	Data Email  `json:"data"`
-	Type string `json:"type"`
+	Data interface{} `json:"data"`
+	Type string      `json:"type"`
 }
 
 // User represent the app user in system
@@ -39,18 +34,29 @@ type User struct {
 	Profiles           []UserProfile
 }
 
-//BeforeSave ...
-func (user *User) BeforeSave() {
-	var timeconfig []TimeProviderConfig
+// BeforeSave ...
+func (user *User) BeforeSave() error {
+	return CleanUserData(user)
+}
+
+// CleanUserData ...
+func CleanUserData(user *User) error {
+	var timeProviderConfigurations []TimeProviderConfig
 
 	user.FirstName = strings.TrimSpace(user.FirstName)
 	user.LastName = strings.TrimSpace(user.LastName)
 	user.Email = strings.TrimSpace(user.Email)
 
-	json.Unmarshal([]byte(user.TimeProviderConfig), &timeconfig)
-	timeconfig[0].Data.Email = strings.TrimSpace(timeconfig[0].Data.Email)
-	timeconfig[0].Type = strings.TrimSpace(timeconfig[0].Type)
-	user.TimeProviderConfig, _ = json.Marshal(timeconfig)
+	err := json.Unmarshal([]byte(user.TimeProviderConfig), &timeProviderConfigurations)
+	if err != nil {
+		return err
+	}
+	for index, timeconfig := range timeProviderConfigurations {
+		timeProviderConfigurations[0].Data.(map[string]interface{})["email"] = strings.TrimSpace(timeProviderConfigurations[0].Data.(map[string]interface{})["email"].(string))
+		timeProviderConfigurations[index].Type = strings.TrimSpace(timeconfig.Type)
+	}
+	user.TimeProviderConfig, err = json.Marshal(timeProviderConfigurations)
+	return err
 }
 
 // Stringify ...
