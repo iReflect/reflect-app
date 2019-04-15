@@ -3,11 +3,10 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
-
-	"net/http"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -63,7 +62,6 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 
 	userTeamQuery := db.Model(&userModels.UserTeam{}).
 		Select("team_id").
-		Where("user_teams.deleted_at IS NULL").
 		Where("user_id = ? and leaved_at IS NULL", userID).
 		QueryExpr()
 
@@ -73,10 +71,14 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 			Preload("Team").
 			Find(&retrospectiveList.OthersRetrospectives).
 			Error
-
+		if err != nil {
+			utils.LogToSentry(err)
+			return nil, http.StatusInternalServerError, errors.New("unable to get retrospective list")
+		}
 	}
 	err = baseQuery.
-		Where("retrospectives.team_id IN (?)", userTeamQuery).
+		Scopes(retroModels.RetroJoinUserTeams).
+		Where("user_teams.user_id = ?", userID).
 		Preload("Team").
 		Find(&retrospectiveList.MyRetrospectives).
 		Error
