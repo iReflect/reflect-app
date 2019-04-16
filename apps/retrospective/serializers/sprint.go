@@ -4,7 +4,6 @@ import (
 	"time"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
-
 	userSerializer "github.com/iReflect/reflect-app/apps/user/serializers"
 )
 

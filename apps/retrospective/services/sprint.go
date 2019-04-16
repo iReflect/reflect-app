@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/jinzhu/gorm"
-
-	"strings"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
