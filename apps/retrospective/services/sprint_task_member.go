@@ -63,34 +63,6 @@ func (service SprintTaskMemberService) GetMembers(
 	return members, http.StatusOK, nil
 }
 
-// AddSprintActiveMember ...
-func (service SprintTaskMemberService) AddSprintActiveMember(taskList *retroSerializers.SprintTasksSerializer,
-	memberID uint,
-	retroID string,
-	sprintID string) *retroSerializers.SprintTasksSerializer {
-	db := service.DB
-	sprintMemberTask := retroModels.SprintMemberTask{}
-	sprintMember := retroModels.SprintMember{}
-
-	db.Model(&retroModels.SprintMember{}).
-		Where("sprint_members.deleted_at IS NULL").
-		Where("sprint_id = ?", sprintID).
-		Where("member_id = ?", memberID).
-		Find(&sprintMember)
-
-	sprintMemberTask.SprintMemberID = sprintMember.ID
-	for _, task := range taskList.Tasks {
-		sprintMemberTask.SprintTaskID = task.ID
-		task.SprintActiveMemberTime = 0
-		member, _, err := service.GetMember(sprintMemberTask, memberID, retroID, sprintID)
-
-		if err == nil {
-			task.SprintActiveMemberTime = member.SprintTime
-		}
-	}
-	return taskList
-}
-
 // GetMember returns the task member summary of a task for a particular sprint member
 func (service SprintTaskMemberService) GetMember(
 	sprintMemberTask retroModels.SprintMemberTask,

@@ -14,7 +14,6 @@ import (
 // SprintTaskController ...
 type SprintTaskController struct {
 	SprintTaskService       retroServices.SprintTaskService
-	SprintTaskMemberService retroServices.SprintTaskMemberService
 	PermissionService       retroServices.PermissionService
 	TrailService            retroServices.TrailService
 }
@@ -39,8 +38,7 @@ func (ctrl SprintTaskController) List(c *gin.Context) {
 		return
 	}
 
-	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID)
-	tasks = ctrl.SprintTaskMemberService.AddSprintActiveMember(tasks, userID.(uint), retroID, sprintID)
+	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -61,7 +59,7 @@ func (ctrl SprintTaskController) Get(c *gin.Context) {
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.Get(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.Get(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -86,7 +84,7 @@ func (ctrl SprintTaskController) Update(c *gin.Context) {
 	var data retroSerializers.SprintTaskUpdate
 	err := c.BindJSON(&data)
 
-	task, status, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data)
+	task, status, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -112,7 +110,7 @@ func (ctrl SprintTaskController) MarkDone(c *gin.Context) {
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -139,7 +137,7 @@ func (ctrl SprintTaskController) MarkUndone(c *gin.Context) {
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
