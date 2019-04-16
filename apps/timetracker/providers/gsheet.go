@@ -4,8 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/iReflect/reflect-app/libs/utils"
-
 	"encoding/json"
 	"errors"
 
@@ -14,6 +12,7 @@ import (
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/google"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // GSheetTimeProvider ...
