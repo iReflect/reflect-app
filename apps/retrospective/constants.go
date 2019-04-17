@@ -25,3 +25,6 @@ const (
 	GoodRating
 	NotableRating
 )
+
+//Resolution ...
+type Resolution int8

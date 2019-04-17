@@ -110,8 +110,10 @@ func (ctrl SprintTaskController) MarkDone(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
+	var data retroSerializers.SprintTaskDone
+	err := c.BindJSON(&data)
 
-	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID, data)
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
