@@ -33,6 +33,8 @@ all: clean | $(BASE) ; $(info $(M) building executable…) @ ## Build program bi
 
 	$Q cd $(BUILD_DIR) && mkdir -p app/views/qor
 	cd $(BUILD_DIR) && cp -r $(BASE)/vendor/github.com/qor/admin/views/* app/views/qor/
+	$Q cd $(BUILD_DIR) && mkdir -p apps/user/views
+	cd $(BUILD_DIR) && cp -r $(BASE)/apps/user/views/* apps/user/views/
 	$Q  cd $(BUILD_DIR) && mkdir -p db
 	cd $(BUILD_DIR) && cp -r $(BASE)/db/migrations db/
 	cd $(BIN) && zip -r -q $(BUILD_NAME).zip $(BUILD_NAME)
