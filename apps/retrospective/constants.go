@@ -26,5 +26,19 @@ const (
 	NotableRating
 )
 
-//Resolution ...
+// Resolution ...
 type Resolution int8
+
+// ResolutionValues ...
+var ResolutionValues = [...]string{
+	" ",
+	"Done",
+	"Won't Do",
+	"Duplicate",
+	"Can't Reproduce",
+}
+
+// GetStringValue ...
+func (resolution Resolution) GetStringValue() string {
+	return ResolutionValues[resolution]
+}
