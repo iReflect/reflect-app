@@ -82,10 +82,11 @@ type timeTrackerConfig struct {
 }
 
 type emailConfig struct {
-	Username string `env:"EMAIL_USERNAME" envDefault:""`
-	Password string `env:"EMAIL_PASSWORD" envDefault:""`
-	Host     string `env:"EMAIL_HOST" envDefault:""`
-	Port     string `env:"EMAIL_PORT" envDefault:""`
+	Username  string `env:"EMAIL_USERNAME"`
+	Password  string `env:"EMAIL_PASSWORD"`
+	Host      string `env:"EMAIL_HOST"`
+	Port      string `env:"EMAIL_PORT"`
+	EmailFrom string `env:"EMAIL_FROM" envDefault:"iReflect<no-reply@ireflect.com>"`
 }
 
 // GetConfig ...
