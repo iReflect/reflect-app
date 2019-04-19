@@ -1,10 +1,10 @@
 package timetracker
 
 import (
-	"strings"
 	"time"
 
 	"encoding/json"
+	"strings"
 
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 )

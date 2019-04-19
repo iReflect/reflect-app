@@ -36,11 +36,11 @@ type User struct {
 
 // BeforeSave ...
 func (user *User) BeforeSave() error {
-	return CleanUserData(user)
+	return user.CleanUserData()
 }
 
 // CleanUserData ...
-func CleanUserData(user *User) error {
+func (user *User) CleanUserData() error {
 	var timeProviderConfigurations []TimeProviderConfig
 
 	user.FirstName = strings.TrimSpace(user.FirstName)

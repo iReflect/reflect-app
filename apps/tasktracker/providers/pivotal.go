@@ -154,7 +154,6 @@ func (c *PivotalConnection) serializeTickets(tickets []*pivotal.Story, userIDNam
 // serializeTicket ...
 func (c *PivotalConnection) serializeTicket(ticket *pivotal.Story, userIDNameMap map[int]string) *serializers.Task {
 	ticketID := strconv.Itoa(ticket.Id)
-	ticketID = strings.TrimPrefix(ticketID, "#")
 	task := &serializers.Task{
 		Key:             ticketID,
 		TrackerUniqueID: ticketID,
