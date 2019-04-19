@@ -13,9 +13,9 @@ import (
 
 // SprintTaskController ...
 type SprintTaskController struct {
-	SprintTaskService       retroServices.SprintTaskService
-	PermissionService       retroServices.PermissionService
-	TrailService            retroServices.TrailService
+	SprintTaskService retroServices.SprintTaskService
+	PermissionService retroServices.PermissionService
+	TrailService      retroServices.TrailService
 }
 
 // Routes for Tasks
