@@ -84,6 +84,10 @@ func (ctrl SprintTaskController) Update(c *gin.Context) {
 
 	var data retroSerializers.SprintTaskUpdate
 	err := c.BindJSON(&data)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "failed to update sprint task"})
+		return
+	}
 
 	task, status, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data)
 
@@ -112,7 +116,10 @@ func (ctrl SprintTaskController) MarkDone(c *gin.Context) {
 	}
 	var data retroSerializers.SprintTaskDone
 	err := c.BindJSON(&data)
-
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "failed to mark the issue as done"})
+		return
+	}
 	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID, data)
 
 	if err != nil {

@@ -31,7 +31,7 @@ type Resolution int8
 
 // ResolutionValues ...
 var ResolutionValues = [...]string{
-	" ",
+	"-",
 	"Done",
 	"Won't Do",
 	"Duplicate",
