@@ -103,12 +103,4 @@ const EmailMIME = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\
 // GenericTimeTrackersList is list of generic time providers which can be used for any task provider.
 var GenericTimeTrackersList = []string{"gsheet"}
 
-// time trackers value and display name.
-const (
-	JIRA                       = "jira"
-	JIRADisplayName            = "JIRA"
-	GoogleTimesheet            = "gsheet"
-	GoogleTimesheetDsiplayName = "Google Timesheet"
-)
-
 // <-------------------- end ------------------------->

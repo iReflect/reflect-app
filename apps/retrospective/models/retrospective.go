@@ -45,8 +45,7 @@ func (retrospective *Retrospective) Validate(db *gorm.DB) (err error) {
 
 // BeforeSave ...
 func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
-	err = retrospective.Validate(db)
-	return err
+	return retrospective.Validate(db)
 }
 
 // BeforeUpdate ...

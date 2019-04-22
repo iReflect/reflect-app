@@ -16,8 +16,8 @@ import (
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/apps/timetracker"
+	timeTrackerProviders "github.com/iReflect/reflect-app/apps/timetracker/providers"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
-	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/iReflect/reflect-app/workers"
 )
@@ -207,7 +207,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 		return err
 	}
 	timeProviderConfig := sprintMember.Member.TimeProviderConfig
-	if sprint.Retrospective.TimeProviderName == constants.JIRA {
+	if sprint.Retrospective.TimeProviderName == timeTrackerProviders.TimeProviderJira {
 		timeProviderConfig = taskProviderConfig
 	}
 	timeTrackerTaskKeys, timeLogs, err := service.GetSprintMemberTimeTrackerData(timeProviderConfig, sprint)
@@ -351,7 +351,7 @@ func (service SprintService) GetTimeTrackerData(sprint retroModels.Sprint, taskP
 	sprintMemberTimeLogs := map[uint][]timeTrackerSerializers.TimeLog{}
 	var err error
 
-	if sprint.Retrospective.TimeProviderName == constants.JIRA {
+	if sprint.Retrospective.TimeProviderName == timeTrackerProviders.TimeProviderJira {
 		timeTrackerTaskKeys, timeLogs, err = service.GetSprintMemberTimeTrackerData(taskProviderConfig, sprint)
 		if err != nil {
 			utils.LogToSentry(err)
@@ -404,10 +404,9 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 	}
 	var ticketKeys []string
 	for _, timeLog := range timeLogs {
-		if _, exists := sprintMemberEmailMap[timeLog.Email]; !exists {
-			continue
+		if _, exists := sprintMemberEmailMap[timeLog.Email]; exists {
+			ticketKeys = append(ticketKeys, timeLog.TaskKey)
 		}
-		ticketKeys = append(ticketKeys, timeLog.TaskKey)
 	}
 	return ticketKeys, timeLogs, nil
 }

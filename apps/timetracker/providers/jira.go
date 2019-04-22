@@ -12,7 +12,6 @@ import (
 	"github.com/andygrunwald/go-jira"
 	"github.com/iReflect/reflect-app/constants"
 
-	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
@@ -30,11 +29,18 @@ type JIRAConnection struct {
 
 // JIRAConfig ...
 type JIRAConfig struct {
-	Credentials   tasktracker.Credentials `json:"Credentials"`
-	BaseURL       string                  `json:"BaseURL"`
-	BoardIds      string                  `json:"BoardIds"`
-	JQL           string                  `json:"JQL"`
-	EstimateField string                  `json:"EstimateField"`
+	Credentials   Credentials `json:"Credentials"`
+	BaseURL       string      `json:"BaseURL"`
+	BoardIds      string      `json:"BoardIds"`
+	JQL           string      `json:"JQL"`
+	EstimateField string      `json:"EstimateField"`
+}
+
+// Credentials ...
+type Credentials struct {
+	Type     string `json:"Type"`
+	Username string `json:"Username"`
+	Password string `json:"Password"`
 }
 
 // JiraTimeResult ...
@@ -46,8 +52,8 @@ type JiraTimeResult struct {
 
 // TimeProviderJira ...
 const (
-	TimeProviderJira            = constants.JIRA
-	TimeProviderJiraDisplayName = constants.JIRADisplayName
+	TimeProviderJira            = "jira"
+	TimeProviderJiraDisplayName = "JIRA"
 )
 
 func init() {
@@ -124,7 +130,10 @@ func (jiraConnection *JIRAConnection) GetProjectTimeLogs(project string, startTi
 	var timeLogs []serializers.TimeLog
 	searchOptions := jira.SearchOptions{MaxResults: 50000, Fields: []string{"worklog", "project"}, ValidateQuery: "warn"}
 
+	// constructed JQL for a fetching ticket which had worklogs for a particular time period and project.
 	jql := fmt.Sprintf("project='%s' AND worklogDate>=%s AND worklogDate<=%s", project, startTime.Format(constants.CustomDateFormat), endTime.Format(constants.CustomDateFormat))
+
+	// added base JQL if available.
 	if jiraConnection.config.JQL != "" {
 		jql = fmt.Sprintf("%s AND %s", jql, jiraConnection.config.JQL)
 	}
@@ -137,17 +146,20 @@ func (jiraConnection *JIRAConnection) GetProjectTimeLogs(project string, startTi
 	}
 	for _, ticket := range tickets {
 		emailTimeMap := make(map[string]uint)
+		// creating email time map for a particular ticket. i.e { "x@email.com": 100 }
 		for _, worklog := range ticket.Fields.Worklog.Worklogs {
 			worklogStartTime := time.Time(*worklog.Started)
+			// check for worklogs which are in b/w start and end date of the sprint.
 			if worklogStartTime.After(startTime) && worklogStartTime.Before(endTime) {
 				emailTimeMap[worklog.Author.EmailAddress] += uint(worklog.TimeSpentSeconds)
 			}
 		}
+		// converting map to timelogs.
 		for email, timespent := range emailTimeMap {
 			timeLogs = append(timeLogs, serializers.TimeLog{
 				Project: ticket.Fields.Project.Name,
 				TaskKey: ticket.Key,
-				Minutes: timespent / 60,
+				Minutes: timespent / 60, // converting to minutes.
 				Logger:  "JIRA",
 				Email:   email,
 			})

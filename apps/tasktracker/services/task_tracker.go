@@ -33,21 +33,22 @@ func (service TaskTrackerService) SupportedTimeTrackersList(taskTracker string, 
 	if err != nil {
 		return nil, err
 	}
-	// check if task tracker also provide time
+	// check if task tracker also provide time tracking.
 	if name, exists := timetracker.TimeProvidersDisplayNameMap[taskTracker]; exists {
 		timeTrackerList.TimeProviders = append(timeTrackerList.TimeProviders, serializers.TimeProvider{DisplayName: name, Name: taskTracker})
 	}
 
-	for _, genricTimetracker := range constants.GenericTimeTrackersList {
-		if team.TimeProviderName == genricTimetracker {
+	for _, genericTimeTracker := range constants.GenericTimeTrackersList {
+		if team.TimeProviderName == genericTimeTracker {
 			isGenericTimeTracker = true
 		} else {
 			timeTrackerList.TimeProviders = append(timeTrackerList.TimeProviders, serializers.TimeProvider{
-				Name:        genricTimetracker,
-				DisplayName: timetracker.TimeProvidersDisplayNameMap[genricTimetracker],
+				Name:        genericTimeTracker,
+				DisplayName: timetracker.TimeProvidersDisplayNameMap[genericTimeTracker],
 			})
 		}
 	}
+	// we will put team task tracker in the first place as a default time provider.
 	if taskTracker != team.TimeProviderName && isGenericTimeTracker {
 		teamTaskTracker := serializers.TimeProvider{
 			Name:        team.TimeProviderName,

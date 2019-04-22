@@ -38,8 +38,8 @@ type TimeResult struct {
 
 // TimeProviderGSheet ...
 const (
-	TimeProviderGSheet            = constants.GoogleTimesheet
-	TimeProviderGSheetDisplayName = constants.GoogleTimesheetDsiplayName
+	TimeProviderGSheet            = "gsheet"
+	TimeProviderGSheetDisplayName = "Google Timesheet"
 )
 
 func init() {
