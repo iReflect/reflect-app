@@ -94,6 +94,9 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 
 	if feedbackData.Scope != nil {
 		retroFeedback.Scope = models.RetrospectiveFeedbackScope(*feedbackData.Scope)
+		if retroFeedback.Scope == 0 {
+			retroFeedback.AssigneeID = nil
+		}
 	}
 
 	if feedbackData.Text != nil {
@@ -109,11 +112,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	}
 
 	if feedbackData.AssigneeID != nil {
-		if *feedbackData.AssigneeID == 0 {
-			retroFeedback.AssigneeID = nil
-		} else {
-			retroFeedback.AssigneeID = feedbackData.AssigneeID
-		}
+		retroFeedback.AssigneeID = feedbackData.AssigneeID
 	}
 
 	err := db.Save(&retroFeedback).Error
