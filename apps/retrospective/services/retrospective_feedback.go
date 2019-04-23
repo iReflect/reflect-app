@@ -94,7 +94,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 
 	if feedbackData.Scope != nil {
 		retroFeedback.Scope = models.RetrospectiveFeedbackScope(*feedbackData.Scope)
-		if retroFeedback.Scope == 0 {
+		if retroFeedback.Scope == models.TeamScope {
 			retroFeedback.AssigneeID = nil
 		}
 	}
