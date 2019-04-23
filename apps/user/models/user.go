@@ -51,9 +51,11 @@ func (user *User) CleanUserData() error {
 	if err != nil {
 		return err
 	}
-	for index, timeconfig := range timeProviderConfigurations {
-		timeProviderConfigurations[0].Data.(map[string]interface{})["email"] = strings.TrimSpace(timeProviderConfigurations[0].Data.(map[string]interface{})["email"].(string))
-		timeProviderConfigurations[index].Type = strings.TrimSpace(timeconfig.Type)
+	for _, timeConfig := range timeProviderConfigurations {
+		timeConfig.Type = strings.TrimSpace(timeConfig.Type)
+		if timeConfig.Type == "gsheet" {
+			timeConfig.Data.(map[string]interface{})["email"] = strings.TrimSpace(timeConfig.Data.(map[string]interface{})["email"].(string))
+		}
 	}
 	user.TimeProviderConfig, err = json.Marshal(timeProviderConfigurations)
 	return err

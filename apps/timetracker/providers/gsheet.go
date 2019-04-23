@@ -1,11 +1,10 @@
 package providers
 
 import (
-	"log"
-	"time"
-
 	"encoding/json"
 	"errors"
+	"log"
+	"time"
 
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"

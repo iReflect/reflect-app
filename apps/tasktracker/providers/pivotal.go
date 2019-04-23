@@ -184,12 +184,20 @@ func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
 	return fmt.Sprintf("https://www.pivotaltracker.com/story/show/%v", ticketKey)
 }
 
+// CleanTickets ...
+func (c *PivotalConnection) CleanTickets(ticketKeys []string) {
+	for index, value := range ticketKeys {
+		ticketKeys[index] = strings.TrimPrefix(value, "#")
+	}
+}
+
 // GetTaskList ...
 func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task {
 	if len(ticketKeys) == 0 {
 		return nil
 	}
-
+	// To remove # from starting of all ticketkeys if present
+	c.CleanTickets(ticketKeys)
 	filterQuery := fmt.Sprintf("id:%s", strings.Join(ticketKeys, ","))
 
 	projectID, err := strconv.Atoi(c.config.ProjectID)
@@ -214,6 +222,8 @@ func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error)
 		utils.LogToSentry(err)
 		return nil, nil
 	}
+	// To remove # from starting of ticketkey if present
+	ticketKey = strings.TrimPrefix(ticketKey, "#")
 	projectID, err := strconv.Atoi(c.config.ProjectID)
 	if err != nil {
 		return nil, err

@@ -1,10 +1,8 @@
 package timetracker
 
 import (
-	"time"
-
 	"encoding/json"
-	"strings"
+	"time"
 
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 )
@@ -45,7 +43,6 @@ func GetProjectTimeLogs(config []byte, project string, startTime time.Time, endT
 	for _, connection := range connections {
 		timeLogs = append(timeLogs, connection.GetProjectTimeLogs(project, startTime, endTime)...)
 	}
-	CleanTickets(timeLogs)
 	return timeLogs, nil
 }
 
@@ -69,11 +66,4 @@ func GetConnections(config []byte) (connections []Connection, err error) {
 		}
 	}
 	return connections, nil
-}
-
-// CleanTickets ...
-func CleanTickets(timeLogs []serializers.TimeLog) {
-	for index, value := range timeLogs {
-		timeLogs[index].TaskKey = strings.TrimPrefix(value.TaskKey, "#")
-	}
 }
