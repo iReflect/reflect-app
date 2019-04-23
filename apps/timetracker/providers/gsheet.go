@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/iReflect/reflect-app/apps/timetracker"
@@ -86,6 +87,12 @@ func getConfigObject(config interface{}) (GsheetConfig, error) {
 		return c, errors.New("invalid type")
 	}
 	return c, nil
+}
+
+// CleanTimeProviderConfig ...
+func (m *GsheetConnection) CleanTimeProviderConfig(data interface{}) interface{} {
+	data.(map[string]interface{})["email"] = strings.TrimSpace(data.(map[string]interface{})["email"].(string))
+	return data
 }
 
 // GetProjectTimeLogs ...

@@ -15,6 +15,7 @@ type TimeProvider interface {
 // Connection ...
 type Connection interface {
 	GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog
+	CleanTimeProviderConfig(interface{}) interface{}
 }
 
 var timeProviders = make(map[string]TimeProvider)
@@ -31,6 +32,13 @@ func GetTimeProvider(name string) TimeProvider {
 		return provider
 	}
 	return nil
+}
+
+// CleanTimeProviderConfig ...
+func CleanTimeProviderConfig(data interface{}, name string) interface{} {
+	var connection Connection
+	connection = GetTimeProvider(name).New(data)
+	return connection.CleanTimeProviderConfig(data)
 }
 
 // GetProjectTimeLogs ...

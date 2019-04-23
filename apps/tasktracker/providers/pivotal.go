@@ -184,11 +184,10 @@ func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
 	return fmt.Sprintf("https://www.pivotaltracker.com/story/show/%v", ticketKey)
 }
 
-// CleanTickets ...
-func (c *PivotalConnection) CleanTickets(ticketKeys []string) {
-	for index, value := range ticketKeys {
-		ticketKeys[index] = strings.TrimPrefix(value, "#")
-	}
+// cleanTickets ...
+func (c *PivotalConnection) cleanTickets(ticketKey string) string {
+	// To remove # from starting of ticketkey if present
+	return strings.TrimPrefix(ticketKey, "#")
 }
 
 // GetTaskList ...
@@ -196,8 +195,9 @@ func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task 
 	if len(ticketKeys) == 0 {
 		return nil
 	}
-	// To remove # from starting of all ticketkeys if present
-	c.CleanTickets(ticketKeys)
+	for index, ticketKey := range ticketKeys {
+		ticketKeys[index] = c.cleanTickets(ticketKey)
+	}
 	filterQuery := fmt.Sprintf("id:%s", strings.Join(ticketKeys, ","))
 
 	projectID, err := strconv.Atoi(c.config.ProjectID)
@@ -216,14 +216,13 @@ func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task 
 
 // GetTask ...
 func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error) {
+	ticketKey = c.cleanTickets(ticketKey)
 	ticketID, err := strconv.Atoi(ticketKey)
 	// Since the ticket ids are always number in Pivotal, if a value is not
 	if err != nil {
 		utils.LogToSentry(err)
 		return nil, nil
 	}
-	// To remove # from starting of ticketkey if present
-	ticketKey = strings.TrimPrefix(ticketKey, "#")
 	projectID, err := strconv.Atoi(c.config.ProjectID)
 	if err != nil {
 		return nil, err
