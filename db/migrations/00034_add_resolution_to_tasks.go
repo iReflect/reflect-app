@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	goose.AddMigration(Up00033, Down00033)
+	goose.AddMigration(Up00034, Down00034)
 }
 
 // Up00034 ...
