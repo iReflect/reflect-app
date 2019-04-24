@@ -9,11 +9,12 @@ import (
 
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"io/ioutil"
 )
 
 // SprintIDJQLKeyword ...
@@ -249,7 +250,6 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool, sp
 		utils.LogToSentry(errors.New(string(jiraErr)))
 		return nil, err
 	}
-
 	return c.serializeTickets(tickets), nil
 }
 

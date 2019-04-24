@@ -35,7 +35,7 @@ type Task struct {
 	DoneAt            *time.Time
 	IsTrackerTask     bool `gorm:"not null;default: false"`
 	SprintMemberTasks []SprintMemberTask
-	Resolution        retrospective.Resolution `gorm:"default:1"`
+	Resolution        retrospective.Resolution `gorm:"default:0"`
 }
 
 // Stringify ...

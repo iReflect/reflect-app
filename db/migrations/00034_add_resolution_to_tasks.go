@@ -13,8 +13,8 @@ func init() {
 	goose.AddMigration(Up00033, Down00033)
 }
 
-// Up00033 ...
-func Up00033(tx *sql.Tx) error {
+// Up00034 ...
+func Up00034(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
@@ -22,14 +22,14 @@ func Up00033(tx *sql.Tx) error {
 	}
 
 	type task struct {
-		Resolution int8 `gorm:"default:1"`
+		Resolution int8 `gorm:"default:0"`
 	}
 	gormdb.AutoMigrate(&task{})
 
 	err = gormdb.Model(retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
-		Where("tasks.done_at IS NULL").
-		Update("resolution", nil).
+		Not("tasks.done_at IS NULL").
+		Update("resolution", 1).
 		Error
 	if err != nil {
 		return err
@@ -38,8 +38,8 @@ func Up00033(tx *sql.Tx) error {
 	return nil
 }
 
-// Down00033 ...
-func Down00033(tx *sql.Tx) error {
+// Down00034 ...
+func Down00034(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
