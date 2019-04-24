@@ -185,7 +185,7 @@ func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
 }
 
 // cleanTickets ...
-func (c *PivotalConnection) cleanTickets(ticketKey string) string {
+func (c *PivotalConnection) sanitizeTicket(ticketKey string) string {
 	// To remove # from starting of ticketkey if present
 	return strings.TrimPrefix(ticketKey, "#")
 }
@@ -196,7 +196,7 @@ func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task 
 		return nil
 	}
 	for index, ticketKey := range ticketKeys {
-		ticketKeys[index] = c.cleanTickets(ticketKey)
+		ticketKeys[index] = c.sanitizeTicket(ticketKey)
 	}
 	filterQuery := fmt.Sprintf("id:%s", strings.Join(ticketKeys, ","))
 
@@ -216,7 +216,7 @@ func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task 
 
 // GetTask ...
 func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error) {
-	ticketKey = c.cleanTickets(ticketKey)
+	ticketKey = c.sanitizeTicket(ticketKey)
 	ticketID, err := strconv.Atoi(ticketKey)
 	// Since the ticket ids are always number in Pivotal, if a value is not
 	if err != nil {

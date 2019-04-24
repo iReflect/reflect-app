@@ -90,9 +90,9 @@ func getConfigObject(config interface{}) (GsheetConfig, error) {
 }
 
 // CleanTimeProviderConfig ...
-func (m *GsheetConnection) CleanTimeProviderConfig(data interface{}) interface{} {
-	data.(map[string]interface{})["email"] = strings.TrimSpace(data.(map[string]interface{})["email"].(string))
-	return data
+func (m *GsheetConnection) CleanTimeProviderConfig() interface{} {
+	m.config.Email = strings.TrimSpace(m.config.Email)
+	return m.config
 }
 
 // GetProjectTimeLogs ...
