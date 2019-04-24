@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
 
+	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
@@ -412,6 +413,18 @@ func (service SprintService) GetSprintMemberTimeTrackerData(
 func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey string, retroID uint) (err error) {
 	tx := service.DB.Begin()
 	var task retroModels.Task
+	var sprint retroModels.Sprint
+
+	err = service.DB.Model(retroModels.Sprint{}).
+		Where("sprints.deleted_at IS NULL").
+		Where("id = ?", sprintID).
+		Find(&sprint).
+		Error
+	if err != nil {
+		tx.Rollback()
+		utils.LogToSentry(err)
+		return err
+	}
 	err = tx.Where(retroModels.Task{RetrospectiveID: retroID, TrackerUniqueID: ticketKey}).
 		Where("tasks.deleted_at IS NULL").
 		Attrs(retroModels.Task{
@@ -427,6 +440,15 @@ func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey stri
 		utils.LogToSentry(err)
 		return err
 	}
+	err = tx.Model(&retroModels.Task{}).
+		Where("id = ?", task.ID).
+		Updates(map[string]interface{}{"done_at": sprint.EndDate, "resolution": retrospective.DoneResolution}).Error
+
+	if err != nil {
+		utils.LogToSentry(err)
+		return err
+	}
+
 	err = tx.Where(retroModels.TaskKeyMap{TaskID: task.ID, Key: ticketKey}).
 		Where("task_key_maps.deleted_at IS NULL").
 		FirstOrCreate(&retroModels.TaskKeyMap{}).Error
@@ -591,6 +613,15 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 				err = tx.Model(&retroModels.Task{}).
 					Where("id = ?", task.ID).
 					Update("DoneAt", sprint.EndDate).Error
+
+				if err != nil {
+					utils.LogToSentry(err)
+					return err
+				}
+				err = tx.Model(&retroModels.Task{}).
+					Where("id = ?", task.ID).
+					Where("resolution = ?", retrospective.TaskNotDoneResolution).
+					Update("resolution", retrospective.DoneResolution).Error
 
 				if err != nil {
 					utils.LogToSentry(err)

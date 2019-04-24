@@ -3,10 +3,12 @@ package migrations
 import (
 	"database/sql"
 
-	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
-	"github.com/iReflect/reflect-app/db/base/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pressly/goose"
+
+	"github.com/iReflect/reflect-app/apps/retrospective"
+	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
+	"github.com/iReflect/reflect-app/db/base/models"
 )
 
 func init() {
@@ -29,7 +31,7 @@ func Up00034(tx *sql.Tx) error {
 	err = gormdb.Model(retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
 		Not("tasks.done_at IS NULL").
-		Update("resolution", 1).
+		Update("resolution", retrospective.DoneResolution).
 		Error
 	if err != nil {
 		return err

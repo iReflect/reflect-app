@@ -42,3 +42,12 @@ var ResolutionValues = [...]string{
 func (resolution Resolution) GetStringValue() string {
 	return ResolutionValues[resolution]
 }
+
+//Resolution
+const (
+	TaskNotDoneResolution Resolution = iota
+	DoneResolution
+	WontDoResolution
+	DuplicateResolution
+	CantReproduceResolution
+)
