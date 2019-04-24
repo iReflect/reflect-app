@@ -70,7 +70,6 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		service.SetSyncFailed(sprint.ID)
 		return err
 	}
-
 	insertedTimeTrackerTaskKeySet, err := service.fetchAndUpdateTimeTrackerTask(
 		sprint,
 		sprint.RetrospectiveID,
@@ -82,7 +81,6 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 		service.SetSyncFailed(sprint.ID)
 		return err
 	}
-
 	err = service.updateMissingTimeTrackerTask(sprint,
 		sprint.RetrospectiveID,
 		taskProviderConfig,
