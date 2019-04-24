@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	retrospectiveService "github.com/iReflect/reflect-app/apps/retrospective/services"
 	"github.com/iReflect/reflect-app/constants"
@@ -110,6 +111,7 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
+
 	retro, status, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})

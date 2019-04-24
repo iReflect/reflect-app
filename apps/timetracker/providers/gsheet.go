@@ -38,12 +38,14 @@ type TimeResult struct {
 
 // TimeProviderGSheet ...
 const (
-	TimeProviderGSheet = "gsheet"
+	TimeProviderGSheet            = "gsheet"
+	TimeProviderGSheetDisplayName = "Google Timesheet"
 )
 
 func init() {
 	provider := &GSheetTimeProvider{}
 	timetracker.RegisterTimeProvider(TimeProviderGSheet, provider)
+	timetracker.RegisterTimeProviderDisplayName(TimeProviderGSheet, TimeProviderGSheetDisplayName)
 }
 
 // New ...
@@ -142,6 +144,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 				TaskKey: logData.TaskID,
 				Logger:  "GSheets",
 				Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
+				Email:   m.config.Email,
 			})
 		}
 	}
