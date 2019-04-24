@@ -22,6 +22,7 @@ type SprintTaskController struct {
 func (ctrl SprintTaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:sprintTaskID/", ctrl.Get)
+	r.DELETE("/:sprintTaskID/", ctrl.Delete)
 	r.PATCH("/:sprintTaskID/", ctrl.Update)
 	r.POST("/:sprintTaskID/done/", ctrl.MarkDone)
 	r.DELETE("/:sprintTaskID/done/", ctrl.MarkUndone)
@@ -38,8 +39,7 @@ func (ctrl SprintTaskController) List(c *gin.Context) {
 		return
 	}
 
-	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID)
-
+	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID, userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -60,7 +60,7 @@ func (ctrl SprintTaskController) Get(c *gin.Context) {
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.Get(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.Get(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -85,7 +85,7 @@ func (ctrl SprintTaskController) Update(c *gin.Context) {
 	var data retroSerializers.SprintTaskUpdate
 	err := c.BindJSON(&data)
 
-	task, status, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data)
+	task, status, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -111,7 +111,7 @@ func (ctrl SprintTaskController) MarkDone(c *gin.Context) {
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -138,7 +138,7 @@ func (ctrl SprintTaskController) MarkUndone(c *gin.Context) {
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID)
+	task, status, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -150,4 +150,30 @@ func (ctrl SprintTaskController) MarkUndone(c *gin.Context) {
 		fmt.Sprint(task.ID),
 		userID.(uint))
 	c.JSON(status, task)
+}
+
+// Delete ...
+func (ctrl SprintTaskController) Delete(c *gin.Context) {
+	sprintTaskID := c.Param("sprintTaskID")
+	retroID := c.Param("retroID")
+	sprintID := c.Param("sprintID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	status, err := ctrl.SprintTaskService.Delete(sprintTaskID, retroID, sprintID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	ctrl.TrailService.Add(
+		constants.DeletedSprintTask,
+		constants.SprintTask,
+		fmt.Sprint(sprintTaskID),
+		userID.(uint))
+
+	c.JSON(status, nil)
 }
