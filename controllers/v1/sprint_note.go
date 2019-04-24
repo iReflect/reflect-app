@@ -23,6 +23,7 @@ type SprintNoteController struct {
 func (ctrl SprintNoteController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.Add)
 	r.GET("/", ctrl.List)
+	r.DELETE("/:noteID/", ctrl.Delete)
 	r.PATCH("/:noteID/", ctrl.Update)
 }
 
@@ -137,4 +138,32 @@ func (ctrl SprintNoteController) Update(c *gin.Context) {
 		userID.(uint))
 
 	c.JSON(status, response)
+}
+
+// Delete ...
+func (ctrl SprintNoteController) Delete(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	noteID := c.Param("noteID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	status, err := ctrl.RetrospectiveFeedbackService.Delete(noteID)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+	}
+	ctrl.TrailService.Add(
+		constants.DeletedNote,
+		constants.RetrospectiveFeedback,
+		noteID,
+		userID.(uint))
+
+	c.JSON(status, nil)
 }

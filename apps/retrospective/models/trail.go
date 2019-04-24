@@ -30,3 +30,8 @@ func TrailJoinST(db *gorm.DB) *gorm.DB {
 func TrailJoinSMT(db *gorm.DB) *gorm.DB {
 	return db.Joins("JOIN sprint_member_tasks ON trails.action_item_id = sprint_member_tasks.id")
 }
+
+// TrailJoinFeedback ...
+func TrailJoinFeedback(db *gorm.DB) *gorm.DB {
+	return db.Joins("JOIN retrospective_feedbacks ON trails.action_item_id = retrospective_feedbacks.id")
+}
