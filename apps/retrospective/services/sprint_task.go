@@ -24,11 +24,12 @@ type SprintTaskService struct {
 // List ...
 func (service SprintTaskService) List(
 	retroID string,
-	sprintID string) (taskList *retroSerializers.SprintTasksSerializer, status int, err error) {
+	sprintID string,
+	userID uint) (taskList *retroSerializers.SprintTasksSerializer, status int, err error) {
 	db := service.DB
 	taskList = new(retroSerializers.SprintTasksSerializer)
 
-	dbs := service.tasksWithTimeDetailsForCurrentAndPrevSprint(retroID, sprintID, nil).
+	dbs := service.tasksWithTimeDetailsForCurrentAndPrevSprint(retroID, sprintID, nil, userID).
 		QueryExpr()
 
 	query := `
@@ -66,11 +67,12 @@ func (service SprintTaskService) List(
 func (service SprintTaskService) Get(
 	sprintTaskID string,
 	retroID string,
-	sprintID string) (*retroSerializers.SprintTask, int, error) {
+	sprintID string,
+	userID uint) (*retroSerializers.SprintTask, int, error) {
 	db := service.DB
 	var task retroSerializers.SprintTask
 
-	dbs := service.tasksWithTimeDetailsForCurrentAndPrevSprint(retroID, sprintID, &sprintTaskID).
+	dbs := service.tasksWithTimeDetailsForCurrentAndPrevSprint(retroID, sprintID, &sprintTaskID, userID).
 		QueryExpr()
 
 	query := `
@@ -100,7 +102,11 @@ func (service SprintTaskService) Get(
 }
 
 // Update ...
-func (service SprintTaskService) Update(sprintTaskID string, retroID string, sprintID string, data retroSerializers.SprintTaskUpdate) (*retroSerializers.SprintTask, int, error) {
+func (service SprintTaskService) Update(sprintTaskID string,
+	retroID string,
+	sprintID string,
+	data retroSerializers.SprintTaskUpdate,
+	userID uint) (*retroSerializers.SprintTask, int, error) {
 	db := service.DB
 
 	var task retroModels.Task
@@ -129,7 +135,7 @@ func (service SprintTaskService) Update(sprintTaskID string, retroID string, spr
 		return nil, http.StatusInternalServerError, errors.New("failed to update sprint task")
 	}
 
-	return service.Get(sprintTaskID, retroID, sprintID)
+	return service.Get(sprintTaskID, retroID, sprintID, userID)
 }
 
 // Delete ...
@@ -194,7 +200,8 @@ func (service SprintTaskService) Delete(sprintTaskID string, retroID string, spr
 func (service SprintTaskService) MarkDone(
 	sprintTaskID string,
 	retroID string,
-	sprintID string) (task *retroSerializers.SprintTask, status int, err error) {
+	sprintID string,
+	userID uint) (task *retroSerializers.SprintTask, status int, err error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
@@ -231,14 +238,15 @@ func (service SprintTaskService) MarkDone(
 
 	service.AssignPointsToSprintTask(sprintTaskID, sprintID)
 
-	return service.Get(sprintTaskID, retroID, sprintID)
+	return service.Get(sprintTaskID, retroID, sprintID, userID)
 }
 
 // MarkUndone ...
 func (service SprintTaskService) MarkUndone(
 	sprintTaskID string,
 	retroID string,
-	sprintID string) (task *retroSerializers.SprintTask, status int, err error) {
+	sprintID string,
+	userID uint) (task *retroSerializers.SprintTask, status int, err error) {
 	db := service.DB
 	query := db.Model(&retroModels.SprintTask{}).
 		Where("sprint_tasks.deleted_at IS NULL").
@@ -259,7 +267,7 @@ func (service SprintTaskService) MarkUndone(
 		return nil, http.StatusInternalServerError, errors.New("failed to mark the task as done")
 	}
 
-	return service.Get(sprintTaskID, retroID, sprintID)
+	return service.Get(sprintTaskID, retroID, sprintID, userID)
 }
 
 // tasksForCurrentAndPrevSprint ...
@@ -290,11 +298,20 @@ func (service SprintTaskService) tasksForCurrentAndPrevSprint(retroID string, sp
 }
 
 // tasksWithTimeDetailsForCurrentAndPrevSprint ...
-func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(retroID string, sprintID string, sprintTaskID *string) *gorm.DB {
+func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(retroID string, sprintID string, sprintTaskID *string, userID uint) *gorm.DB {
 
 	db := service.DB
 
-	taskOwnerTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
+	baseQuery := service.tasksForCurrentAndPrevSprint(retroID, sprintID)
+	sprintCurrentMemberTable := baseQuery.
+		Where("sprint_members.member_id = ?", userID).
+		Where("sprint_members.sprint_id = ?", sprintID).
+		Select(`
+	        	DISTINCT ON (tasks.id) tasks.id AS task_id,
+						SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id) AS sprint_current_member_time`).
+		Order("tasks.id")
+
+	taskOwnerTable := baseQuery.
 		Select(`
         DISTINCT ON (tasks.id) tasks.id AS task_id,
         users.first_name || ' ' || users.last_name          AS member_name,
@@ -307,7 +324,7 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 		Order("member_time DESC NULLS LAST").
 		Order("sprint_members.member_id DESC NULLS LAST")
 
-	tempSprintTaskMemberTable := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
+	tempSprintTaskMemberTable := baseQuery.
 		Select(`
         tasks.id as temp_task_id,
 		users.first_name || ' ' || users.last_name			AS sprint_member_name,
@@ -333,7 +350,7 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 	sprintTaskOwnerTable := db.Raw(sprintTaskOwnerQuery, tempSprintTaskMemberTable.QueryExpr(), sprintID)
 
 	// TODO Update to include non-timesheet sprint tasks too
-	dbs := service.tasksForCurrentAndPrevSprint(retroID, sprintID).
+	dbs := baseQuery.
 		Select(`
             sprint_tasks.id,
             tasks.key,
@@ -349,7 +366,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
             sprint_task_owners.sprint_member_name as sprint_owner,
             sprint_task_owners.sprint_participants as sprint_participants,
             sprint_task_owners.sprint_task_member_total_time as sprint_owner_total_time,
-            sprint_task_owners.max_sprint_task_member_time as sprint_owner_time,
+						sprint_task_owners.max_sprint_task_member_time as sprint_owner_time,
+						sprint_current_members.sprint_current_member_time as sprint_current_member_time,
             tasks.estimate,
             tasks.rating,
             tasks.done_at,
@@ -371,7 +389,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 	}
 	dbs = dbs.
 		Joins("LEFT JOIN (?) AS task_owners ON task_owners.task_id = tasks.id", taskOwnerTable.QueryExpr()).
-		Joins(`LEFT JOIN (?) AS sprint_task_owners ON sprint_task_owners.task_id = tasks.id`, sprintTaskOwnerTable.QueryExpr())
+		Joins(`LEFT JOIN (?) AS sprint_task_owners ON sprint_task_owners.task_id = tasks.id`, sprintTaskOwnerTable.QueryExpr()).
+		Joins(`LEFT JOIN (?) AS sprint_current_members ON sprint_current_members.task_id = tasks.id`, sprintCurrentMemberTable.QueryExpr())
 	return dbs
 }
 
