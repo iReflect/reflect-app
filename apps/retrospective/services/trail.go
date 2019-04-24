@@ -63,8 +63,18 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 		Where("sprint_tasks.sprint_id = ?", sprintID).
 		QueryExpr()
 
-	err = db.Raw("SELECT * FROM (?) AS sprint_trails UNION SELECT * FROM (?) AS sprint_member_trails UNION SELECT * FROM (?) AS sprint_task_trails UNION SELECT * FROM (?) AS sprint_member_task_trails",
-		sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail).
+	retroFeedbackTrail := db.Model(&retroModels.Trail{}).
+		Scopes(retroModels.TrailJoinFeedback).
+		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.RetrospectiveFeedback]).
+		QueryExpr()
+
+	err = db.Raw(
+		`SELECT * FROM (?) AS sprint_trails
+		UNION SELECT * FROM (?) AS sprint_member_trails
+		UNION SELECT * FROM (?) AS sprint_task_trails
+		UNION SELECT * FROM (?) AS sprint_member_task_trails
+		UNION SELECT * FROM (?) AS retro_feedback_trails`,
+		sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail, retroFeedbackTrail).
 		Preload("ActionBy").
 		Order("created_at DESC").
 		Find(&trails.Trails).Error

@@ -6,4 +6,5 @@ type TimeLog struct {
 	TaskKey string
 	Logger  string
 	Minutes uint
+	Email   string
 }
