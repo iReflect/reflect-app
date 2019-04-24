@@ -85,7 +85,9 @@ var ActionTypeMap = map[ActionType]string{
 
 // constants for error messages
 const (
-	InvalidEmailOrPassword = "Invalid email or password"
+	InvalidEmailOrPassword     = "Invalid email or password"
+	TaskTrackerNameIsMustError = "no task tracker name provided in the request"
+	TeamIDIsMustError          = "no team ID provided in the request"
 )
 
 // <----------- constants for email --------------->
@@ -95,3 +97,10 @@ const OTPEmailSubject = "One Time Password"
 
 // EmailMIME ...
 const EmailMIME = "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+// <------------- time tracker constants ------------>
+
+// GenericTimeTrackersList is list of generic time providers which can be used for any task provider.
+var GenericTimeTrackersList = []string{"gsheet"}
+
+// <-------------------- end ------------------------->
