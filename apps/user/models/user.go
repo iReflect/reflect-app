@@ -11,6 +11,7 @@ import (
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
+	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
@@ -51,9 +52,9 @@ func (user *User) CleanUserData() error {
 	if err != nil {
 		return err
 	}
-	for index, timeconfig := range timeProviderConfigurations {
-		timeProviderConfigurations[0].Data.(map[string]interface{})["email"] = strings.TrimSpace(timeProviderConfigurations[0].Data.(map[string]interface{})["email"].(string))
-		timeProviderConfigurations[index].Type = strings.TrimSpace(timeconfig.Type)
+	for index, timeConfig := range timeProviderConfigurations {
+		timeProviderConfigurations[index].Type = strings.TrimSpace(timeConfig.Type)
+		timeProviderConfigurations[index].Data = timetracker.CleanTimeProviderConfig(timeConfig.Data, timeProviderConfigurations[index].Type)
 	}
 	user.TimeProviderConfig, err = json.Marshal(timeProviderConfigurations)
 	return err

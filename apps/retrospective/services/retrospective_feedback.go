@@ -270,6 +270,16 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	return feedbackList, http.StatusOK, nil
 }
 
+// Delete ...
+func (service RetrospectiveFeedbackService) Delete(retroFeedbackID string) (int, error) {
+	gormDB := service.DB
+	err := gormDB.Where("id = ?", retroFeedbackID).Delete(&models.RetrospectiveFeedback{}).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+}
+
 func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedbackID uint) (
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,

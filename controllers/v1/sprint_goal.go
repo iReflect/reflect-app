@@ -23,6 +23,7 @@ func (ctrl SprintGoalController) Routes(r *gin.RouterGroup) {
 	r.POST("/", ctrl.Add)
 	r.GET("/", ctrl.List)
 	r.PATCH("/:goalID/", ctrl.Update)
+	r.DELETE("/:goalID/", ctrl.Delete)
 	r.POST("/:goalID/resolve/", ctrl.Resolve)
 	r.DELETE("/:goalID/resolve/", ctrl.UnResolve)
 }
@@ -140,6 +141,34 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 		userID.(uint))
 
 	c.JSON(status, response)
+}
+
+// Delete ...
+func (ctrl SprintGoalController) Delete(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	sprintID := c.Param("sprintID")
+	retroID := c.Param("retroID")
+	goalID := c.Param("goalID")
+
+	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	status, err := ctrl.RetrospectiveFeedbackService.Delete(goalID)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+	}
+	ctrl.TrailService.Add(
+		constants.DeletedGoal,
+		constants.RetrospectiveFeedback,
+		goalID,
+		userID.(uint))
+
+	c.JSON(status, nil)
 }
 
 // Resolve goal associated to a sprint

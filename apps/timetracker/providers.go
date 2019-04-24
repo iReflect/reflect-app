@@ -1,10 +1,8 @@
 package timetracker
 
 import (
-	"time"
-
 	"encoding/json"
-	"strings"
+	"time"
 
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 )
@@ -17,13 +15,22 @@ type TimeProvider interface {
 // Connection ...
 type Connection interface {
 	GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog
+	CleanTimeProviderConfig() interface{}
 }
 
 var timeProviders = make(map[string]TimeProvider)
 
+// TimeProvidersDisplayNameMap ...
+var TimeProvidersDisplayNameMap = make(map[string]string)
+
 // RegisterTimeProvider ...
 func RegisterTimeProvider(name string, newProvider TimeProvider) {
 	timeProviders[name] = newProvider
+}
+
+// RegisterTimeProviderDisplayName ...
+func RegisterTimeProviderDisplayName(name string, displayName string) {
+	TimeProvidersDisplayNameMap[name] = displayName
 }
 
 // GetTimeProvider ...
@@ -33,6 +40,13 @@ func GetTimeProvider(name string) TimeProvider {
 		return provider
 	}
 	return nil
+}
+
+// CleanTimeProviderConfig ...
+func CleanTimeProviderConfig(data interface{}, name string) interface{} {
+	var connection Connection
+	connection = GetTimeProvider(name).New(data)
+	return connection.CleanTimeProviderConfig()
 }
 
 // GetProjectTimeLogs ...
@@ -45,7 +59,6 @@ func GetProjectTimeLogs(config []byte, project string, startTime time.Time, endT
 	for _, connection := range connections {
 		timeLogs = append(timeLogs, connection.GetProjectTimeLogs(project, startTime, endTime)...)
 	}
-	CleanTickets(timeLogs)
 	return timeLogs, nil
 }
 
@@ -69,11 +82,4 @@ func GetConnections(config []byte) (connections []Connection, err error) {
 		}
 	}
 	return connections, nil
-}
-
-// CleanTickets ...
-func CleanTickets(timeLogs []serializers.TimeLog) {
-	for index, value := range timeLogs {
-		timeLogs[index].TaskKey = strings.TrimPrefix(value.TaskKey, "#")
-	}
 }
