@@ -1,9 +1,9 @@
 package timetracker
 
 import (
+	"encoding/json"
 	"time"
 
-	"encoding/json"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 )
 
@@ -15,13 +15,22 @@ type TimeProvider interface {
 // Connection ...
 type Connection interface {
 	GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog
+	CleanTimeProviderConfig() interface{}
 }
 
 var timeProviders = make(map[string]TimeProvider)
 
+// TimeProvidersDisplayNameMap ...
+var TimeProvidersDisplayNameMap = make(map[string]string)
+
 // RegisterTimeProvider ...
 func RegisterTimeProvider(name string, newProvider TimeProvider) {
 	timeProviders[name] = newProvider
+}
+
+// RegisterTimeProviderDisplayName ...
+func RegisterTimeProviderDisplayName(name string, displayName string) {
+	TimeProvidersDisplayNameMap[name] = displayName
 }
 
 // GetTimeProvider ...
@@ -31,6 +40,13 @@ func GetTimeProvider(name string) TimeProvider {
 		return provider
 	}
 	return nil
+}
+
+// CleanTimeProviderConfig ...
+func CleanTimeProviderConfig(data interface{}, name string) interface{} {
+	var connection Connection
+	connection = GetTimeProvider(name).New(data)
+	return connection.CleanTimeProviderConfig()
 }
 
 // GetProjectTimeLogs ...
@@ -65,6 +81,5 @@ func GetConnections(config []byte) (connections []Connection, err error) {
 			connections = append(connections, connection)
 		}
 	}
-
 	return connections, nil
 }
