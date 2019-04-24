@@ -1,11 +1,11 @@
 package providers
 
 import (
-	"log"
-	"time"
-
 	"encoding/json"
 	"errors"
+	"log"
+	"strings"
+	"time"
 
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
@@ -89,6 +89,12 @@ func getConfigObject(config interface{}) (GsheetConfig, error) {
 		return c, errors.New("invalid type")
 	}
 	return c, nil
+}
+
+// CleanTimeProviderConfig ...
+func (m *GsheetConnection) CleanTimeProviderConfig() interface{} {
+	m.config.Email = strings.TrimSpace(m.config.Email)
+	return m.config
 }
 
 // GetProjectTimeLogs ...

@@ -1,16 +1,25 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 
+	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
+
+// TimeProviderConfig ...
+type TimeProviderConfig struct {
+	Data interface{} `json:"data"`
+	Type string      `json:"type"`
+}
 
 // User represent the app user in system
 type User struct {
@@ -24,6 +33,31 @@ type User struct {
 	IsAdmin            bool         `gorm:"default:false; not null"`
 	Teams              []Team
 	Profiles           []UserProfile
+}
+
+// BeforeSave ...
+func (user *User) BeforeSave() error {
+	return user.CleanUserData()
+}
+
+// CleanUserData ...
+func (user *User) CleanUserData() error {
+	var timeProviderConfigurations []TimeProviderConfig
+
+	user.FirstName = strings.TrimSpace(user.FirstName)
+	user.LastName = strings.TrimSpace(user.LastName)
+	user.Email = strings.TrimSpace(user.Email)
+
+	err := json.Unmarshal([]byte(user.TimeProviderConfig), &timeProviderConfigurations)
+	if err != nil {
+		return err
+	}
+	for index, timeConfig := range timeProviderConfigurations {
+		timeProviderConfigurations[index].Type = strings.TrimSpace(timeConfig.Type)
+		timeProviderConfigurations[index].Data = timetracker.CleanTimeProviderConfig(timeConfig.Data, timeProviderConfigurations[index].Type)
+	}
+	user.TimeProviderConfig, err = json.Marshal(timeProviderConfigurations)
+	return err
 }
 
 // Stringify ...

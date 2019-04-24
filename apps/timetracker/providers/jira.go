@@ -124,6 +124,18 @@ func getJIRAConfigObject(config interface{}) (JIRAConfig, error) {
 	return c, nil
 }
 
+// CleanTimeProviderConfig ...
+func (m *JIRAConnection) CleanTimeProviderConfig() interface{} {
+	m.config.Credentials.Password = strings.TrimSpace(m.config.Credentials.Password)
+	m.config.Credentials.Username = strings.TrimSpace(m.config.Credentials.Username)
+	m.config.Credentials.Type = strings.TrimSpace(m.config.Credentials.Type)
+	m.config.BaseURL = strings.TrimSpace(m.config.BaseURL)
+	m.config.BoardIds = strings.TrimSpace(m.config.BoardIds)
+	m.config.EstimateField = strings.TrimSpace(m.config.EstimateField)
+	m.config.JQL = strings.TrimSpace(m.config.JQL)
+	return m.config
+}
+
 // GetProjectTimeLogs ...
 func (jiraConnection *JIRAConnection) GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog {
 
