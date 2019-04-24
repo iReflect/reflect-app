@@ -3,8 +3,10 @@ package services
 import (
 	"encoding/json"
 	"errors"
-	"github.com/jinzhu/gorm"
+	"net/http"
 	"strconv"
+
+	"github.com/jinzhu/gorm"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -13,7 +15,6 @@ import (
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 // RetrospectiveService ...
@@ -171,6 +172,7 @@ func (service RetrospectiveService) Create(userID uint,
 	retro.CreatedByID = userID
 	retro.Title = retrospectiveData.Title
 	retro.ProjectName = retrospectiveData.ProjectName
+	retro.TimeProviderName = retrospectiveData.TimeProviderName
 	retro.StoryPointPerWeek = retrospectiveData.StoryPointPerWeek
 
 	if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {

@@ -1,17 +1,18 @@
 package providers
 
 import (
-	"github.com/iReflect/reflect-app/libs/utils"
 	"log"
 	"time"
 
 	"encoding/json"
 	"errors"
+
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	"github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/google"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // GSheetTimeProvider ...
@@ -37,12 +38,14 @@ type TimeResult struct {
 
 // TimeProviderGSheet ...
 const (
-	TimeProviderGSheet = "gsheet"
+	TimeProviderGSheet            = "gsheet"
+	TimeProviderGSheetDisplayName = "Google Timesheet"
 )
 
 func init() {
 	provider := &GSheetTimeProvider{}
 	timetracker.RegisterTimeProvider(TimeProviderGSheet, provider)
+	timetracker.RegisterTimeProviderDisplayName(TimeProviderGSheet, TimeProviderGSheetDisplayName)
 }
 
 // New ...
@@ -135,6 +138,7 @@ func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Tim
 				TaskKey: logData.TaskID,
 				Logger:  "GSheets",
 				Minutes: uint(logData.Hours * 60), //uint(logData["Hours"].(float64) * 60),
+				Email:   m.config.Email,
 			})
 		}
 	}

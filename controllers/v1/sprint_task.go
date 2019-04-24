@@ -22,6 +22,7 @@ type SprintTaskController struct {
 func (ctrl SprintTaskController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:sprintTaskID/", ctrl.Get)
+	r.DELETE("/:sprintTaskID/", ctrl.Delete)
 	r.PATCH("/:sprintTaskID/", ctrl.Update)
 	r.POST("/:sprintTaskID/done/", ctrl.MarkDone)
 	r.DELETE("/:sprintTaskID/done/", ctrl.MarkUndone)
@@ -149,4 +150,30 @@ func (ctrl SprintTaskController) MarkUndone(c *gin.Context) {
 		fmt.Sprint(task.ID),
 		userID.(uint))
 	c.JSON(status, task)
+}
+
+// Delete ...
+func (ctrl SprintTaskController) Delete(c *gin.Context) {
+	sprintTaskID := c.Param("sprintTaskID")
+	retroID := c.Param("retroID")
+	sprintID := c.Param("sprintID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	status, err := ctrl.SprintTaskService.Delete(sprintTaskID, retroID, sprintID)
+
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	ctrl.TrailService.Add(
+		constants.DeletedSprintTask,
+		constants.SprintTask,
+		fmt.Sprint(sprintTaskID),
+		userID.(uint))
+
+	c.JSON(status, nil)
 }

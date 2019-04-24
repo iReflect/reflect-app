@@ -153,7 +153,7 @@ func (a *App) SetRoutes() {
 	taskMemberController := apiControllers.SprintTaskMemberController{SprintTaskMemberService: taskMemberService, PermissionService: permissionService, TrailService: trailService}
 	taskMemberController.Routes(taskMemberRoute)
 
-	taskTrackerService := taskTrackerServices.TaskTrackerService{}
+	taskTrackerService := taskTrackerServices.TaskTrackerService{DB: a.DB}
 	taskTrackerController := apiControllers.TaskTrackerController{TaskTrackerService: taskTrackerService}
 	taskTrackerController.Routes(v1.Group("task-tracker"))
 }
