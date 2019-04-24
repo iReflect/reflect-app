@@ -98,6 +98,9 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 
 	if feedbackData.Scope != nil {
 		retroFeedback.Scope = models.RetrospectiveFeedbackScope(*feedbackData.Scope)
+		if retroFeedback.Scope == models.TeamScope {
+			retroFeedback.AssigneeID = nil
+		}
 	}
 
 	if feedbackData.Text != nil {
@@ -269,6 +272,16 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 		return nil, http.StatusInternalServerError, errors.New("failed to get goals")
 	}
 	return feedbackList, http.StatusOK, nil
+}
+
+// Delete ...
+func (service RetrospectiveFeedbackService) Delete(retroFeedbackID string) (int, error) {
+	gormDB := service.DB
+	err := gormDB.Where("id = ?", retroFeedbackID).Delete(&models.RetrospectiveFeedback{}).Error
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
 }
 
 func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedbackID uint) (

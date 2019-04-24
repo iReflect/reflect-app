@@ -32,3 +32,14 @@ type Board struct {
 	ID   string
 	Name string
 }
+
+// TimeProvider ...
+type TimeProvider struct {
+	DisplayName string
+	Name        string
+}
+
+// TimeProvidersSerializer ...
+type TimeProvidersSerializer struct {
+	TimeProviders []TimeProvider
+}
