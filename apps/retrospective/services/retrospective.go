@@ -77,8 +77,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		}
 	}
 	err = baseQuery.
-		Scopes(retroModels.RetroJoinUserTeams).
-		Where("user_teams.user_id = ?", userID).
+		Where("retrospectives.team_id IN (?)", userTeamQuery).
 		Preload("Team").
 		Find(&retrospectiveList.MyRetrospectives).
 		Error
