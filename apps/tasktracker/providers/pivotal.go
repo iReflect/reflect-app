@@ -10,7 +10,6 @@ import (
 	"github.com/iReflect/go-pivotaltracker/v5/pivotal"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
-	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -186,12 +185,13 @@ func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
 }
 
 // SanitizeTimeLogs ...
-func (c *PivotalConnection) SanitizeTimeLogs(timeLogs []timeTrackerSerializers.TimeLog) []timeTrackerSerializers.TimeLog {
-	for index, timeLog := range timeLogs {
+func (c *PivotalConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	sanitizedKeys := make(map[string]string)
+	for _, timeLogKey := range timeLogKeys {
 		// To remove # from starting of ticketkey if present
-		timeLogs[index].TaskKey = strings.TrimPrefix(timeLog.TaskKey, "#")
+		sanitizedKeys[timeLogKey] = strings.TrimPrefix(timeLogKey, "#")
 	}
-	return timeLogs
+	return sanitizedKeys
 }
 
 // GetTaskList ...
@@ -231,7 +231,7 @@ func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error)
 	story, _, err := c.client.Stories.Get(projectID, ticketID)
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, err
+		return nil, nil
 	}
 
 	return c.serializeTicket(story, c.getUserIDNameMap()), nil

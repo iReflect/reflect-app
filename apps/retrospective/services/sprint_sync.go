@@ -386,38 +386,38 @@ func (service SprintService) GetSprintMemberSanitizedTimeTrackerData(
 	timeTrackerConfig []byte,
 	sprint retroModels.Sprint) ([]string, []timeTrackerSerializers.TimeLog, error) {
 
-	_, timeLogs, err := service.GetSprintMemberTimeTrackerData(timeTrackerConfig, sprint)
+	taskKeys, timeLogs, err := service.GetSprintMemberTimeTrackerData(timeTrackerConfig, sprint)
 	if err != nil {
 		utils.LogToSentry(err)
 		service.SetSyncFailed(sprint.ID)
 		return nil, nil, err
 	}
-	timeLogs, err = tasktracker.SanitizeTimeLogs(taskProviderConfig, timeLogs)
+	// Returns the map of uncleaned keys as map key and cleaned keys as map value
+	sanitizedKeys, err := tasktracker.SanitizeTimeLogs(taskProviderConfig, taskKeys)
 	if err != nil {
 		utils.LogToSentry(err)
 		service.SetSyncFailed(sprint.ID)
 		return nil, nil, err
 	}
 
-	timeLogsKeymap := map[string]timeTrackerSerializers.TimeLog{}
-	for _, timeLog := range timeLogs {
-		var key = timeLog.TaskKey
-		if value, ok := timeLogsKeymap[key]; ok {
-			value.Minutes = timeLogsKeymap[key].Minutes + timeLog.Minutes
-			timeLogsKeymap[key] = value
-		} else {
-			timeLogsKeymap[key] = timeLog
-		}
-	}
-
+	var timeLogsKeymap map[string]int
 	var sanitizedTimeLogs []timeTrackerSerializers.TimeLog
-	for _, timeLog := range timeLogsKeymap {
-		sanitizedTimeLogs = append(sanitizedTimeLogs, timeLog)
-	}
-
 	var sanitizedMemberTaskKeys []string
-	for _, sanitizedTimeLog := range sanitizedTimeLogs {
-		sanitizedMemberTaskKeys = append(sanitizedMemberTaskKeys, sanitizedTimeLog.TaskKey)
+	var sanitizedTimeLogsIndex = 0
+
+	// To add the time of timelogs with the # in the key and same key without #
+	// Also remove the repeated timelogs
+	for _, timeLog := range timeLogs {
+		var key = sanitizedKeys[timeLog.TaskKey]
+		if value, ok := timeLogsKeymap[key]; ok {
+			sanitizedTimeLogs[value].Minutes += timeLog.Minutes
+		} else {
+			timeLog.TaskKey = key
+			sanitizedTimeLogs[sanitizedTimeLogsIndex] = timeLog
+			timeLogsKeymap[key] = sanitizedTimeLogsIndex
+			sanitizedMemberTaskKeys = append(sanitizedMemberTaskKeys, timeLog.TaskKey)
+			sanitizedTimeLogsIndex++
+		}
 	}
 	return sanitizedMemberTaskKeys, sanitizedTimeLogs, nil
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/blaskovicz/go-cryptkeeper"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
-	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	"github.com/iReflect/reflect-app/config"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
@@ -34,7 +33,7 @@ type Connection interface {
 	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint serializers.Sprint) []serializers.Task
 	ValidateConfig() error
-	SanitizeTimeLogs([]timeTrackerSerializers.TimeLog) []timeTrackerSerializers.TimeLog
+	SanitizeTimeLogs([]string) map[string]string
 }
 
 // TaskProviders ...
@@ -146,13 +145,13 @@ func ValidateCredentials(credentials map[string]interface{}) (err error) {
 }
 
 // SanitizeTimeLogs ...
-func SanitizeTimeLogs(config []byte, timeLogs []timeTrackerSerializers.TimeLog) ([]timeTrackerSerializers.TimeLog, error) {
+func SanitizeTimeLogs(config []byte, timeLogKeys []string) (map[string]string, error) {
 	connection := GetConnection(config)
 	if connection == nil {
 		return nil, errors.New("task_list: invalid connection config")
 	}
-	timeLogs = connection.SanitizeTimeLogs(timeLogs)
-	return timeLogs, nil
+	sanitizedKeys := connection.SanitizeTimeLogs(timeLogKeys)
+	return sanitizedKeys, nil
 }
 
 // GetTaskList ...
