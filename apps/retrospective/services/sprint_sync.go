@@ -12,7 +12,6 @@ import (
 	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
 
-	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
@@ -442,7 +441,7 @@ func (service SprintService) insertTimeTrackerTask(sprintID uint, ticketKey stri
 	}
 	err = tx.Model(&retroModels.Task{}).
 		Where("id = ?", task.ID).
-		Updates(map[string]interface{}{"done_at": sprint.EndDate, "resolution": retrospective.DoneResolution}).Error
+		Updates(map[string]interface{}{"done_at": sprint.EndDate, "resolution": retroModels.DoneResolution}).Error
 
 	if err != nil {
 		utils.LogToSentry(err)
