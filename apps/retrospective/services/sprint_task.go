@@ -226,7 +226,7 @@ func (service SprintTaskService) MarkDone(
 	err = db.Model(&retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
 		Where("id = (?)", query).
-		Updates(map[string]interface{}{"done_at": gorm.Expr("COALESCE(done_at, ?)", *sprint.EndDate), "resolution": retrospective.Resolution(*data.Resolution)}).
+		Updates(map[string]interface{}{"done_at": gorm.Expr("COALESCE(done_at, ?)", *sprint.EndDate), "resolution": retroModels.Resolution(*data.Resolution)}).
 		Error
 
 	if err != nil {

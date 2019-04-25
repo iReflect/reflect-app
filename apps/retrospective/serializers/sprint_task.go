@@ -64,7 +64,7 @@ type SprintTaskUpdate struct {
 
 // SprintTaskDone ...
 type SprintTaskDone struct {
-	BaseResolution
+	Resolution *int8 `json:"Resolution" binding:"omitempty,is_valid_resolution"`
 }
 
 // AddSprintTaskMemberSerializer ...
