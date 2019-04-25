@@ -13,6 +13,7 @@ import (
 
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
+	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
@@ -153,6 +154,11 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 		},
 	}
 	return configMap
+}
+
+// SanitizeTimeLogs ...
+func (m *JIRAConnection) SanitizeTimeLogs(timeLogs []timeTrackerSerializers.TimeLog) []timeTrackerSerializers.TimeLog {
+	return timeLogs
 }
 
 // GetTaskUrl ...
