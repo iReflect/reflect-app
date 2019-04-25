@@ -2,7 +2,7 @@ package retrospective
 
 // RatingValues ...
 var RatingValues = [...]string{
-	"Red",
+	"Concern",
 	"Improve",
 	"Decent",
 	"Good",
@@ -19,7 +19,7 @@ func (rating Rating) GetStringValue() string {
 
 // Rating
 const (
-	RedRating Rating = iota
+	ConcernRating Rating = iota
 	ImproveRating
 	DecentRating
 	GoodRating
