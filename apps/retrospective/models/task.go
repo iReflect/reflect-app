@@ -16,6 +16,32 @@ import (
 	"github.com/iReflect/reflect-app/db/models/fields"
 )
 
+// Resolution ...
+type Resolution int8
+
+// ResolutionValues ...
+var ResolutionValues = [...]string{
+	"-",
+	"Done",
+	"Won't Do",
+	"Duplicate",
+	"Can't Reproduce",
+}
+
+// GetStringValue ...
+func (resolution Resolution) GetStringValue() string {
+	return ResolutionValues[resolution]
+}
+
+//Resolution
+const (
+	TaskNotDoneResolution Resolution = iota
+	DoneResolution
+	WontDoResolution
+	DuplicateResolution
+	CantReproduceResolution
+)
+
 // Task represents the tasks for retrospectives
 type Task struct {
 	gorm.Model
@@ -35,7 +61,7 @@ type Task struct {
 	DoneAt            *time.Time
 	IsTrackerTask     bool `gorm:"not null;default: false"`
 	SprintMemberTasks []SprintMemberTask
-	Resolution        retrospective.Resolution `gorm:"default:0"`
+	Resolution        Resolution `gorm:"default:0"`
 }
 
 // Stringify ...
@@ -76,7 +102,6 @@ func RegisterTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 }
 func getTaskResolutionMeta() admin.Meta {
 	return admin.Meta{
-
 		Name: "Resolution",
 		Type: "select_one",
 		Valuer: func(value interface{}, context *qor.Context) interface{} {
@@ -90,10 +115,10 @@ func getTaskResolutionMeta() admin.Meta {
 				logrus.Error("Cannot convert string to int")
 				return
 			}
-			task.Resolution = retrospective.Resolution(value)
+			task.Resolution = Resolution(value)
 		},
 		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
-			for index, value := range retrospective.ResolutionValues {
+			for index, value := range ResolutionValues {
 				results = append(results, []string{strconv.Itoa(index), value})
 			}
 			return

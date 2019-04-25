@@ -620,8 +620,8 @@ func (service SprintService) addOrUpdateTaskTrackerTask(
 				}
 				err = tx.Model(&retroModels.Task{}).
 					Where("id = ?", task.ID).
-					Where("resolution = ?", retrospective.TaskNotDoneResolution).
-					Update("resolution", retrospective.DoneResolution).Error
+					Where("resolution = ?", retroModels.TaskNotDoneResolution).
+					Update("resolution", retroModels.DoneResolution).Error
 
 				if err != nil {
 					utils.LogToSentry(err)
