@@ -29,7 +29,7 @@ func Up00034(tx *sql.Tx) error {
 	err = gormdb.Model(retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
 		Not("tasks.done_at IS NULL").
-		Update("resolution", 1).
+		Update("resolution", retroModels.DoneResolution).
 		Error
 	if err != nil {
 		return err
