@@ -6,6 +6,7 @@ import (
 
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -22,12 +23,14 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 	feedbackData *retrospectiveSerializers.RetrospectiveFeedbackCreateSerializer) (
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
+	string,
 	error) {
 	db := service.DB
 
 	retroIDInt, err := strconv.Atoi(retroID)
 	if err != nil {
-		return nil, http.StatusBadRequest, errors.New("invalid retrospective id")
+		responseError := constants.APIErrorMessages[constants.InvalidRetrospectiveIDError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 	sprint := models.Sprint{}
 
@@ -36,10 +39,12 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	retroFeedback := models.RetrospectiveFeedback{
@@ -63,11 +68,19 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 
 	err = db.Create(&retroFeedback).Error
 	if err != nil {
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		if feedbackType == models.HighlightType {
+			responseError := constants.APIErrorMessages[constants.AddRetrospectiveFeedbackHighligtError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else if feedbackType == models.NoteType {
+			responseError := constants.APIErrorMessages[constants.AddRetrospectiveFeedbackNoteError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else {
+			responseError := constants.APIErrorMessages[constants.AddRetrospectiveFeedbackGoalError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		}
 	}
 
 	return service.getRetrospectiveFeedback(retroFeedback.ID)
-
 }
 
 // Update ...
@@ -76,6 +89,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	feedbackData *retrospectiveSerializers.RetrospectiveFeedbackUpdateSerializer) (
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
+	string,
 	error) {
 	db := service.DB
 
@@ -86,14 +100,17 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 		Where("id = ?", feedbackID).
 		First(&retroFeedback).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("retrospective feedback not found")
+			responseError := constants.APIErrorMessages[constants.RetroFeedbackNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get retrospective feedback")
+		responseError := constants.APIErrorMessages[constants.GetRetroFeedbackError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if retroFeedback.Type == models.GoalType && retroFeedback.ResolvedAt != nil {
-		return nil, http.StatusBadRequest, errors.New("can not updated resolved goal")
+		responseError := constants.APIErrorMessages[constants.UpdateResolvedGoalError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if feedbackData.Scope != nil {
@@ -109,8 +126,8 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 
 	if feedbackData.ExpectedAt != nil {
 		if retroFeedback.Type != models.GoalType {
-			return nil, http.StatusBadRequest, errors.New("expectedAt can be updated only for goal " +
-				"type retrospective feedback")
+			responseError := constants.APIErrorMessages[constants.FeedbackExpectedAtUpdationError]
+			return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 		}
 		retroFeedback.ExpectedAt = feedbackData.ExpectedAt
 	}
@@ -122,7 +139,16 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	err := db.Save(&retroFeedback).Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to update retrospective feedback")
+		if retroFeedback.Type == models.HighlightType {
+			responseError := constants.APIErrorMessages[constants.UpdateRetroFeedbackHighligtError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else if retroFeedback.Type == models.NoteType {
+			responseError := constants.APIErrorMessages[constants.UpdateRetroFeedbackNoteError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else {
+			responseError := constants.APIErrorMessages[constants.UpdateRetroFeedbackGoalError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		}
 	}
 
 	return service.getRetrospectiveFeedback(retroFeedback.ID)
@@ -134,6 +160,7 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	markResolved bool) (
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
+	string,
 	error) {
 	db := service.DB
 
@@ -146,10 +173,12 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
@@ -157,15 +186,17 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 		Where("id = ?", feedbackID).
 		First(&retroFeedback).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("goal not found")
+			responseError := constants.APIErrorMessages[constants.RetroFeedbackGoalNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get goal")
+		responseError := constants.APIErrorMessages[constants.GetRetroFeedbackGoalError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if retroFeedback.Type != models.GoalType {
-		return nil, http.StatusBadRequest, errors.New("only goal typed retrospective feedback could" +
-			" be resolved or unresolved")
+		responseError := constants.APIErrorMessages[constants.RetroFeedbackResolvedAtUpdationError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if markResolved && retroFeedback.ResolvedAt == nil {
@@ -179,7 +210,13 @@ func (service RetrospectiveFeedbackService) Resolve(userID uint, sprintID string
 	err := db.Save(&retroFeedback).Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to resolve goal")
+		if markResolved {
+			responseError := constants.APIErrorMessages[constants.FailedToResolveFeedbackGoalError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else {
+			responseError := constants.APIErrorMessages[constants.FailedToUnResolveFeedbackGoalError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		}
 	}
 
 	return service.getRetrospectiveFeedback(retroFeedback.ID)
@@ -190,6 +227,7 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 	feedbackType models.RetrospectiveFeedbackType) (
 	feedbackList *retrospectiveSerializers.RetrospectiveFeedbackListSerializer,
 	status int,
+	errorCode string,
 	err error) {
 	db := service.DB
 	feedbackList = new(retrospectiveSerializers.RetrospectiveFeedbackListSerializer)
@@ -200,10 +238,12 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if err := db.Model(&models.RetrospectiveFeedback{}).
@@ -215,10 +255,16 @@ func (service RetrospectiveFeedbackService) List(userID uint, sprintID string, r
 		Order("added_at DESC, created_at DESC").
 		Find(&feedbackList.Feedbacks).Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get retrospective feedbacks")
+		if feedbackType == models.NoteType {
+			responseError := constants.APIErrorMessages[constants.GetRetroFeedbackNoteListError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else {
+			responseError := constants.APIErrorMessages[constants.GetRetroFeedbackHighlightListError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		}
 	}
 
-	return feedbackList, http.StatusOK, nil
+	return feedbackList, http.StatusOK, "", nil
 }
 
 // ListGoal ...
@@ -226,6 +272,7 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 	retroID string, goalType string) (
 	feedbackList *retrospectiveSerializers.RetrospectiveFeedbackListSerializer,
 	status int,
+	errorCode string,
 	err error) {
 	db := service.DB
 
@@ -237,10 +284,12 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 		Where("id = ?", sprintID).
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	query := db.Model(&models.RetrospectiveFeedback{}).
@@ -262,16 +311,27 @@ func (service RetrospectiveFeedbackService) ListGoal(userID uint, sprintID strin
 			Where("added_at < ?", sprint.EndDate).
 			Order("expected_at, added_at DESC, created_at DESC")
 	default:
-		return nil, http.StatusBadRequest, errors.New("invalid goal type")
+		responseError := constants.APIErrorMessages[constants.InvalidGoalTypeError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if err := query.
 		Preload("Assignee").
 		Preload("CreatedBy").
 		Find(&feedbackList.Feedbacks).Error; err != nil {
-		return nil, http.StatusInternalServerError, errors.New("failed to get goals")
+		if goalType == "added" {
+			responseError := constants.APIErrorMessages[constants.GetRetroFeedbackAddedGoalsError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else if goalType == "completed" {
+			responseError := constants.APIErrorMessages[constants.GetRetroFeedbackCompletedGoalsError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		} else {
+			responseError := constants.APIErrorMessages[constants.GetRetroFeedbackPendingGoalsError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
+		}
 	}
-	return feedbackList, http.StatusOK, nil
+
+	return feedbackList, http.StatusOK, "", nil
 }
 
 // Delete ...
@@ -287,6 +347,7 @@ func (service RetrospectiveFeedbackService) Delete(retroFeedbackID string) (int,
 func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedbackID uint) (
 	*retrospectiveSerializers.RetrospectiveFeedback,
 	int,
+	string,
 	error) {
 	db := service.DB
 	feedback := retrospectiveSerializers.RetrospectiveFeedback{}
@@ -298,12 +359,14 @@ func (service RetrospectiveFeedbackService) getRetrospectiveFeedback(retroFeedba
 		First(&feedback).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.RetroFeedbackNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.GetRetroFeedbackError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
-	return &feedback, http.StatusOK, nil
+	return &feedback, http.StatusOK, "", nil
 
 }

@@ -34,10 +34,11 @@ func (ctrl RetrospectiveController) List(c *gin.Context) {
 	page := c.DefaultQuery("page", "")
 	isAdmin := ctrl.PermissionService.IsUserAdmin(userID.(uint))
 
-	response, status, err := ctrl.RetrospectiveService.List(userID.(uint), perPage, page, isAdmin)
+	response, status, errorCode, err := ctrl.RetrospectiveService.List(userID.(uint), perPage, page, isAdmin)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
+		return
 	}
 
 	c.JSON(status, response)
@@ -49,13 +50,14 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessRetroError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveService.Get(retroID, true)
+	response, status, errorCode, err := ctrl.RetrospectiveService.Get(retroID, true)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -69,14 +71,15 @@ func (ctrl RetrospectiveController) GetTeamMembers(c *gin.Context) {
 	isAdmin := ctrl.PermissionService.IsUserAdmin(userID.(uint))
 
 	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessRetroError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	//ToDo: Match leaved_at with sprint dates instead of now
-	members, status, err := ctrl.RetrospectiveService.GetTeamMembers(retroID, userID.(uint), isAdmin)
+	members, status, errorCode, err := ctrl.RetrospectiveService.GetTeamMembers(retroID, userID.(uint), isAdmin)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -89,13 +92,14 @@ func (ctrl RetrospectiveController) GetLatestSprint(c *gin.Context) {
 	retroID := c.Param("retroID")
 
 	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessRetroError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	sprint, status, err := ctrl.RetrospectiveService.GetLatestSprint(retroID, userID.(uint))
+	sprint, status, errorCode, err := ctrl.RetrospectiveService.GetLatestSprint(retroID, userID.(uint))
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -108,13 +112,14 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 	var err error
 	retrospectiveData := retrospectiveSerializers.RetrospectiveCreateSerializer{CreatedByID: userID.(uint)}
 	if err = c.BindJSON(&retrospectiveData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	retro, status, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
+	retro, status, errorCode, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 

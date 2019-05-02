@@ -24,7 +24,7 @@ func SyncSprintData(job *work.Job) error {
 		log.Println("Job failed: ", job.Name, " with error: sprintID cannot be blank")
 		return errors.New("sprintID cannot be blank")
 	}
-
+z
 	err := sprintService.SyncSprintData(sprintID)
 
 	if err != nil {

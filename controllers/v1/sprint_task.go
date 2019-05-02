@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/gin-gonic/gin"
 
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -35,13 +37,14 @@ func (ctrl SprintTaskController) List(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	tasks, status, err := ctrl.SprintTaskService.List(retroID, sprintID, userID.(uint))
+	tasks, status, errorCode, err := ctrl.SprintTaskService.List(retroID, sprintID, userID.(uint))
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -56,14 +59,15 @@ func (ctrl SprintTaskController) Get(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanAccessSprintTask(retroID, sprintID, id, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.Get(id, retroID, sprintID, userID.(uint))
+	task, status, errorCode, err := ctrl.SprintTaskService.Get(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -78,17 +82,23 @@ func (ctrl SprintTaskController) Update(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, id, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	var data retroSerializers.SprintTaskUpdate
 	err := c.BindJSON(&data)
+	if err != nil {
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
+		return
+	}
 
-	task, status, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data, userID.(uint))
+	task, status, errorCode, err := ctrl.SprintTaskService.Update(id, retroID, sprintID, data, userID.(uint))
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	ctrl.TrailService.Add(
@@ -107,14 +117,15 @@ func (ctrl SprintTaskController) MarkDone(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, id, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID, userID.(uint))
+	task, status, errorCode, err := ctrl.SprintTaskService.MarkDone(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	ctrl.TrailService.Add(
@@ -134,14 +145,15 @@ func (ctrl SprintTaskController) MarkUndone(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, id, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	task, status, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID, userID.(uint))
+	task, status, errorCode, err := ctrl.SprintTaskService.MarkUndone(id, retroID, sprintID, userID.(uint))
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	ctrl.TrailService.Add(
@@ -160,13 +172,17 @@ func (ctrl SprintTaskController) Delete(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
-		c.AbortWithStatus(http.StatusForbidden)
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
+
 	status, err := ctrl.SprintTaskService.Delete(sprintTaskID, retroID, sprintID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		logrus.Error(err)
+		responseError := constants.APIErrorMessages[constants.DeleteSprintTaskError]
+		c.AbortWithStatusJSON(status, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	ctrl.TrailService.Add(

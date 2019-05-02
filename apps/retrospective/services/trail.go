@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 
 	"errors"
 	"net/http"
@@ -36,7 +37,11 @@ func (service TrailService) Add(action constants.ActionType, actionItem constant
 }
 
 // GetTrails method to get history of trails for a particular sprint
-func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.TrailSerializer, status int, err error) {
+func (service TrailService) GetTrails(sprintID uint) (
+	trails *trailSerializer.TrailSerializer,
+	status int,
+	errorCode string,
+	err error) {
 	db := service.DB
 	trails = new(trailSerializer.TrailSerializer)
 
@@ -80,8 +85,11 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 		Find(&trails.Trails).Error
 
 	if err != nil {
-		return nil, http.StatusInternalServerError, errors.New("failed to get the sprint trails")
+		logrus.Error(err)
+		responseError := constants.APIErrorMessages[constants.GetSprintTrailsError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return trails, http.StatusOK, nil
+
+	return trails, http.StatusOK, "", nil
 
 }

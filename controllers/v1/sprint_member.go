@@ -34,18 +34,20 @@ func (ctrl SprintMemberController) AddMember(c *gin.Context) {
 
 	addMemberData := retroSerializers.AddMemberSerializer{}
 	if err := c.BindJSON(&addMemberData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.SprintService.AddSprintMember(sprintID, addMemberData.MemberID)
+	response, status, errorCode, err := ctrl.SprintService.AddSprintMember(sprintID, addMemberData.MemberID)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -65,13 +67,14 @@ func (ctrl SprintMemberController) GetSprintMemberList(c *gin.Context) {
 	retroID := c.Param("retroID")
 
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.SprintService.GetSprintMemberList(sprintID)
+	response, status, errorCode, err := ctrl.SprintService.GetSprintMemberList(sprintID)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -86,13 +89,14 @@ func (ctrl SprintMemberController) RemoveMember(c *gin.Context) {
 	memberID := c.Param("memberID")
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	status, err := ctrl.SprintService.RemoveSprintMember(sprintID, memberID)
+	status, errorCode, err := ctrl.SprintService.RemoveSprintMember(sprintID, memberID)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -113,15 +117,20 @@ func (ctrl SprintMemberController) UpdateSprintMember(c *gin.Context) {
 	sprintMemberID := c.Param("memberID")
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	var memberData retroSerializers.SprintMemberUpdate
-	err := c.BindJSON(&memberData)
+	if err := c.BindJSON(&memberData); err != nil {
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
+		return
+	}
 
-	response, status, err := ctrl.SprintService.UpdateSprintMember(sprintID, sprintMemberID, memberData)
+	response, status, errorCode, err := ctrl.SprintService.UpdateSprintMember(sprintID, sprintMemberID, memberData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 

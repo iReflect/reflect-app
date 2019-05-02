@@ -1,6 +1,9 @@
 package services
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/iReflect/reflect-app/apps/tasktracker"
@@ -8,6 +11,7 @@ import (
 	"github.com/iReflect/reflect-app/apps/timetracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/iReflect/reflect-app/constants"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 //TaskTrackerService ...
@@ -24,15 +28,22 @@ func (service TaskTrackerService) ConfigList() (configList []map[string]interfac
 }
 
 // SupportedTimeTrackersList ...
-func (service TaskTrackerService) SupportedTimeTrackersList(taskTracker string, teamID string) (*serializers.TimeProvidersSerializer, error) {
+func (service TaskTrackerService) SupportedTimeTrackersList(taskTracker string, teamID string) (*serializers.TimeProvidersSerializer, int, string, error) {
 	var timeTrackerList serializers.TimeProvidersSerializer
 	var team userModels.Team
 	var isGenericTimeTracker bool
 
 	err := service.DB.Model(&userModels.Team{}).Where("id = ?", teamID).Scan(&team).Error
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			responseError := constants.APIErrorMessages[constants.TeamNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
+		}
+		utils.LogToSentry(err)
+		responseError := constants.APIErrorMessages[constants.GetTimeProviderOptionError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
+
 	// check if task tracker also provide time tracking.
 	if name, exists := timetracker.TimeProvidersDisplayNameMap[taskTracker]; exists {
 		timeTrackerList.TimeProviders = append(timeTrackerList.TimeProviders, serializers.TimeProvider{DisplayName: name, Name: taskTracker})
@@ -57,5 +68,5 @@ func (service TaskTrackerService) SupportedTimeTrackersList(taskTracker string, 
 		timeTrackerList.TimeProviders = append([]serializers.TimeProvider{teamTaskTracker}, timeTrackerList.TimeProviders...)
 	}
 
-	return &timeTrackerList, nil
+	return &timeTrackerList, http.StatusOK, "", nil
 }

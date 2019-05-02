@@ -2,12 +2,15 @@ package services
 
 import (
 	"errors"
+
 	"github.com/jinzhu/gorm"
+
+	"net/http"
 
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 //TeamService ...
@@ -16,7 +19,7 @@ type TeamService struct {
 }
 
 // UserTeamList ...
-func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, status int, err error) {
+func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *userSerializers.TeamsSerializer, status int, errorCode string, err error) {
 	db := service.DB
 	teams = new(userSerializers.TeamsSerializer)
 
@@ -33,21 +36,24 @@ func (service TeamService) UserTeamList(userID uint, onlyActive bool) (teams *us
 
 	err = filterQuery.Scan(&teams.Teams).Error
 	if err != nil {
-		return nil, http.StatusInternalServerError, errors.New("failed to get user team list")
+		responseError := constants.APIErrorMessages[constants.GetUserTeamListError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return teams, http.StatusOK, nil
+
+	return teams, http.StatusOK, "", nil
 }
 
 // MemberList ...
 func (service TeamService) MemberList(teamID string, userID uint, onlyActive bool, isAdmin bool) (
-	members *userSerializers.MembersSerializer, status int, err error) {
+	members *userSerializers.MembersSerializer, status int, errorCode string, err error) {
 	db := service.DB
 	members = new(userSerializers.MembersSerializer)
 	activeMemberIDs := service.getTeamMemberIDs(teamID, true)
 	var memberIDs []uint
 
 	if !isAdmin && !utils.UIntInSlice(userID, activeMemberIDs) {
-		return nil, http.StatusForbidden, errors.New("must be a member of the team")
+		responseError := constants.APIErrorMessages[constants.NotTeamMemberError]
+		return nil, http.StatusForbidden, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if onlyActive {
@@ -62,11 +68,16 @@ func (service TeamService) MemberList(teamID string, userID uint, onlyActive boo
 		Order("users.first_name, users.last_name, id").
 		Scan(&members.Members).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			responseError := constants.APIErrorMessages[constants.MemberListNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
+		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, err
+		responseError := constants.APIErrorMessages[constants.GetRetrospectiveMembersError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
-	return members, http.StatusOK, nil
+	return members, http.StatusOK, "", nil
 }
 
 func (service TeamService) getTeamMemberIDs(teamID string, onlyActive bool) []uint {

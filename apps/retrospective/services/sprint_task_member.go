@@ -11,6 +11,7 @@ import (
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -23,7 +24,7 @@ type SprintTaskMemberService struct {
 func (service SprintTaskMemberService) GetMembers(
 	sprintTaskID string,
 	retroID string,
-	sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, err error) {
+	sprintID string) (members *retroSerializers.TaskMembersSerializer, status int, errorCode string, err error) {
 	db := service.DB
 	members = new(retroSerializers.TaskMembersSerializer)
 
@@ -57,10 +58,11 @@ func (service SprintTaskMemberService) GetMembers(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get members")
+		responseError := constants.APIErrorMessages[constants.GetSprintIssueMemberSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
-	return members, http.StatusOK, nil
+	return members, http.StatusOK, "", nil
 }
 
 // GetMember returns the task member summary of a task for a particular sprint member
@@ -68,7 +70,7 @@ func (service SprintTaskMemberService) GetMember(
 	sprintMemberTask retroModels.SprintMemberTask,
 	memberID uint,
 	retroID string,
-	sprintID string) (member *retroSerializers.TaskMember, status int, err error) {
+	sprintID string) (member *retroSerializers.TaskMember, status int, errorCode string, err error) {
 	db := service.DB
 	member = new(retroSerializers.TaskMember)
 
@@ -90,12 +92,13 @@ func (service SprintTaskMemberService) GetMember(
 		Scan(&member).Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get member")
+		responseError := constants.APIErrorMessages[constants.GetSprintMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	member.Current = true // Since the member task will always be a part of the sprint, current will always be True.
 
-	return member, http.StatusOK, nil
+	return member, http.StatusOK, "", nil
 }
 
 // AddMember ...
@@ -103,9 +106,8 @@ func (service SprintTaskMemberService) AddMember(
 	sprintTaskID string,
 	retroID string,
 	sprintID string,
-	memberID uint) (member *retroSerializers.TaskMember, status int, err error) {
+	memberID uint) (member *retroSerializers.TaskMember, status int, errorCode string, err error) {
 	db := service.DB
-
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.deleted_at IS NULL").
@@ -115,10 +117,12 @@ func (service SprintTaskMemberService) AddMember(
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("member is not a part of the sprint")
+			responseError := constants.APIErrorMessages[constants.SprintMemberNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get member summary")
+		responseError := constants.APIErrorMessages[constants.GetMemberSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	err = db.Model(&retroModels.SprintMemberTask{}).
@@ -129,13 +133,15 @@ func (service SprintTaskMemberService) AddMember(
 		Error
 
 	if err == nil {
-		return nil, http.StatusBadRequest, errors.New("member is already a part of the sprint task")
+		responseError := constants.APIErrorMessages[constants.MemberAlreadyInSprintTaskError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	intSprintTaskID, err := strconv.Atoi(sprintTaskID)
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusBadRequest, errors.New("invalid task id")
+		responseError := constants.APIErrorMessages[constants.InvalidTaskIDError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	sprintMemberTask := retroModels.SprintMemberTask{}
@@ -150,7 +156,8 @@ func (service SprintTaskMemberService) AddMember(
 	err = db.Create(&sprintMemberTask).Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get member summary")
+		responseError := constants.APIErrorMessages[constants.AdSprintIssueMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	return service.GetMember(sprintMemberTask, sprintMember.MemberID, retroID, sprintID)
@@ -162,7 +169,7 @@ func (service SprintTaskMemberService) UpdateTaskMember(
 	retroID string,
 	sprintID string,
 	smtID string,
-	taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, int, error) {
+	taskMemberData *retroSerializers.SprintTaskMemberUpdate) (*retroSerializers.TaskMember, int, string, error) {
 	db := service.DB
 
 	sprintMemberTask := retroModels.SprintMemberTask{}
@@ -175,10 +182,12 @@ func (service SprintTaskMemberService) UpdateTaskMember(
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("task member not found")
+			responseError := constants.APIErrorMessages[constants.TaskMemberNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to update task member")
+		responseError := constants.APIErrorMessages[constants.UpdateTaskMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if taskMemberData.SprintPoints != nil {
@@ -195,8 +204,10 @@ func (service SprintTaskMemberService) UpdateTaskMember(
 	}
 	if err = db.Set("gorm:save_associations", false).Save(&sprintMemberTask).Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to update task member")
+		responseError := constants.APIErrorMessages[constants.UpdateTaskMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
+
 	return service.GetMember(sprintMemberTask, sprintMemberTask.SprintMember.MemberID, retroID, sprintID)
 }
 

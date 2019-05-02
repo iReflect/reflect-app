@@ -33,14 +33,15 @@ func (ctrl SprintTaskMemberController) GetMembers(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanAccessSprintTask(retroID, sprintID, id, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	members, status, err := ctrl.SprintTaskMemberService.GetMembers(id, retroID, sprintID)
+	members, status, errorCode, err := ctrl.SprintTaskMemberService.GetMembers(id, retroID, sprintID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -55,20 +56,22 @@ func (ctrl SprintTaskMemberController) AddMember(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	addTaskMemberData := retroSerializers.AddSprintTaskMemberSerializer{}
 	if err := c.BindJSON(&addTaskMemberData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	members, status, err := ctrl.SprintTaskMemberService.AddMember(sprintTaskID, retroID, sprintID, addTaskMemberData.MemberID)
+	members, status, errorCode, err := ctrl.SprintTaskMemberService.AddMember(sprintTaskID, retroID, sprintID, addTaskMemberData.MemberID)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -90,20 +93,22 @@ func (ctrl SprintTaskMemberController) UpdateTaskMember(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	if !ctrl.PermissionService.UserCanEditSprintTask(retroID, sprintID, sprintTaskID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintTaskError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	taskMemberData := retroSerializers.SprintTaskMemberUpdate{}
 	if err := c.BindJSON(&taskMemberData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	taskMember, status, err := ctrl.SprintTaskMemberService.UpdateTaskMember(sprintTaskID, retroID, sprintID, smtID, &taskMemberData)
+	taskMember, status, errorCode, err := ctrl.SprintTaskMemberService.UpdateTaskMember(sprintTaskID, retroID, sprintID, smtID, &taskMemberData)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 

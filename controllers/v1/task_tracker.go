@@ -29,18 +29,20 @@ func (ctrl TaskTrackerController) ConfigList(c *gin.Context) {
 func (ctrl TaskTrackerController) SupportedTimeTrackersList(c *gin.Context) {
 	taskTracker, exists := c.GetQuery("taskTrackerName")
 	if !exists {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.TaskTrackerNameIsMustError})
+		responseError := constants.APIErrorMessages[constants.TaskTrackerNameIsMustError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	team, exists := c.GetQuery("teamID")
 	if !exists {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": constants.TeamIDIsMustError})
+		responseError := constants.APIErrorMessages[constants.TeamIDIsMustError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
-	timeTrackers, err := ctrl.TaskTrackerService.SupportedTimeTrackersList(taskTracker, team)
+	timeTrackers, status, errorCode, err := ctrl.TaskTrackerService.SupportedTimeTrackersList(taskTracker, team)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
-	c.JSON(http.StatusOK, timeTrackers)
+	c.JSON(status, timeTrackers)
 }

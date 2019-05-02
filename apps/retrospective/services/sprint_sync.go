@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
 
@@ -114,10 +114,11 @@ func (service SprintService) SyncSprintData(sprintID string) (err error) {
 }
 
 // QueueSprint ...
-func (service SprintService) QueueSprint(sprintID uint, assignPoints bool) {
+func (service SprintService) QueueSprint(sprintID uint, assignPoints bool) error {
 	db := service.DB
-	workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": fmt.Sprint(sprintID), "assignPoints": assignPoints})
+	_, err := workers.Enqueuer.EnqueueUnique("sync_sprint_data", work.Q{"sprintID": fmt.Sprint(sprintID), "assignPoints": assignPoints})
 	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Queued})
+	return err
 }
 
 // QueueSprintMember ...

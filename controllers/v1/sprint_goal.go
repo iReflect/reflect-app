@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/gin-gonic/gin"
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -36,21 +38,25 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		logrus.Error(err)
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.Add(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.Add(
 		userID.(uint),
 		sprintID,
 		retroID,
@@ -58,7 +64,7 @@ func (ctrl SprintGoalController) Add(c *gin.Context) {
 		&feedbackData,
 	)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -78,22 +84,24 @@ func (ctrl SprintGoalController) List(c *gin.Context) {
 	goalType := c.Query("goalType")
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.ListGoal(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.ListGoal(
 		userID.(uint),
 		sprintID,
 		retroID,
 		goalType)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -110,27 +118,30 @@ func (ctrl SprintGoalController) Update(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.Update(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.Update(
 		userID.(uint),
 		retroID,
 		goalID,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -151,16 +162,19 @@ func (ctrl SprintGoalController) Delete(c *gin.Context) {
 	goalID := c.Param("goalID")
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatus(http.StatusForbidden)
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatus(http.StatusForbidden)
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	status, err := ctrl.RetrospectiveFeedbackService.Delete(goalID)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		responseError := constants.APIErrorMessages[constants.DeleteRetroFeedbackGoalError]
+		c.AbortWithStatusJSON(status, gin.H{"error": responseError.Message, "code": responseError.Code})
 	}
 	ctrl.TrailService.Add(
 		constants.DeletedGoal,
@@ -179,23 +193,25 @@ func (ctrl SprintGoalController) Resolve(c *gin.Context) {
 	goalID := c.Param("goalID")
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.Resolve(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.Resolve(
 		userID.(uint),
 		sprintID,
 		retroID,
 		goalID,
 		true)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	ctrl.TrailService.Add(
@@ -215,23 +231,25 @@ func (ctrl SprintGoalController) UnResolve(c *gin.Context) {
 	goalID := c.Param("goalID")
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.Resolve(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.Resolve(
 		userID.(uint),
 		sprintID,
 		retroID,
 		goalID,
 		false)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 

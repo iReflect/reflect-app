@@ -35,28 +35,31 @@ func (ctrl SprintHighlightController) Add(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackCreateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.Add(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.Add(
 		userID.(uint),
 		sprintID,
 		retroID,
 		models.HighlightType,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -76,22 +79,24 @@ func (ctrl SprintHighlightController) List(c *gin.Context) {
 	retroID := c.Param("retroID")
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanAccessSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanAccessSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.List(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.List(
 		userID.(uint),
 		sprintID,
 		retroID,
 		models.HighlightType)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -107,27 +112,30 @@ func (ctrl SprintHighlightController) Update(c *gin.Context) {
 	feedbackData := serializers.RetrospectiveFeedbackUpdateSerializer{}
 
 	if err := c.BindJSON(&feedbackData); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 
-	response, status, err := ctrl.RetrospectiveFeedbackService.Update(
+	response, status, errorCode, err := ctrl.RetrospectiveFeedbackService.Update(
 		userID.(uint),
 		retroID,
 		highlightID,
 		&feedbackData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -148,16 +156,19 @@ func (ctrl SprintHighlightController) Delete(c *gin.Context) {
 	highlightID := c.Param("highlightID")
 
 	if !ctrl.PermissionService.CanAccessRetrospectiveFeedback(sprintID, userID.(uint)) {
-		c.AbortWithStatus(http.StatusForbidden)
+		responseError := constants.APIErrorMessages[constants.RetrospectiveFeedbackAccessError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	if !ctrl.PermissionService.UserCanEditSprint(retroID, sprintID, userID.(uint)) {
-		c.AbortWithStatus(http.StatusForbidden)
+		responseError := constants.APIErrorMessages[constants.UserCanEditSprintError]
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": responseError.Message, "code": responseError.Code})
 		return
 	}
 	status, err := ctrl.RetrospectiveFeedbackService.Delete(highlightID)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		responseError := constants.APIErrorMessages[constants.DeleteRetroFeedbackHighlightError]
+		c.AbortWithStatusJSON(status, gin.H{"error": responseError.Message, "code": responseError.Code})
 	}
 	ctrl.TrailService.Add(
 		constants.DeletedHighlight,

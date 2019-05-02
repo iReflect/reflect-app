@@ -21,10 +21,10 @@ func (ctrl TeamController) Routes(r *gin.RouterGroup) {
 // GetTeams ...
 func (ctrl TeamController) GetTeams(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	teams, status, err := ctrl.TeamService.UserTeamList(userID.(uint), true)
+	teams, status, errorCode, err := ctrl.TeamService.UserTeamList(userID.(uint), true)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 
@@ -38,10 +38,10 @@ func (ctrl TeamController) GetMembers(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	isAdmin := ctrl.PermissionService.IsUserAdmin(userID.(uint))
 
-	members, status, err := ctrl.TeamService.MemberList(id, userID.(uint), all != "true", isAdmin)
+	members, status, errorCode, err := ctrl.TeamService.MemberList(id, userID.(uint), all != "true", isAdmin)
 
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 

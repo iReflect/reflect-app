@@ -8,15 +8,17 @@ import (
 
 	"github.com/jinzhu/gorm"
 
+	"strings"
+
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	taskTrackerSerializers "github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/constants"
 	customErrors "github.com/iReflect/reflect-app/libs"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strings"
 )
 
 // SprintService ...
@@ -46,7 +48,7 @@ func (service SprintService) isSprintDeletable(sprint retroModels.Sprint) (bool,
 }
 
 // DeleteSprint deletes the given sprint
-func (service SprintService) DeleteSprint(sprintID string) (int, error) {
+func (service SprintService) DeleteSprint(sprintID string) (int, string, error) {
 	db := service.DB
 
 	// ToDo: Use batch deletes
@@ -61,21 +63,25 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	// Check if the sprint is deleteable.
 	isDeletableSprint, err := service.isSprintDeletable(sprint)
 	if err == nil {
 		if !isDeletableSprint {
-			return http.StatusBadRequest, errors.New("this sprint can not be deleted")
+			responseError := constants.APIErrorMessages[constants.DeleteSprintError]
+			return http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 		}
 	} else {
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("something went wrong, please retry after some time")
+		responseError := constants.APIErrorMessages[constants.SomethingWentWrong]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	// Transaction to delete the sprint starts
@@ -86,13 +92,15 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 			if err := tx.Delete(&sprintMemberTask).Error; err != nil {
 				tx.Rollback()
 				utils.LogToSentry(err)
-				return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
+				responseError := constants.APIErrorMessages[constants.DeleteSprintError]
+				return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 			}
 		}
 		if err := tx.Delete(&sprintMember).Error; err != nil {
 			tx.Rollback()
 			utils.LogToSentry(err)
-			return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
+			responseError := constants.APIErrorMessages[constants.DeleteSprintError]
+			return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 	}
 
@@ -100,7 +108,8 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 		if err := tx.Delete(&sprintTask).Error; err != nil {
 			tx.Rollback()
 			utils.LogToSentry(err)
-			return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
+			responseError := constants.APIErrorMessages[constants.DeleteSprintError]
+			return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 
 	}
@@ -112,18 +121,20 @@ func (service SprintService) DeleteSprint(sprintID string) (int, error) {
 	if err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
+		responseError := constants.APIErrorMessages[constants.DeleteSprintError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 	err = tx.Commit().Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("sprint couldn't be deleted")
+		responseError := constants.APIErrorMessages[constants.DeleteSprintError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return http.StatusNoContent, nil
+	return http.StatusNoContent, "", nil
 }
 
 // ActivateSprint activates the given sprint
-func (service SprintService) ActivateSprint(sprintID string, retroID string) (int, error) {
+func (service SprintService) ActivateSprint(sprintID string, retroID string) (int, string, error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 
@@ -131,26 +142,34 @@ func (service SprintService) ActivateSprint(sprintID string, retroID string) (in
 		Where("sprints.deleted_at IS NULL").
 		Where("status = ?", retroModels.DraftSprint).
 		Find(&sprint).Error; err != nil {
-		return http.StatusNotFound, nil
+		if err == gorm.ErrRecordNotFound {
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
+		}
+		utils.LogToSentry(err)
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
-	isValid, err := service.ValidateSprint(sprintID, retroID)
+	isValid, errorCode, err := service.ValidateSprint(sprintID, retroID)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalServerError, errorCode, err
 	}
 	if isValid {
 		sprint.Status = retroModels.ActiveSprint
 		if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
-			return http.StatusInternalServerError, errors.New("sprint couldn't be activated")
+			responseError := constants.APIErrorMessages[constants.ActivateSprintError]
+			return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 		service.QueueSprint(sprint.ID, true)
-		return http.StatusNoContent, nil
+		return http.StatusNoContent, "", nil
 	}
-	return http.StatusBadRequest, errors.New("cannot activate an invalid draft sprint")
+	responseError := constants.APIErrorMessages[constants.InvalidDraftSprintAcivationError]
+	return http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 }
 
 // FreezeSprint freezes the given sprint
-func (service SprintService) FreezeSprint(sprintID string, retroID string) (int, error) {
+func (service SprintService) FreezeSprint(sprintID string, retroID string) (int, string, error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 
@@ -158,24 +177,33 @@ func (service SprintService) FreezeSprint(sprintID string, retroID string) (int,
 		Where("sprints.deleted_at IS NULL").
 		Where("status = ?", retroModels.ActiveSprint).
 		Find(&sprint).Error; err != nil {
-		return http.StatusNotFound, err
+		if err == gorm.ErrRecordNotFound {
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
+		}
+		utils.LogToSentry(err)
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	isValid, err := service.ValidateSprint(sprintID, retroID)
+	isValid, errorCode, err := service.ValidateSprint(sprintID, retroID)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalServerError, errorCode, err
 	}
+
 	if isValid {
 		sprint.Status = retroModels.CompletedSprint
 		if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
-			return http.StatusInternalServerError, errors.New("sprint couldn't be frozen")
+			responseError := constants.APIErrorMessages[constants.FrozenSprintError]
+			return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
-		return http.StatusNoContent, nil
+		return http.StatusNoContent, "", nil
 	}
-	return http.StatusBadRequest, errors.New("can not freeze a invalid active sprint")
+	responseError := constants.APIErrorMessages[constants.FreezeInvalidActiveSprintError]
+	return http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 }
 
 // Get return details of the given sprint
-func (service SprintService) Get(sprintID string, userID uint, includeSprintSummary bool) (*retroSerializers.Sprint, int, error) {
+func (service SprintService) Get(sprintID string, userID uint, includeSprintSummary bool) (*retroSerializers.Sprint, int, string, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
 	var currentSprint retroModels.Sprint
@@ -189,10 +217,12 @@ func (service SprintService) Get(sprintID string, userID uint, includeSprintSumm
 		Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	// Check if the sprint is deleteable.
@@ -205,9 +235,9 @@ func (service SprintService) Get(sprintID string, userID uint, includeSprintSumm
 	}
 
 	if includeSprintSummary {
-		summary, status, err := service.GetSprintSummary(sprintID, sprint.RetrospectiveID)
+		summary, status, errorCode, err := service.GetSprintSummary(sprintID, sprint.RetrospectiveID)
 		if err != nil {
-			return nil, status, err
+			return nil, status, errorCode, err
 		}
 		sprint.Summary = *summary
 	}
@@ -222,19 +252,20 @@ func (service SprintService) Get(sprintID string, userID uint, includeSprintSumm
 	if err != nil {
 		if err != sql.ErrNoRows {
 			utils.LogToSentry(err)
-			return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+			responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 		sprint.SyncStatus = int8(retroModels.NotSynced)
 	}
 
 	sprint.SetEditable(userID)
-	return &sprint, http.StatusOK, nil
+	return &sprint, http.StatusOK, "", nil
 }
 
 // GetSprintSummary ...
 func (service SprintService) GetSprintSummary(
 	sprintID string,
-	retroID uint) (*retroSerializers.SprintSummary, int, error) {
+	retroID uint) (*retroSerializers.SprintSummary, int, string, error) {
 	db := service.DB
 
 	var sprint retroModels.Sprint
@@ -247,10 +278,12 @@ func (service SprintService) GetSprintSummary(
 		First(&sprint).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+		responseError := constants.APIErrorMessages[constants.GetSprintSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
@@ -270,23 +303,24 @@ func (service SprintService) GetSprintSummary(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+		responseError := constants.APIErrorMessages[constants.GetSprintSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
-	taskTypesSummary, status, err := service.GetSprintTaskSummary(sprintID, retroID)
+	taskTypesSummary, status, errorCode, err := service.GetSprintTaskSummary(sprintID, retroID)
 
 	summary.TaskSummary = taskTypesSummary
 	if err != nil {
-		return nil, status, errors.New("failed to get sprint")
+		return nil, status, errorCode, err
 	}
 
-	return &summary, http.StatusOK, nil
+	return &summary, http.StatusOK, "", nil
 }
 
 // GetSprintTaskSummary ...
 func (service SprintService) GetSprintTaskSummary(
 	sprintID string,
-	retroID uint) (summary map[string]retroSerializers.SprintTaskSummary, status int, err error) {
+	retroID uint) (summary map[string]retroSerializers.SprintTaskSummary, status int, errorCode string, err error) {
 	db := service.DB
 	var retro retroModels.Retrospective
 
@@ -295,34 +329,37 @@ func (service SprintService) GetSprintTaskSummary(
 		Where("id = ?", retroID).First(&retro).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("retrospective not found")
+			responseError := constants.APIErrorMessages[constants.RetrospectiveNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+		responseError := constants.APIErrorMessages[constants.GetSprintSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	taskTypes, err := tasktracker.GetTaskTypeMappings(retro.TaskProviderConfig)
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint summary")
+		responseError := constants.APIErrorMessages[constants.GetSprintSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 	summary = make(map[string]retroSerializers.SprintTaskSummary)
 
 	for _, taskType := range tasktracker.TaskTypes {
-		taskSummary, status, err := service.getSprintTaskTypeSummary(sprintID, taskTypes[taskType])
+		taskSummary, status, errorCode, err := service.getSprintTaskTypeSummary(sprintID, taskTypes[taskType])
 		if err != nil {
-			return nil, status, err
+			return nil, status, errorCode, err
 		}
 		summary[taskType] = *taskSummary
 	}
 
-	return summary, http.StatusOK, nil
+	return summary, http.StatusOK, "", nil
 }
 
 func (service SprintService) getSprintTaskTypeSummary(
 	sprintID string,
-	taskTypes []string) (*retroSerializers.SprintTaskSummary, int, error) {
+	taskTypes []string) (*retroSerializers.SprintTaskSummary, int, string, error) {
 	db := service.DB
 
 	var summary retroSerializers.SprintTaskSummary
@@ -346,14 +383,15 @@ func (service SprintService) getSprintTaskTypeSummary(
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get task info for " + strings.Join(taskTypes, ", "))
+		responseError := constants.APIErrorMessages[constants.GetTaskDetailsError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message + "for" + strings.Join(taskTypes, ", "))
 	}
 
-	return &summary, http.StatusOK, nil
+	return &summary, http.StatusOK, "", nil
 }
 
 // GetSprintsList ...
-func (service SprintService) GetSprintsList(retrospectiveID string, userID uint, perPage int, after string) (*retroSerializers.SprintsSerializer, int, error) {
+func (service SprintService) GetSprintsList(retrospectiveID string, userID uint, perPage int, after string) (*retroSerializers.SprintsSerializer, int, string, error) {
 	db := service.DB
 	sprints := new(retroSerializers.SprintsSerializer)
 
@@ -367,7 +405,8 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint,
 		afterDate, err := utils.ParseDateString(after)
 		if err != nil {
 			utils.LogToSentry(err)
-			return nil, http.StatusInternalServerError, errors.New("failed to get sprints")
+			responseError := constants.APIErrorMessages[constants.GetSprintListError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 		filterQuery = filterQuery.Where("sprints.end_date < ?", afterDate)
 	}
@@ -378,16 +417,18 @@ func (service SprintService) GetSprintsList(retrospectiveID string, userID uint,
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprints")
+		responseError := constants.APIErrorMessages[constants.GetSprintListError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return sprints, http.StatusOK, nil
+
+	return sprints, http.StatusOK, "", nil
 }
 
 // Create creates a new sprint for the retro
 func (service SprintService) Create(
 	retroID string,
 	userID uint,
-	sprintData retroSerializers.CreateSprintSerializer) (*retroSerializers.Sprint, int, error) {
+	sprintData retroSerializers.CreateSprintSerializer) (*retroSerializers.Sprint, int, string, error) {
 	db := service.DB
 	var err error
 	var previousSprint retroModels.Sprint
@@ -405,10 +446,12 @@ func (service SprintService) Create(
 		Find(&retro).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("retrospective not found")
+			responseError := constants.APIErrorMessages[constants.RetrospectiveNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get retrospective")
+		responseError := constants.APIErrorMessages[constants.RetrospectiveDetailsError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	sprint.Title = sprintData.Title
@@ -424,13 +467,14 @@ func (service SprintService) Create(
 		taskProviderConfig, err := tasktracker.DecryptTaskProviders(retro.TaskProviderConfig)
 		if err != nil {
 			utils.LogToSentry(err)
-			return nil, http.StatusInternalServerError,
-				errors.New("failed to get task provider config. please contact admin")
+			responseError := constants.APIErrorMessages[constants.GetTaskProviderConfigError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 
 		connection := tasktracker.GetConnection(taskProviderConfig)
 		if connection == nil {
-			return nil, http.StatusInternalServerError, errors.New("invalid connection config")
+			responseError := constants.APIErrorMessages[constants.InvalidConnectionConfigError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 
 		var providerSprint *taskTrackerSerializers.Sprint
@@ -445,13 +489,13 @@ func (service SprintService) Create(
 				sprint.EndDate = providerSprint.ToDate
 			}
 		} else {
-			return nil, http.StatusUnprocessableEntity, errors.New("sprint not found in task tracker")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundInTaskTrackerError]
+			return nil, http.StatusUnprocessableEntity, responseError.Code, errors.New(responseError.Message)
 		}
 	}
 	if sprint.StartDate == nil || sprint.EndDate == nil {
-		return nil, http.StatusUnprocessableEntity,
-			errors.New("sprint doesn't have a start and/or end date, please provide the start date and end date " +
-				"or set them in the task tracker")
+		responseError := constants.APIErrorMessages[constants.SprintStartOrEndDateMissingError]
+		return nil, http.StatusUnprocessableEntity, responseError.Code, errors.New(responseError.Message)
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
@@ -463,7 +507,9 @@ func (service SprintService) Create(
 		First(&previousSprint).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
+		utils.LogToSentry(err)
+		responseError := constants.APIErrorMessages[constants.CreateSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	} else if err == nil {
 		query := `SELECT DISTINCT (sprint_members.*)
             FROM "sprint_members"
@@ -475,7 +521,9 @@ func (service SprintService) Create(
             (sprint_members.sprint_id = ?) AND
             ((leaved_at IS NULL OR leaved_at >= ?) AND joined_at <= ?))`
 		if err = db.Raw(query, previousSprint.ID, sprint.StartDate, sprint.EndDate).Scan(&previousSprintMembers).Error; err != nil {
-			return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
+			utils.LogToSentry(err)
+			responseError := constants.APIErrorMessages[constants.CreateSprintError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 		iteratorLen = len(previousSprintMembers)
 	}
@@ -487,7 +535,8 @@ func (service SprintService) Create(
 			Where("(leaved_at IS NULL OR leaved_at >= ?) AND joined_at <= ? ", sprint.StartDate, sprint.EndDate).
 			Pluck("DISTINCT user_id", &teamMemberIDs).
 			Error; err != nil {
-			return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
+			responseError := constants.APIErrorMessages[constants.CreateSprintError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 		iteratorType = "memberID"
 		iteratorLen = len(teamMemberIDs)
@@ -499,10 +548,11 @@ func (service SprintService) Create(
 	if err = tx.Create(&sprint).Error; err != nil {
 		tx.Rollback()
 		if customErrors.IsModelError(err) {
-			return nil, http.StatusBadRequest, err
+			return nil, http.StatusBadRequest, "", err
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
+		responseError := constants.APIErrorMessages[constants.CreateSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	for i := 0; i < iteratorLen; i++ {
@@ -527,14 +577,16 @@ func (service SprintService) Create(
 		if err = tx.Create(&sprintMember).Error; err != nil {
 			tx.Rollback()
 			utils.LogToSentry(err)
-			return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
+			responseError := constants.APIErrorMessages[constants.CreateSprintError]
+			return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 	}
 
 	err = tx.Commit().Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to create sprint")
+		responseError := constants.APIErrorMessages[constants.CreateSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	service.SetNotSynced(sprint.ID)
@@ -544,7 +596,7 @@ func (service SprintService) Create(
 }
 
 // ValidateSprint validate the given sprint
-func (service SprintService) ValidateSprint(sprintID string, retroID string) (bool, error) {
+func (service SprintService) ValidateSprint(sprintID string, retroID string) (bool, string, error) {
 	db := service.DB
 	query := `
 		WITH constants (retro_id, sprint_id) AS (
@@ -578,20 +630,21 @@ func (service SprintService) ValidateSprint(sprintID string, retroID string) (bo
 	}
 	err := db.Raw(query, retroID, sprintID, retroModels.DraftSprint, retroModels.DeletedSprint).Scan(&count).Error
 	if count.Count == 0 {
-		return true, nil
+		return true, "", nil
 	}
 	if err != nil {
 		utils.LogToSentry(err)
-		return false, errors.New("error in fetching invalid sprint task lists")
+		responseError := constants.APIErrorMessages[constants.InvalidSprintTaskListError]
+		return false, responseError.Code, errors.New(responseError.Message)
 	}
-	return false, nil
+	return false, "", nil
 }
 
 // UpdateSprint updates the given sprint
 func (service SprintService) UpdateSprint(
 	sprintID string,
 	userID uint,
-	sprintData retroSerializers.UpdateSprintSerializer) (*retroSerializers.Sprint, int, error) {
+	sprintData retroSerializers.UpdateSprintSerializer) (*retroSerializers.Sprint, int, string, error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 
@@ -599,14 +652,17 @@ func (service SprintService) UpdateSprint(
 		Where("sprints.deleted_at IS NULL").
 		Find(&sprint).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintMemberNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if rowsAffected := db.Save(&sprint).RowsAffected; rowsAffected == 0 {
-		return nil, http.StatusInternalServerError, errors.New("sprint couldn't be updated")
+		responseError := constants.APIErrorMessages[constants.UpdateSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	return service.Get(sprintID, userID, true)

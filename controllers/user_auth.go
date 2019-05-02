@@ -4,9 +4,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
+	"github.com/iReflect/reflect-app/constants"
 )
 
 //UserAuthController ...
@@ -36,9 +38,9 @@ func (ctrl UserAuthController) Login(c *gin.Context) {
 
 // BasicLogin ...
 func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
-	user, status, err := ctrl.AuthService.BasicLogin(c)
+	user, status, errorCode, err := ctrl.AuthService.BasicLogin(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	c.JSON(status, user)
@@ -46,9 +48,9 @@ func (ctrl UserAuthController) BasicLogin(c *gin.Context) {
 
 // Identify ...
 func (ctrl UserAuthController) Identify(c *gin.Context) {
-	reSendTime, status, err := ctrl.AuthService.Identify(c)
+	reSendTime, status, errorCode, err := ctrl.AuthService.Identify(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	c.JSON(status, gin.H{"reSendTime": reSendTime})
@@ -60,11 +62,13 @@ func (ctrl UserAuthController) Recover(c *gin.Context) {
 	var recoveryData userSerializers.Recover
 	err := c.BindJSON(&recoveryData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logrus.Error(err)
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": responseError.Message, "code": responseError.Code})
 	}
-	status, err := ctrl.AuthService.Recover(recoveryData)
+	status, errorCode, err := ctrl.AuthService.Recover(recoveryData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	c.JSON(status, nil)
@@ -76,15 +80,17 @@ func (ctrl UserAuthController) UpdatePassword(c *gin.Context) {
 	var userPasswordData userSerializers.Recover
 	err := c.BindJSON(&userPasswordData)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logrus.Error(err)
+		responseError := constants.APIErrorMessages[constants.InvalidRequestDataError]
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": responseError.Message, "code": responseError.Code})
 	}
-	status, err := ctrl.AuthService.Recover(userPasswordData)
+	status, errorCode, err := ctrl.AuthService.Recover(userPasswordData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 	}
-	status, err = ctrl.AuthService.UpdatePassword(userPasswordData)
+	status, errorCode, err = ctrl.AuthService.UpdatePassword(userPasswordData)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	c.JSON(status, nil)
@@ -92,9 +98,9 @@ func (ctrl UserAuthController) UpdatePassword(c *gin.Context) {
 
 // Auth ...
 func (ctrl UserAuthController) Auth(c *gin.Context) {
-	user, status, err := ctrl.AuthService.Authorize(c)
+	user, status, errorCode, err := ctrl.AuthService.Authorize(c)
 	if err != nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error(), "code": errorCode})
 		return
 	}
 	c.JSON(status, user)
@@ -107,5 +113,6 @@ func (ctrl UserAuthController) Logout(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusOK, gin.H{"message": "success"})
 		return
 	}
-	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	responseError := constants.APIErrorMessages[constants.UnauthorizedError]
+	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": responseError.Message, "code": responseError.Code})
 }

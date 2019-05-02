@@ -9,19 +9,21 @@ import (
 
 	"github.com/jinzhu/gorm"
 
+	"net/http"
+
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	timeTrackerSerializers "github.com/iReflect/reflect-app/apps/timetracker/serializers"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 // AddSprintMember ...
 func (service SprintService) AddSprintMember(
 	sprintID string,
-	memberID uint) (*retroSerializers.SprintMemberSummary, int, error) {
+	memberID uint) (*retroSerializers.SprintMemberSummary, int, string, error) {
 	db := service.DB
 	var sprintMember retroModels.SprintMember
 	var sprint retroModels.Sprint
@@ -34,7 +36,8 @@ func (service SprintService) AddSprintMember(
 		Error
 
 	if err == nil {
-		return nil, http.StatusBadRequest, errors.New("member already a part of the sprint")
+		responseError := constants.APIErrorMessages[constants.MemberAlreadyInSprintError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	err = db.Model(&retroModels.Sprint{}).
@@ -47,16 +50,19 @@ func (service SprintService) AddSprintMember(
 		Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusBadRequest, errors.New("member is not a part of the retrospective team")
+			responseError := constants.APIErrorMessages[constants.NotRetroTeamMemberError]
+			return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to add member")
+		responseError := constants.APIErrorMessages[constants.UnableToAddMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	intSprintID, err := strconv.Atoi(sprintID)
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusBadRequest, errors.New("failed to add member")
+		responseError := constants.APIErrorMessages[constants.UnableToAddMemberError]
+		return nil, http.StatusBadRequest, responseError.Code, errors.New(responseError.Message)
 	}
 
 	sprintMember.SprintID = uint(intSprintID)
@@ -69,7 +75,8 @@ func (service SprintService) AddSprintMember(
 	err = db.Create(&sprintMember).Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to add member")
+		responseError := constants.APIErrorMessages[constants.UnableToAddMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	service.QueueSprintMember(uint(intSprintID), fmt.Sprint(sprintMember.ID))
@@ -85,20 +92,22 @@ func (service SprintService) AddSprintMember(
 		Scan(&sprintMemberSummary).
 		Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("member not found in sprint")
+			responseError := constants.APIErrorMessages[constants.MemberNotInSprintError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get member summary")
+		responseError := constants.APIErrorMessages[constants.GetMemberSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	sprintMemberSummary.ActualStoryPoint = 0
 	sprintMemberSummary.SetExpectedStoryPoint(sprint, sprint.Retrospective)
 
-	return sprintMemberSummary, http.StatusOK, nil
+	return sprintMemberSummary, http.StatusOK, "", nil
 }
 
 // RemoveSprintMember ...
-func (service SprintService) RemoveSprintMember(sprintID string, memberID string) (int, error) {
+func (service SprintService) RemoveSprintMember(sprintID string, memberID string) (int, string, error) {
 	db := service.DB
 	var sprintMember retroModels.SprintMember
 
@@ -112,10 +121,12 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return http.StatusNotFound, errors.New("sprint member not found")
+			responseError := constants.APIErrorMessages[constants.SprintMemberNotFoundError]
+			return http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("failed to remove sprint member")
+		responseError := constants.APIErrorMessages[constants.RemoveSprintMemberError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	tx := db.Begin()
@@ -124,7 +135,8 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 		if err != nil {
 			tx.Rollback()
 			utils.LogToSentry(err)
-			return http.StatusInternalServerError, errors.New("failed to remove sprint member")
+			responseError := constants.APIErrorMessages[constants.RemoveSprintMemberError]
+			return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 		}
 	}
 
@@ -132,22 +144,24 @@ func (service SprintService) RemoveSprintMember(sprintID string, memberID string
 	if err != nil {
 		tx.Rollback()
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("failed to remove sprint member")
+		responseError := constants.APIErrorMessages[constants.RemoveSprintMemberError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	err = tx.Commit().Error
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return http.StatusInternalServerError, errors.New("failed to remove sprint member")
+		responseError := constants.APIErrorMessages[constants.RemoveSprintMemberError]
+		return http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
-	return http.StatusOK, nil
+	return http.StatusOK, "", nil
 }
 
 // GetSprintMembersSummary returns the sprint member summary list
 func (service SprintService) GetSprintMembersSummary(
-	sprintID string) (*retroSerializers.SprintMemberSummaryListSerializer, int, error) {
+	sprintID string) (*retroSerializers.SprintMemberSummaryListSerializer, int, string, error) {
 	db := service.DB
 	sprintMemberSummaryList := new(retroSerializers.SprintMemberSummaryListSerializer)
 
@@ -159,10 +173,12 @@ func (service SprintService) GetSprintMembersSummary(
 		Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint not found")
+			responseError := constants.APIErrorMessages[constants.SprintNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
+		responseError := constants.APIErrorMessages[constants.UnableToGetSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 	if err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.deleted_at IS NULL").
@@ -178,17 +194,19 @@ func (service SprintService) GetSprintMembersSummary(
 		Scan(&sprintMemberSummaryList.Members).
 		Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get member summary")
+		responseError := constants.APIErrorMessages[constants.GetMemberSummaryError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 	for _, sprintMemberSummary := range sprintMemberSummaryList.Members {
 		sprintMemberSummary.SetExpectedStoryPoint(sprint, sprint.Retrospective)
 	}
-	return sprintMemberSummaryList, http.StatusOK, nil
+
+	return sprintMemberSummaryList, http.StatusOK, "", nil
 }
 
 // GetSprintMemberList returns the sprint member list
 func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberList *userSerializers.MembersSerializer,
-	status int, err error) {
+	status int, errorCode string, err error) {
 	db := service.DB
 	sprintMemberList = new(userSerializers.MembersSerializer)
 
@@ -201,16 +219,19 @@ func (service SprintService) GetSprintMemberList(sprintID string) (sprintMemberL
 		Scan(&sprintMemberList.Members).
 		Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint members")
+		responseError := constants.APIErrorMessages[constants.GetSprintMemberListError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return sprintMemberList, http.StatusOK, nil
+
+	return sprintMemberList, http.StatusOK, "", nil
 }
 
 // UpdateSprintMember update the sprint member summary
 func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID string,
-	memberData retroSerializers.SprintMemberUpdate) (*retroSerializers.SprintMemberSummary, int, error) {
+	memberData retroSerializers.SprintMemberUpdate) (*retroSerializers.SprintMemberSummary, int, string, error) {
 	db := service.DB
-
+	responseError := constants.APIErrorMessages[constants.UpdateSprintMemberError]
+	return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	var sprintMember retroModels.SprintMember
 	sprintMemberSummary := retroSerializers.SprintMemberSummary{}
 	if err := db.Model(&retroModels.SprintMember{}).
@@ -221,10 +242,12 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 		Find(&sprintMember).
 		Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("sprint member not found")
+			responseError := constants.APIErrorMessages[constants.SprintMemberNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get sprint member")
+		responseError := constants.APIErrorMessages[constants.GetSprintMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if memberData.AllocationPercent != nil {
@@ -245,7 +268,8 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
 
 	if err := db.Save(&sprintMember).Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to update sprint member")
+		responseError := constants.APIErrorMessages[constants.UpdateSprintMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if err := db.Model(&retroModels.SprintMember{}).
@@ -259,12 +283,13 @@ func (service SprintService) UpdateSprintMember(sprintID string, sprintMemberID 
             COALESCE(SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY sprint_members.id), 0) AS total_time_spent_in_min`).
 		Scan(&sprintMemberSummary).Error; err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to update sprint member")
+		responseError := constants.APIErrorMessages[constants.UpdateSprintMemberError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	sprintMemberSummary.SetExpectedStoryPoint(sprintMember.Sprint, sprintMember.Sprint.Retrospective)
 
-	return &sprintMemberSummary, http.StatusOK, nil
+	return &sprintMemberSummary, http.StatusOK, "", nil
 }
 
 func (service SprintService) addOrUpdateSMT(timeLog timeTrackerSerializers.TimeLog,

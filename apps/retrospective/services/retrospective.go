@@ -14,6 +14,7 @@ import (
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
+	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
 )
 
@@ -27,6 +28,7 @@ type RetrospectiveService struct {
 func (service RetrospectiveService) List(userID uint, perPageString string, pageString string, isAdmin bool) (
 	retrospectiveList *retroSerializers.RetrospectiveListSerializer,
 	status int,
+	errorCode string,
 	err error) {
 	db := service.DB
 
@@ -44,7 +46,7 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 
 	var offset int
 	if perPage < 0 && page > 1 {
-		return retrospectiveList, http.StatusNoContent, nil
+		return retrospectiveList, http.StatusNoContent, "", nil
 	} else if page < 1 {
 		offset = 0
 	} else {
@@ -75,14 +77,19 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("unable to get retrospective list")
-	}
+		responseError := constants.APIErrorMessages[constants.RetrospectiveListError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 
-	return retrospectiveList, http.StatusOK, nil
+	}
+	return retrospectiveList, http.StatusOK, "", nil
 }
 
 // Get the details of the given Retrospective.
-func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (retro *retroSerializers.Retrospective, status int, err error) {
+func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (
+	retro *retroSerializers.Retrospective,
+	status int,
+	errorCode string,
+	err error) {
 	db := service.DB
 
 	retro = new(retroSerializers.Retrospective)
@@ -101,32 +108,34 @@ func (service RetrospectiveService) Get(retroID string, isEagerLoading bool) (re
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("retrospective not found")
+			responseError := constants.APIErrorMessages[constants.RetrospectiveNotFoundError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to get retrospective")
+		responseError := constants.APIErrorMessages[constants.RetrospectiveDetailsError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return retro, http.StatusOK, nil
+	return retro, http.StatusOK, "", nil
 }
 
 // GetTeamMembers ...
 func (service RetrospectiveService) GetTeamMembers(retrospectiveID string, userID uint, isAdmin bool) (
-	members *userSerializers.MembersSerializer, status int, err error) {
-	retro, status, err := service.Get(retrospectiveID, false)
+	members *userSerializers.MembersSerializer, status int, errorCode string, err error) {
+	retro, status, errorCode, err := service.Get(retrospectiveID, false)
 	if err != nil {
-		return nil, status, err
+		return nil, status, errorCode, err
 	}
 
-	members, status, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true, isAdmin)
+	members, status, errorCode, err = service.TeamService.MemberList(strconv.Itoa(int(retro.TeamID)), userID, true, isAdmin)
 	if err != nil {
-		return nil, status, err
+		return nil, status, errorCode, err
 	}
 
-	return members, http.StatusOK, nil
+	return members, http.StatusOK, "", nil
 }
 
 // GetLatestSprint returns the latest sprint for the retro
-func (service RetrospectiveService) GetLatestSprint(retroID string, userID uint) (*retroSerializers.Sprint, int, error) {
+func (service RetrospectiveService) GetLatestSprint(retroID string, userID uint) (*retroSerializers.Sprint, int, string, error) {
 	db := service.DB
 	var sprint retroSerializers.Sprint
 
@@ -139,18 +148,20 @@ func (service RetrospectiveService) GetLatestSprint(retroID string, userID uint)
 		First(&sprint).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, http.StatusNotFound, errors.New("retrospective does not have any active or frozen sprint")
+			responseError := constants.APIErrorMessages[constants.RetrospectiveNoSprintError]
+			return nil, http.StatusNotFound, responseError.Code, errors.New(responseError.Message)
 		}
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, err
+		responseError := constants.APIErrorMessages[constants.RetrospectiveLatestSprintError]
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 	sprint.SetEditable(userID)
-	return &sprint, http.StatusOK, nil
+	return &sprint, http.StatusOK, "", nil
 }
 
 // Create the Retrospective with the given values (provided the user is a member of the retrospective's team.
 func (service RetrospectiveService) Create(userID uint,
-	retrospectiveData *retroSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, int, error) {
+	retrospectiveData *retroSerializers.RetrospectiveCreateSerializer) (*retroModels.Retrospective, int, string, error) {
 	db := service.DB
 	var err error
 
@@ -161,7 +172,9 @@ func (service RetrospectiveService) Create(userID uint,
 			retrospectiveData.TeamID, userID).
 		Find(&userModels.UserTeam{}).Error
 	if err != nil {
-		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to create the retro")
+		utils.LogToSentry(err)
+		responseError := constants.APIErrorMessages[constants.CreateRetrospectivePermissionError]
+		return nil, http.StatusForbidden, responseError.Code, errors.New(responseError.Message)
 	}
 
 	var retro retroModels.Retrospective
@@ -176,23 +189,25 @@ func (service RetrospectiveService) Create(userID uint,
 	retro.StoryPointPerWeek = retrospectiveData.StoryPointPerWeek
 
 	if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
-		return nil, http.StatusBadRequest, err
+		return nil, http.StatusBadRequest, "", err
 	}
 
+	responseError := constants.APIErrorMessages[constants.CreateRetrospectiveError]
 	if taskProviders, err = json.Marshal(retrospectiveData.TaskProviderConfig); err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 
 	if encryptedTaskProviders, err = tasktracker.EncryptTaskProviders(taskProviders); err != nil {
-		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
 	retro.TaskProviderConfig = encryptedTaskProviders
 
 	err = db.Create(&retro).Error
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
+		return nil, http.StatusInternalServerError, responseError.Code, errors.New(responseError.Message)
 	}
-	return &retro, http.StatusCreated, nil
+	return &retro, http.StatusCreated, "", nil
 }
