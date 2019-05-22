@@ -22,6 +22,8 @@ type RetrospectiveController struct {
 func (ctrl RetrospectiveController) Routes(r *gin.RouterGroup) {
 	r.GET("/", ctrl.List)
 	r.GET("/:retroID/", ctrl.Get)
+	r.PUT("/:retroID/", ctrl.Update)
+	r.GET("/:retroID/edit-level/", ctrl.GetEditLevels)
 	r.GET("/:retroID/team-members/", ctrl.GetTeamMembers)
 	r.GET("/:retroID/latest-sprint/", ctrl.GetLatestSprint)
 	r.POST("/", ctrl.Create)
@@ -54,6 +56,25 @@ func (ctrl RetrospectiveController) Get(c *gin.Context) {
 	}
 
 	response, status, err := ctrl.RetrospectiveService.Get(retroID, true)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(status, response)
+}
+
+// GetEditLevels ...
+func (ctrl RetrospectiveController) GetEditLevels(c *gin.Context) {
+	retroID := c.Param("retroID")
+	userID, _ := c.Get("userID")
+
+	if !ctrl.PermissionService.UserCanAccessRetro(retroID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	response, status, err := ctrl.RetrospectiveService.GetEditLevels()
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
@@ -125,4 +146,29 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		userID.(uint))
 
 	c.JSON(status, retro)
+}
+
+// Update ...
+func (ctrl RetrospectiveController) Update(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var err error
+	retrospectiveData := retrospectiveSerializers.RetrospectiveUpdateSerializer{}
+	if err = c.BindJSON(&retrospectiveData); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		return
+	}
+
+	retro, status, err := ctrl.RetrospectiveService.Update(userID.(uint), &retrospectiveData)
+	if err != nil {
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctrl.TrailService.Add(
+		constants.UpdatedRetrospective,
+		constants.Retrospective,
+		strconv.Itoa(int(retro.ID)),
+		userID.(uint))
+
+	c.JSON(200, nil)
 }

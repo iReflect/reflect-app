@@ -32,6 +32,7 @@ type ActionType string
 // constants defined to use in ActionTypeMap
 const (
 	CreatedRetrospective    ActionType = "CreatedRetrospective"
+	UpdatedRetrospective    ActionType = "UpdatedRetrospective"
 	AddedGoal               ActionType = "AddedGoal"
 	UpdatedGoal             ActionType = "UpdatedGoal"
 	ResolvedGoal            ActionType = "ResolvedGoal"
@@ -63,6 +64,7 @@ const (
 // ActionTypeMap is types of Action of Trail model used in adding trails.
 var ActionTypeMap = map[ActionType]string{
 	CreatedRetrospective:    "Created Retrospective",
+	UpdatedRetrospective:    "Updated Retrospective",
 	AddedGoal:               "Added a Goal",
 	UpdatedGoal:             "Updated a Goal",
 	ResolvedGoal:            "Marked a goal resolved",

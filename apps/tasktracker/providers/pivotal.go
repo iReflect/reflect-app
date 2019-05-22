@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/iReflect/go-pivotaltracker/v5/pivotal"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strconv"
-	"strings"
 )
 
 // PivotalTaskProvider ...
@@ -98,6 +99,7 @@ func (p *PivotalTaskProvider) ConfigTemplate() (configMap map[string]interface{}
 				"FieldDisplayName": "Enter the Project ID for your PT Project. e.g. 1234567",
 				"Type":             "number",
 				"Required":         true,
+				"Editable":         false,
 			},
 		},
 	}
