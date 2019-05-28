@@ -16,7 +16,7 @@ func init() {
 // Up00034 ...
 func Up00034(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
-	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
+	gormDB, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
 	}
@@ -24,9 +24,12 @@ func Up00034(tx *sql.Tx) error {
 	type task struct {
 		Resolution int8 `gorm:"default:0"`
 	}
-	gormdb.AutoMigrate(&task{})
 
-	err = gormdb.Model(retroModels.Task{}).
+	err = gormDB.AutoMigrate(&task{}).Error
+	if err != nil {
+		return err
+	}
+	err = gormDB.Model(retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
 		Not("tasks.done_at IS NULL").
 		Update("resolution", retroModels.DoneResolution).
@@ -41,12 +44,14 @@ func Up00034(tx *sql.Tx) error {
 // Down00034 ...
 func Down00034(tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
-	gormdb, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
+	gormDB, err := gorm.Open("postgres", interface{}(tx).(gorm.SQLCommon))
 	if err != nil {
 		return err
 	}
 
-	gormdb.Model(&models.Task{}).DropColumn("resolution")
-
+	err = gormDB.Model(&models.Task{}).DropColumn("resolution").Error
+	if err != nil {
+		return err
+	}
 	return nil
 }
