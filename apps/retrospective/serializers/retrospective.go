@@ -26,7 +26,7 @@ type Retrospective struct {
 // EditLevel ...
 type EditLevel uint
 
-// different EditLevels ...
+// Various EditLevels ...
 const (
 	NotEditable EditLevel = iota + 1
 	Partially
@@ -43,21 +43,15 @@ type RetroFieldsEditLevelMap struct {
 }
 
 func (editLevel EditLevel) validate() bool {
-	if editLevel == NotEditable || editLevel == Partially || editLevel == Fully {
-		return true
-	}
-	return false
+	return (editLevel == NotEditable || editLevel == Partially || editLevel == Fully)
 }
 
 // Validate ...
 func (retroFieldsEditLevelMap RetroFieldsEditLevelMap) Validate() bool {
-	if retroFieldsEditLevelMap.ProjectName.validate() &&
+	return (retroFieldsEditLevelMap.ProjectName.validate() &&
 		retroFieldsEditLevelMap.StoryPointPerWeek.validate() &&
 		retroFieldsEditLevelMap.TeamID.validate() &&
-		retroFieldsEditLevelMap.Title.validate() {
-		return true
-	}
-	return false
+		retroFieldsEditLevelMap.Title.validate())
 }
 
 // RetrospectiveCreateSerializer ...

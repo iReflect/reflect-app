@@ -227,7 +227,7 @@ func (service RetrospectiveService) Update(userID uint,
 			retrospectiveData.TeamID, userID).
 		Find(&userModels.UserTeam{}).Error
 	if err != nil {
-		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to create the retro")
+		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to update the retro")
 	}
 
 	var retro retroModels.Retrospective
