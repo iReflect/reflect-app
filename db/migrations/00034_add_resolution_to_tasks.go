@@ -3,10 +3,11 @@ package migrations
 import (
 	"database/sql"
 
-	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
-	"github.com/iReflect/reflect-app/db/base/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pressly/goose"
+
+	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
+	"github.com/iReflect/reflect-app/db/base/models"
 )
 
 func init() {
