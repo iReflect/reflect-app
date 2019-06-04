@@ -400,8 +400,8 @@ func (service SprintService) GetSprintMemberSanitizedTimeTrackerData(
 		return nil, nil, err
 	}
 
-	var timeLogsKeymap map[string]int
-	var sanitizedTimeLogs []timeTrackerSerializers.TimeLog
+	timeLogsKeymap := make(map[string]int)
+	sanitizedTimeLogs := make([]timeTrackerSerializers.TimeLog, len(taskKeys))
 	var sanitizedMemberTaskKeys []string
 	var sanitizedTimeLogsIndex = 0
 
