@@ -9,11 +9,12 @@ import (
 
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/constants"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"io/ioutil"
 )
 
 // SprintIDJQLKeyword ...
@@ -44,6 +45,7 @@ type JIRAConfig struct {
 	EstimateField string                  `json:"EstimateField"`
 }
 
+// GetBaseURL returns the sanitized base URL.
 func (config JIRAConfig) GetBaseURL() string {
 	// Just to make sure there are no trailing slashes in the base url, even if provided by the user.
 	return strings.Trim(config.BaseURL, "/")
@@ -154,6 +156,12 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 	return configMap
 }
 
+// SanitizeTimeLogs ...
+func (c *JIRAConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	// This method is currently not used
+	return nil
+}
+
 // GetTaskUrl ...
 func (c *JIRAConnection) GetTaskUrl(ticketKey string) string {
 	return fmt.Sprintf("%v/browse/%v", c.config.GetBaseURL(), ticketKey)
@@ -249,7 +257,6 @@ func (c *JIRAConnection) getTicketsFromJQL(extraJQL string, skipBaseJQL bool, sp
 		utils.LogToSentry(errors.New(string(jiraErr)))
 		return nil, err
 	}
-
 	return c.serializeTickets(tickets), nil
 }
 

@@ -2,20 +2,21 @@ package models
 
 import (
 	"errors"
-	"github.com/iReflect/reflect-app/config"
-	customErrors "github.com/iReflect/reflect-app/libs"
-	"github.com/iReflect/reflect-app/libs/utils"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
-
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
 	"github.com/sirupsen/logrus"
+
+	userModels "github.com/iReflect/reflect-app/apps/user/models"
+	"github.com/iReflect/reflect-app/config"
+	customErrors "github.com/iReflect/reflect-app/libs"
+	"github.com/iReflect/reflect-app/libs/utils"
 )
 
 // SprintStatusValues ...
@@ -146,6 +147,8 @@ func (sprint *Sprint) validateDateContinuity(baseQuery *gorm.DB, statuses []Spri
 
 // BeforeSave ...
 func (sprint *Sprint) BeforeSave(db *gorm.DB) (err error) {
+	sprint.SprintID = strings.TrimSpace(sprint.SprintID)
+	sprint.Title = strings.TrimSpace(sprint.Title)
 	return sprint.Validate(db)
 }
 

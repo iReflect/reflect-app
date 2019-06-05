@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/iReflect/go-pivotaltracker/v5/pivotal"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
 	"github.com/iReflect/reflect-app/apps/tasktracker/serializers"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"strconv"
-	"strings"
 )
 
 // PivotalTaskProvider ...
@@ -183,12 +184,21 @@ func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
 	return fmt.Sprintf("https://www.pivotaltracker.com/story/show/%v", ticketKey)
 }
 
+// SanitizeTimeLogs ...
+func (c *PivotalConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	sanitizedKeys := make(map[string]string)
+	for _, timeLogKey := range timeLogKeys {
+		// To remove # from starting of ticketkey if present
+		sanitizedKeys[timeLogKey] = strings.TrimPrefix(timeLogKey, "#")
+	}
+	return sanitizedKeys
+}
+
 // GetTaskList ...
 func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task {
 	if len(ticketKeys) == 0 {
 		return nil
 	}
-
 	filterQuery := fmt.Sprintf("id:%s", strings.Join(ticketKeys, ","))
 
 	projectID, err := strconv.Atoi(c.config.ProjectID)
@@ -221,7 +231,7 @@ func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error)
 	story, _, err := c.client.Stories.Get(projectID, ticketID)
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, err
+		return nil, nil
 	}
 
 	return c.serializeTicket(story, c.getUserIDNameMap()), nil
@@ -254,6 +264,9 @@ func (c *PivotalConnection) GetSprint(sprintID string) *serializers.Sprint {
 
 // GetSprintTaskList ...
 func (c *PivotalConnection) GetSprintTaskList(sprint serializers.Sprint) []serializers.Task {
+	if sprint.ID == "" {
+		return nil
+	}
 	iterationNumber, err := strconv.Atoi(sprint.ID)
 	if err != nil {
 		utils.LogToSentry(err)

@@ -3,8 +3,10 @@ package services
 import (
 	"encoding/json"
 	"errors"
-	"github.com/jinzhu/gorm"
+	"net/http"
 	"strconv"
+
+	"github.com/jinzhu/gorm"
 
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -13,7 +15,6 @@ import (
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/libs/utils"
-	"net/http"
 )
 
 // RetrospectiveService ...
@@ -30,7 +31,8 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	db := service.DB
 
 	retrospectiveList = &retroSerializers.RetrospectiveListSerializer{}
-	retrospectiveList.Retrospectives = []retroSerializers.Retrospective{}
+	retrospectiveList.MyRetrospectives = []retroSerializers.Retrospective{}
+	retrospectiveList.OthersRetrospectives = []retroSerializers.Retrospective{}
 
 	perPage, err := strconv.Atoi(perPageString)
 	if err != nil {
@@ -58,19 +60,27 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		Offset(offset).
 		Select("DISTINCT(retrospectives.*)")
 
+	userTeamQuery := db.Model(&userModels.UserTeam{}).
+		Select("team_id").
+		Where("user_id = ? and leaved_at IS NULL", userID).
+		QueryExpr()
+
 	if isAdmin {
 		err = baseQuery.
-			Find(&retrospectiveList.Retrospectives).
-			Error
-
-	} else {
-		err = baseQuery.
-			Scopes(retroModels.RetroJoinUserTeams).
-			Where("user_teams.user_id = ?", userID).
+			Where("retrospectives.team_id NOT IN (?)", userTeamQuery).
 			Preload("Team").
-			Find(&retrospectiveList.Retrospectives).
+			Find(&retrospectiveList.OthersRetrospectives).
 			Error
+		if err != nil {
+			utils.LogToSentry(err)
+			return nil, http.StatusInternalServerError, errors.New("unable to get retrospective list")
+		}
 	}
+	err = baseQuery.
+		Where("retrospectives.team_id IN (?)", userTeamQuery).
+		Preload("Team").
+		Find(&retrospectiveList.MyRetrospectives).
+		Error
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -171,6 +181,7 @@ func (service RetrospectiveService) Create(userID uint,
 	retro.CreatedByID = userID
 	retro.Title = retrospectiveData.Title
 	retro.ProjectName = retrospectiveData.ProjectName
+	retro.TimeProviderName = retrospectiveData.TimeProviderName
 	retro.StoryPointPerWeek = retrospectiveData.StoryPointPerWeek
 
 	if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {

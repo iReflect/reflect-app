@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
@@ -10,6 +11,7 @@ import (
 	"github.com/qor/qor/resource"
 
 	"github.com/iReflect/reflect-app/apps/tasktracker"
+	"github.com/iReflect/reflect-app/apps/timetracker"
 	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	"github.com/iReflect/reflect-app/db/models/fields"
 	"github.com/iReflect/reflect-app/libs/utils"
@@ -21,6 +23,7 @@ type Retrospective struct {
 	Title              string       `gorm:"type:varchar(255); not null"`
 	ProjectName        string       `gorm:"type:varchar(255); not null"`
 	TaskProviderConfig fields.JSONB `gorm:"type:jsonb; not null; default:'[]'::jsonb"`
+	TimeProviderName   string       `gorm:"not null"`
 	Team               userModels.Team
 	TeamID             uint `gorm:"not null"`
 	Sprints            []Sprint
@@ -35,11 +38,16 @@ func (retrospective *Retrospective) Validate(db *gorm.DB) (err error) {
 		err = errors.New("story points per week cannot be negative")
 		return err
 	}
+	if _, exists := timetracker.TimeProvidersDisplayNameMap[retrospective.TimeProviderName]; !exists {
+		return errors.New("Invalid time provider name")
+	}
 	return
 }
 
 // BeforeSave ...
 func (retrospective *Retrospective) BeforeSave(db *gorm.DB) (err error) {
+	retrospective.Title = strings.TrimSpace(retrospective.Title)
+	retrospective.ProjectName = strings.TrimSpace(retrospective.ProjectName)
 	return retrospective.Validate(db)
 }
 
@@ -53,7 +61,9 @@ func RegisterRetrospectiveToAdmin(Admin *admin.Admin, config admin.Config) {
 	retrospective := Admin.AddResource(&Retrospective{}, &config)
 	taskProviderConfigMeta := getTaskProviderConfigMetaFieldMeta()
 	createdByMeta := userModels.GetUserFieldMeta("CreatedBy")
+	providerNameMeta := getTimeProviderMeta()
 
+	retrospective.Meta(&providerNameMeta)
 	retrospective.Meta(&taskProviderConfigMeta)
 	retrospective.Meta(&createdByMeta)
 
@@ -77,6 +87,33 @@ func getTaskProviderConfigMetaFieldMeta() admin.Meta {
 			value := metaValue.Value.([]string)[0]
 			retrospective.TaskProviderConfig = fields.JSONB(value)
 		}}
+}
+
+// getTimeProviderMeta ...
+func getTimeProviderMeta() admin.Meta {
+	return admin.Meta{
+		Name: "TimeProviderName",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			retrospective := value.(*Retrospective)
+			return retrospective.TimeProviderName
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			retrospective := value.(*Retrospective)
+			return timetracker.TimeProvidersDisplayNameMap[retrospective.TimeProviderName]
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			retrospective := resource.(*Retrospective)
+			value := metaValue.Value.([]string)[0]
+			retrospective.TimeProviderName = value
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for key, value := range timetracker.TimeProvidersDisplayNameMap {
+				results = append(results, []string{key, value})
+			}
+			return
+		},
+	}
 }
 
 // RetroJoinSprints ...

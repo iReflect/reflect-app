@@ -1,10 +1,11 @@
 package validators
 
 import (
+	"reflect"
+
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/go-playground/validator.v8"
-	"reflect"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -103,6 +104,24 @@ func IsValidRating(
 ) bool {
 	rating := currentStruct.Interface().(retrospectiveSerializers.BaseRating).Rating
 	if rating != nil && *rating >= 0 && int(*rating) < len(retrospective.RatingValues) {
+		return true
+	}
+	return false
+}
+
+// IsValidResolution ...
+//noinspection GoUnusedParameter
+func IsValidResolution(
+	v *validator.Validate,
+	topStruct reflect.Value,
+	currentStruct reflect.Value,
+	field reflect.Value,
+	fieldType reflect.Type,
+	fieldKind reflect.Kind,
+	param string,
+) bool {
+	resolution := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskDone).Resolution
+	if resolution != nil && *resolution >= int8(models.DoneResolution) && int(*resolution) < len(models.ResolutionValues) {
 		return true
 	}
 	return false

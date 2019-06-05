@@ -19,6 +19,7 @@ type Retrospective struct {
 	CreatedByID        uint
 	CreatedAt          time.Time
 	TaskProviderConfig fields.JSONB
+	TimeProviderName   string
 	StoryPointPerWeek  float64
 }
 
@@ -29,10 +30,12 @@ type RetrospectiveCreateSerializer struct {
 	TaskProviderConfig []map[string]interface{} `json:"taskProvider" binding:"required,is_valid_task_provider_config"`
 	TeamID             uint                     `json:"team" binding:"required,is_valid_team"`
 	StoryPointPerWeek  float64                  `json:"storyPointPerWeek" binding:"required"`
+	TimeProviderName   string                   `json:"timeProviderKey" binding:"required"`
 	CreatedByID        uint
 }
 
 // RetrospectiveListSerializer ...
 type RetrospectiveListSerializer struct {
-	Retrospectives []Retrospective
+	MyRetrospectives     []Retrospective
+	OthersRetrospectives []Retrospective
 }
