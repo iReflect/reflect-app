@@ -264,6 +264,9 @@ func (c *PivotalConnection) GetSprint(sprintID string) *serializers.Sprint {
 
 // GetSprintTaskList ...
 func (c *PivotalConnection) GetSprintTaskList(sprint serializers.Sprint) []serializers.Task {
+	if len(sprint.ID) < 1 {
+		return nil
+	}
 	iterationNumber, err := strconv.Atoi(sprint.ID)
 	if err != nil {
 		utils.LogToSentry(err)
