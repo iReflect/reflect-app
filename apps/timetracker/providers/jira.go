@@ -125,15 +125,15 @@ func getJIRAConfigObject(config interface{}) (JIRAConfig, error) {
 }
 
 // CleanTimeProviderConfig ...
-func (m *JIRAConnection) CleanTimeProviderConfig() interface{} {
-	m.config.Credentials.Password = strings.TrimSpace(m.config.Credentials.Password)
-	m.config.Credentials.Username = strings.TrimSpace(m.config.Credentials.Username)
-	m.config.Credentials.Type = strings.TrimSpace(m.config.Credentials.Type)
-	m.config.BaseURL = strings.TrimSpace(m.config.BaseURL)
-	m.config.BoardIds = strings.TrimSpace(m.config.BoardIds)
-	m.config.EstimateField = strings.TrimSpace(m.config.EstimateField)
-	m.config.JQL = strings.TrimSpace(m.config.JQL)
-	return m.config
+func (jiraConnection *JIRAConnection) CleanTimeProviderConfig() interface{} {
+	jiraConnection.config.Credentials.Password = strings.TrimSpace(jiraConnection.config.Credentials.Password)
+	jiraConnection.config.Credentials.Username = strings.TrimSpace(jiraConnection.config.Credentials.Username)
+	jiraConnection.config.Credentials.Type = strings.TrimSpace(jiraConnection.config.Credentials.Type)
+	jiraConnection.config.BaseURL = strings.TrimSpace(jiraConnection.config.BaseURL)
+	jiraConnection.config.BoardIds = strings.TrimSpace(jiraConnection.config.BoardIds)
+	jiraConnection.config.EstimateField = strings.TrimSpace(jiraConnection.config.EstimateField)
+	jiraConnection.config.JQL = strings.TrimSpace(jiraConnection.config.JQL)
+	return jiraConnection.config
 }
 
 // GetProjectTimeLogs ...
