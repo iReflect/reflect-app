@@ -155,6 +155,12 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 	return configMap
 }
 
+// SanitizeTimeLogs ...
+func (m *JIRAConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	// This method is currently not used
+	return nil
+}
+
 // GetTaskUrl ...
 func (c *JIRAConnection) GetTaskUrl(ticketKey string) string {
 	return fmt.Sprintf("%v/browse/%v", c.config.GetBaseURL(), ticketKey)
