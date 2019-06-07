@@ -158,8 +158,11 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 
 // SanitizeTimeLogs ...
 func (c *JIRAConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
-	// This method is currently not used
-	return nil
+	sanitizedKeys := make(map[string]string)
+	for _, timeLogKey := range timeLogKeys {
+		sanitizedKeys[timeLogKey] = timeLogKey
+	}
+	return sanitizedKeys
 }
 
 // GetTaskUrl ...
