@@ -11,7 +11,6 @@ import (
 	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	retroSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
 	"github.com/iReflect/reflect-app/apps/tasktracker"
-	userModels "github.com/iReflect/reflect-app/apps/user/models"
 	userSerializers "github.com/iReflect/reflect-app/apps/user/serializers"
 	userServices "github.com/iReflect/reflect-app/apps/user/services"
 	"github.com/iReflect/reflect-app/libs/utils"
@@ -171,16 +170,6 @@ func (service RetrospectiveService) Create(userID uint,
 	db := service.DB
 	var err error
 
-	// Check if the user has the permission to create the retro
-	err = db.Model(&userModels.UserTeam{}).
-		Where("user_teams.deleted_at IS NULL").
-		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
-			retrospectiveData.TeamID, userID).
-		Find(&userModels.UserTeam{}).Error
-	if err != nil {
-		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to create the retro")
-	}
-
 	var retro retroModels.Retrospective
 	var taskProviders []byte
 	var encryptedTaskProviders []byte
@@ -219,16 +208,6 @@ func (service RetrospectiveService) Update(userID uint,
 	retrospectiveData *retroSerializers.RetrospectiveUpdateSerializer) (*retroModels.Retrospective, int, error) {
 	db := service.DB
 	var err error
-
-	// Check if the user has the permission to create the retro
-	err = db.Model(&userModels.UserTeam{}).
-		Where("user_teams.deleted_at IS NULL").
-		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
-			retrospectiveData.TeamID, userID).
-		Find(&userModels.UserTeam{}).Error
-	if err != nil {
-		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to update the retro")
-	}
 
 	var retro retroModels.Retrospective
 	err = db.Model(&retroModels.Retrospective{}).Where("id = ?", retrospectiveData.RetroID).First(&retro).Error

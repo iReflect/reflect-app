@@ -132,6 +132,10 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
+	if !ctrl.PermissionService.UserCanUseRetro(retrospectiveData.TeamID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
 
 	retro, status, err := ctrl.RetrospectiveService.Create(userID.(uint), &retrospectiveData)
 	if err != nil {
@@ -158,6 +162,11 @@ func (ctrl RetrospectiveController) Update(c *gin.Context) {
 		return
 	}
 
+	if !ctrl.PermissionService.UserCanUseRetro(retrospectiveData.TeamID, userID.(uint)) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
 	retro, status, err := ctrl.RetrospectiveService.Update(userID.(uint), &retrospectiveData)
 	if err != nil {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
@@ -170,5 +179,5 @@ func (ctrl RetrospectiveController) Update(c *gin.Context) {
 		strconv.Itoa(int(retro.ID)),
 		userID.(uint))
 
-	c.JSON(200, nil)
+	c.JSON(status, nil)
 }
