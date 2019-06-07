@@ -36,7 +36,7 @@ func (service TrailService) Add(action constants.ActionType, actionItem constant
 }
 
 // GetTrails method to get history of trails for a particular sprint
-func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.TrailSerializer, status int, err error) {
+func (service TrailService) GetTrails(sprintID uint, retroID string) (trails *trailSerializer.TrailSerializer, status int, err error) {
 	db := service.DB
 	trails = new(trailSerializer.TrailSerializer)
 
@@ -66,6 +66,7 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 	retroFeedbackTrail := db.Model(&retroModels.Trail{}).
 		Scopes(retroModels.TrailJoinFeedback).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.RetrospectiveFeedback]).
+		Where("retrospective_feedbacks.retrospective_id = ?", retroID).
 		QueryExpr()
 
 	err = db.Raw(

@@ -201,7 +201,8 @@ func (service SprintTaskService) MarkDone(
 	sprintTaskID string,
 	retroID string,
 	sprintID string,
-	userID uint) (task *retroSerializers.SprintTask, status int, err error) {
+	userID uint,
+	data retroSerializers.SprintTaskDone) (task *retroSerializers.SprintTask, status int, err error) {
 	db := service.DB
 	var sprint retroModels.Sprint
 	err = db.Model(&retroModels.Sprint{}).
@@ -225,7 +226,7 @@ func (service SprintTaskService) MarkDone(
 	err = db.Model(&retroModels.Task{}).
 		Where("tasks.deleted_at IS NULL").
 		Where("id = (?)", query).
-		Update("done_at", gorm.Expr("COALESCE(done_at, ?)", *sprint.EndDate)).
+		Updates(map[string]interface{}{"done_at": gorm.Expr("COALESCE(done_at, ?)", *sprint.EndDate), "resolution": retroModels.Resolution(*data.Resolution)}).
 		Error
 
 	if err != nil {
@@ -257,6 +258,7 @@ func (service SprintTaskService) MarkUndone(
 		Where("tasks.deleted_at IS NULL").
 		Where("id = (?)", query).
 		Update("done_at", nil).
+		Updates(map[string]interface{}{"done_at": nil, "resolution": nil}).
 		Error
 
 	if err != nil {
@@ -370,7 +372,8 @@ func (service SprintTaskService) tasksWithTimeDetailsForCurrentAndPrevSprint(ret
 						sprint_current_members.sprint_current_member_time as sprint_current_member_time,
             tasks.estimate,
             tasks.rating,
-            tasks.done_at,
+						tasks.done_at,
+						tasks.resolution,
             tasks.is_tracker_task,
             sprint_tasks.sprint_id,
             SUM(sprint_member_tasks.time_spent_minutes) OVER (PARTITION BY tasks.id)                           AS total_time,

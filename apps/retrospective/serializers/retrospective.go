@@ -36,5 +36,6 @@ type RetrospectiveCreateSerializer struct {
 
 // RetrospectiveListSerializer ...
 type RetrospectiveListSerializer struct {
-	Retrospectives []Retrospective
+	MyRetrospectives     []Retrospective
+	OthersRetrospectives []Retrospective
 }

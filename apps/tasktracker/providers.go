@@ -2,7 +2,6 @@ package tasktracker
 
 import (
 	"encoding/json"
-
 	"errors"
 	"strings"
 
@@ -34,6 +33,7 @@ type Connection interface {
 	GetSprint(sprintID string) *serializers.Sprint
 	GetSprintTaskList(sprint serializers.Sprint) []serializers.Task
 	ValidateConfig() error
+	SanitizeTimeLogs([]string) map[string]string
 }
 
 // TaskProviders ...
@@ -142,6 +142,16 @@ func ValidateCredentials(credentials map[string]interface{}) (err error) {
 		return err
 	}
 	return nil
+}
+
+// SanitizeTimeLogs ...
+func SanitizeTimeLogs(config []byte, timeLogKeys []string) (map[string]string, error) {
+	connection := GetConnection(config)
+	if connection == nil {
+		return nil, errors.New("task_list: invalid connection config")
+	}
+	sanitizedKeys := connection.SanitizeTimeLogs(timeLogKeys)
+	return sanitizedKeys, nil
 }
 
 // GetTaskList ...

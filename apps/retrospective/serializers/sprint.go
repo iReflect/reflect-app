@@ -1,9 +1,9 @@
 package serializers
 
 import (
-	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	"time"
 
+	retroModels "github.com/iReflect/reflect-app/apps/retrospective/models"
 	userSerializer "github.com/iReflect/reflect-app/apps/user/serializers"
 )
 
@@ -52,6 +52,7 @@ type SprintTaskSummary struct {
 	TotalCount        uint
 	PointsEarned      float64
 	TotalPointsEarned float64
+	ActualHours       uint
 }
 
 // SprintsSerializer ...

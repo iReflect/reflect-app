@@ -45,6 +45,7 @@ type JIRAConfig struct {
 	EstimateField string                  `json:"EstimateField"`
 }
 
+// GetBaseURL returns the sanitized base URL.
 func (config JIRAConfig) GetBaseURL() string {
 	// Just to make sure there are no trailing slashes in the base url, even if provided by the user.
 	return strings.Trim(config.BaseURL, "/")
@@ -153,6 +154,15 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 		},
 	}
 	return configMap
+}
+
+// SanitizeTimeLogs ...
+func (c *JIRAConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	sanitizedKeys := make(map[string]string)
+	for _, timeLogKey := range timeLogKeys {
+		sanitizedKeys[timeLogKey] = timeLogKey
+	}
+	return sanitizedKeys
 }
 
 // GetTaskUrl ...
