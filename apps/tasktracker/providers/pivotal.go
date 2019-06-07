@@ -185,19 +185,20 @@ func (c *PivotalConnection) GetTaskUrl(ticketKey string) string {
 	return fmt.Sprintf("https://www.pivotaltracker.com/story/show/%v", ticketKey)
 }
 
-// cleanTickets ...
-func (c *PivotalConnection) sanitizeTicket(ticketKey string) string {
-	// To remove # from starting of ticketkey if present
-	return strings.TrimPrefix(ticketKey, "#")
+// SanitizeTimeLogs ...
+func (c *PivotalConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	sanitizedKeys := make(map[string]string)
+	for _, timeLogKey := range timeLogKeys {
+		// To remove # from starting of ticketkey if present
+		sanitizedKeys[timeLogKey] = strings.TrimPrefix(timeLogKey, "#")
+	}
+	return sanitizedKeys
 }
 
 // GetTaskList ...
 func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task {
 	if len(ticketKeys) == 0 {
 		return nil
-	}
-	for index, ticketKey := range ticketKeys {
-		ticketKeys[index] = c.sanitizeTicket(ticketKey)
 	}
 	filterQuery := fmt.Sprintf("id:%s", strings.Join(ticketKeys, ","))
 
@@ -217,7 +218,6 @@ func (c *PivotalConnection) GetTaskList(ticketKeys []string) []serializers.Task 
 
 // GetTask ...
 func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error) {
-	ticketKey = c.sanitizeTicket(ticketKey)
 	ticketID, err := strconv.Atoi(ticketKey)
 	// Since the ticket ids are always number in Pivotal, if a value is not
 	if err != nil {
@@ -232,7 +232,7 @@ func (c *PivotalConnection) GetTask(ticketKey string) (*serializers.Task, error)
 	story, _, err := c.client.Stories.Get(projectID, ticketID)
 	if err != nil {
 		utils.LogToSentry(err)
-		return nil, err
+		return nil, nil
 	}
 
 	return c.serializeTicket(story, c.getUserIDNameMap()), nil
@@ -265,6 +265,9 @@ func (c *PivotalConnection) GetSprint(sprintID string) *serializers.Sprint {
 
 // GetSprintTaskList ...
 func (c *PivotalConnection) GetSprintTaskList(sprint serializers.Sprint) []serializers.Task {
+	if sprint.ID == "" {
+		return nil
+	}
 	iterationNumber, err := strconv.Atoi(sprint.ID)
 	if err != nil {
 		utils.LogToSentry(err)

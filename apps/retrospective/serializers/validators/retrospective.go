@@ -124,6 +124,24 @@ func IsValidRating(
 	return false
 }
 
+// IsValidResolution ...
+//noinspection GoUnusedParameter
+func IsValidResolution(
+	v *validator.Validate,
+	topStruct reflect.Value,
+	currentStruct reflect.Value,
+	field reflect.Value,
+	fieldType reflect.Type,
+	fieldKind reflect.Kind,
+	param string,
+) bool {
+	resolution := currentStruct.Interface().(*retrospectiveSerializers.SprintTaskDone).Resolution
+	if resolution != nil && *resolution >= int8(models.DoneResolution) && int(*resolution) < len(models.ResolutionValues) {
+		return true
+	}
+	return false
+}
+
 // IsValidTaskRole ...
 //noinspection GoUnusedParameter
 func IsValidTaskRole(
