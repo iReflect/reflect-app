@@ -57,6 +57,10 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 		retroFeedback.ResolvedAt = sprint.EndDate
 	}
 
+	if feedbackType == models.GoalType {
+		retroFeedback.ExpectedAt = sprint.EndDate
+	}
+
 	err = db.Create(&retroFeedback).Error
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.New("failed to get sprint")
@@ -94,6 +98,9 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 
 	if feedbackData.Scope != nil {
 		retroFeedback.Scope = models.RetrospectiveFeedbackScope(*feedbackData.Scope)
+		if retroFeedback.Scope == models.TeamScope {
+			retroFeedback.AssigneeID = nil
+		}
 	}
 
 	if feedbackData.Text != nil {
@@ -109,11 +116,7 @@ func (service RetrospectiveFeedbackService) Update(userID uint, retroID string,
 	}
 
 	if feedbackData.AssigneeID != nil {
-		if *feedbackData.AssigneeID == 0 {
-			retroFeedback.AssigneeID = nil
-		} else {
-			retroFeedback.AssigneeID = feedbackData.AssigneeID
-		}
+		retroFeedback.AssigneeID = feedbackData.AssigneeID
 	}
 
 	err := db.Save(&retroFeedback).Error
