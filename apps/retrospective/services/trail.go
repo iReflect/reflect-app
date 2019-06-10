@@ -42,7 +42,7 @@ func (service TrailService) GetTrails(sprintID uint, retroID string) (trails *tr
 
 	retroTrail := db.Model(&retroModels.Trail{}).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.Retrospective]).
-		Where("trails.action_item_id = ?", sprintID).
+		Where("trails.action_item_id = ?", retroID).
 		QueryExpr()
 
 	sprintTrail := db.Model(&retroModels.Trail{}).

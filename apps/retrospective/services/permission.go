@@ -30,8 +30,8 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 	return err == nil
 }
 
-// UserCanUseRetro ...
-func (service PermissionService) UserCanUseRetro(teamID uint, userID uint) bool {
+// UserCanCreateOrEditRetro ...
+func (service PermissionService) UserCanCreateOrEditRetro(teamID uint, userID uint) bool {
 	if service.IsUserAdmin(userID) {
 		return true
 	}

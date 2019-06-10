@@ -132,7 +132,7 @@ func (ctrl RetrospectiveController) Create(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
 		return
 	}
-	if !ctrl.PermissionService.UserCanUseRetro(retrospectiveData.TeamID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanCreateOrEditRetro(retrospectiveData.TeamID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
@@ -162,7 +162,7 @@ func (ctrl RetrospectiveController) Update(c *gin.Context) {
 		return
 	}
 
-	if !ctrl.PermissionService.UserCanUseRetro(retrospectiveData.TeamID, userID.(uint)) {
+	if !ctrl.PermissionService.UserCanCreateOrEditRetro(retrospectiveData.TeamID, userID.(uint)) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{})
 		return
 	}
