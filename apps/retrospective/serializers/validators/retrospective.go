@@ -27,7 +27,14 @@ func IsValidTaskProviderConfigList(
 	var isValid bool
 	var providerType string
 	var providerData, credentials map[string]interface{}
-	taskProviderConfigList := currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveCreateSerializer).TaskProviderConfig
+	var taskProviderConfigList []map[string]interface{}
+
+	switch reflect.TypeOf(currentStruct.Interface()) {
+	case reflect.TypeOf(&retrospectiveSerializers.RetrospectiveCreateSerializer{}):
+		taskProviderConfigList = currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveCreateSerializer).TaskProviderConfig
+	case reflect.TypeOf(&retrospectiveSerializers.RetrospectiveUpdateSerializer{}):
+		taskProviderConfigList = currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveUpdateSerializer).TaskProviderConfig
+	}
 	// There should be at least one task provider config
 	if len(taskProviderConfigList) == 0 {
 		return false
@@ -80,7 +87,15 @@ func IsValidTeam(db *gorm.DB) validator.Func {
 		param string,
 	) bool {
 		var team userModels.Team
-		teamID := currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveCreateSerializer).TeamID
+		var teamID uint
+
+		switch reflect.TypeOf(currentStruct.Interface()) {
+		case reflect.TypeOf(&retrospectiveSerializers.RetrospectiveCreateSerializer{}):
+			teamID = currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveCreateSerializer).TeamID
+		case reflect.TypeOf(&retrospectiveSerializers.RetrospectiveUpdateSerializer{}):
+			teamID = currentStruct.Interface().(*retrospectiveSerializers.RetrospectiveUpdateSerializer).TeamID
+		}
+
 		if err := db.Model(&userModels.Team{}).
 			Where("deleted_at IS NULL").
 			Where("id = ? and active = true", teamID).

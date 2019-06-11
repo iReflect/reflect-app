@@ -30,6 +30,20 @@ func (service PermissionService) UserCanAccessRetro(retroID string, userID uint)
 	return err == nil
 }
 
+// UserCanCreateOrEditRetro ...
+func (service PermissionService) UserCanCreateOrEditRetro(teamID uint, userID uint) bool {
+	if service.IsUserAdmin(userID) {
+		return true
+	}
+	db := service.DB
+	// Check if the user has the permission to create or update the retro
+	err := db.Model(&userModels.UserTeam{}).
+		Where("user_teams.deleted_at IS NULL").
+		Where("team_id = ? and user_id = ? and leaved_at IS NULL", teamID, userID).
+		Find(&userModels.UserTeam{}).Error
+	return err == nil
+}
+
 // UserCanAccessSprint ...
 func (service PermissionService) UserCanAccessSprint(retroID string, sprintID string, userID uint) bool {
 	if service.IsUserAdmin(userID) {

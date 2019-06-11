@@ -99,6 +99,7 @@ func (p *PivotalTaskProvider) ConfigTemplate() (configMap map[string]interface{}
 				"FieldDisplayName": "Enter the Project ID for your PT Project. e.g. 1234567",
 				"Type":             "number",
 				"Required":         true,
+				"Editable":         false,
 			},
 		},
 	}
