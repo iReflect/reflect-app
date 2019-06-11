@@ -127,12 +127,14 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 				"FieldDisplayName": "Base URL of the project. eg. 'https://ireflect.atlassian.net'",
 				"Type":             "string",
 				"Required":         true,
+				"Editable":         false,
 			},
 			{
 				"FieldName":        "BoardIds",
 				"FieldDisplayName": "Board IDs (Comma Separated)",
 				"Type":             "string",
 				"Required":         true,
+				"Editable":         false,
 			},
 			{
 				"FieldName": "JQL",
@@ -140,6 +142,7 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 					FromDateJQLKeyword, ToDateJQLKeyword),
 				"Type":     "string",
 				"Required": false,
+				"Editable": false,
 				"Hint": fmt.Sprintf("<i>You can use the following parameters in your custom JQL, which will be replaced with "+
 					"their actual values at the time of the sprint sync.<br><strong>Sprint ID</strong>: %s, "+
 					"<strong>\"From\" Date</strong>: %s, <strong>\"To\" Date</strong>: %s </i>",
@@ -150,6 +153,7 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 				"FieldDisplayName": "Estimate Field (Leave blank to use TimeEstimate)",
 				"Type":             "string",
 				"Required":         false,
+				"Editable":         false,
 			},
 		},
 	}
