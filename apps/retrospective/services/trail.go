@@ -36,9 +36,14 @@ func (service TrailService) Add(action constants.ActionType, actionItem constant
 }
 
 // GetTrails method to get history of trails for a particular sprint
-func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.TrailSerializer, status int, err error) {
+func (service TrailService) GetTrails(sprintID uint, retroID string) (trails *trailSerializer.TrailSerializer, status int, err error) {
 	db := service.DB
 	trails = new(trailSerializer.TrailSerializer)
+
+	retroTrail := db.Model(&retroModels.Trail{}).
+		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.Retrospective]).
+		Where("trails.action_item_id = ?", retroID).
+		QueryExpr()
 
 	sprintTrail := db.Model(&retroModels.Trail{}).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.Sprint]).
@@ -66,15 +71,17 @@ func (service TrailService) GetTrails(sprintID uint) (trails *trailSerializer.Tr
 	retroFeedbackTrail := db.Model(&retroModels.Trail{}).
 		Scopes(retroModels.TrailJoinFeedback).
 		Where("trails.action_item = ?", constants.ActionItemTypeMap[constants.RetrospectiveFeedback]).
+		Where("retrospective_feedbacks.retrospective_id = ?", retroID).
 		QueryExpr()
 
 	err = db.Raw(
 		`SELECT * FROM (?) AS sprint_trails
+		UNION SELECT * FROM (?) AS retro_trails
 		UNION SELECT * FROM (?) AS sprint_member_trails
 		UNION SELECT * FROM (?) AS sprint_task_trails
 		UNION SELECT * FROM (?) AS sprint_member_task_trails
 		UNION SELECT * FROM (?) AS retro_feedback_trails`,
-		sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail, retroFeedbackTrail).
+		retroTrail, sprintTrail, sprintMemberTrail, sprintTaskTrail, sprintMemberTaskTrail, retroFeedbackTrail).
 		Preload("ActionBy").
 		Order("created_at DESC").
 		Find(&trails.Trails).Error

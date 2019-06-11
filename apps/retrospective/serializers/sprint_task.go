@@ -29,6 +29,7 @@ type SprintTask struct {
 	SprintTime              uint   // Time spent on the task in the sprint
 	TotalTime               uint   // Total time spent on the task across the sprints
 	DoneAt                  *time.Time
+	Resolution              int8
 }
 
 // SprintTasksSerializer ...
@@ -59,6 +60,11 @@ type TaskMembersSerializer struct {
 // SprintTaskUpdate ...
 type SprintTaskUpdate struct {
 	BaseRating
+}
+
+// SprintTaskDone ...
+type SprintTaskDone struct {
+	Resolution *int8 `json:"Resolution" binding:"omitempty,is_valid_resolution"`
 }
 
 // AddSprintTaskMemberSerializer ...

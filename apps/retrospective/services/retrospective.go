@@ -31,7 +31,8 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	db := service.DB
 
 	retrospectiveList = &retroSerializers.RetrospectiveListSerializer{}
-	retrospectiveList.Retrospectives = []retroSerializers.Retrospective{}
+	retrospectiveList.MyRetrospectives = []retroSerializers.Retrospective{}
+	retrospectiveList.OthersRetrospectives = []retroSerializers.Retrospective{}
 
 	perPage, err := strconv.Atoi(perPageString)
 	if err != nil {
@@ -59,19 +60,27 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 		Offset(offset).
 		Select("DISTINCT(retrospectives.*)")
 
+	userTeamQuery := db.Model(&userModels.UserTeam{}).
+		Select("team_id").
+		Where("user_id = ? and leaved_at IS NULL", userID).
+		QueryExpr()
+
 	if isAdmin {
 		err = baseQuery.
-			Find(&retrospectiveList.Retrospectives).
-			Error
-
-	} else {
-		err = baseQuery.
-			Scopes(retroModels.RetroJoinUserTeams).
-			Where("user_teams.user_id = ?", userID).
+			Where("retrospectives.team_id NOT IN (?)", userTeamQuery).
 			Preload("Team").
-			Find(&retrospectiveList.Retrospectives).
+			Find(&retrospectiveList.OthersRetrospectives).
 			Error
+		if err != nil {
+			utils.LogToSentry(err)
+			return nil, http.StatusInternalServerError, errors.New("unable to get retrospective list")
+		}
 	}
+	err = baseQuery.
+		Where("retrospectives.team_id IN (?)", userTeamQuery).
+		Preload("Team").
+		Find(&retrospectiveList.MyRetrospectives).
+		Error
 
 	if err != nil {
 		utils.LogToSentry(err)
@@ -79,6 +88,23 @@ func (service RetrospectiveService) List(userID uint, perPageString string, page
 	}
 
 	return retrospectiveList, http.StatusOK, nil
+}
+
+// GetEditLevels ...
+func (service RetrospectiveService) GetEditLevels() (
+	*retroSerializers.RetroFieldsEditLevelMap, int, error) {
+
+	retroFieldsEditLevel := retroSerializers.RetroFieldsEditLevelMap{
+		Title:             retroSerializers.Fully,
+		ProjectName:       retroSerializers.Partially,
+		TeamID:            retroSerializers.NotEditable,
+		StoryPointPerWeek: retroSerializers.NotEditable,
+		TimeProviderName:  retroSerializers.NotEditable,
+	}
+	if !retroFieldsEditLevel.Validate() {
+		return nil, http.StatusInternalServerError, errors.New("error in validating edit levels")
+	}
+	return &retroFieldsEditLevel, http.StatusOK, nil
 }
 
 // Get the details of the given Retrospective.
@@ -154,16 +180,6 @@ func (service RetrospectiveService) Create(userID uint,
 	db := service.DB
 	var err error
 
-	// Check if the user has the permission to create the retro
-	err = db.Model(&userModels.UserTeam{}).
-		Where("user_teams.deleted_at IS NULL").
-		Where("team_id = ? and user_id = ? and leaved_at IS NULL",
-			retrospectiveData.TeamID, userID).
-		Find(&userModels.UserTeam{}).Error
-	if err != nil {
-		return nil, http.StatusForbidden, errors.New("user doesn't have the permission to create the retro")
-	}
-
 	var retro retroModels.Retrospective
 	var taskProviders []byte
 	var encryptedTaskProviders []byte
@@ -195,4 +211,55 @@ func (service RetrospectiveService) Create(userID uint,
 		return nil, http.StatusInternalServerError, errors.New("failed to create retrospective")
 	}
 	return &retro, http.StatusCreated, nil
+}
+
+// Update the Retrospective with the given values provided the user is a member of the retrospective's team.
+func (service RetrospectiveService) Update(userID uint,
+	retrospectiveData *retroSerializers.RetrospectiveUpdateSerializer) (*retroModels.Retrospective, int, error) {
+	db := service.DB
+	var err error
+
+	var retro retroModels.Retrospective
+	err = db.Model(&retroModels.Retrospective{}).Where("id = ?", retrospectiveData.RetroID).First(&retro).Error
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to update retrospective")
+	}
+
+	retro.TeamID = retrospectiveData.TeamID
+	retro.CreatedByID = userID
+	retro.Title = retrospectiveData.Title
+	retro.ProjectName = retrospectiveData.ProjectName
+	retro.TimeProviderName = retrospectiveData.TimeProviderName
+	retro.StoryPointPerWeek = retrospectiveData.StoryPointPerWeek
+
+	if retrospectiveData.CredentialsChanged {
+		if err := tasktracker.ValidateConfigs(retrospectiveData.TaskProviderConfig); err != nil {
+			return nil, http.StatusBadRequest, err
+		}
+	}
+
+	taskProviders, err := json.Marshal(retrospectiveData.TaskProviderConfig)
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to update retrospective")
+	}
+
+	if retrospectiveData.CredentialsChanged {
+		encryptedTaskProviders, err := tasktracker.EncryptTaskProviders(taskProviders)
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.New("failed to update retrospective")
+		}
+		retro.TaskProviderConfig = encryptedTaskProviders
+	} else {
+		retro.TaskProviderConfig = taskProviders
+	}
+
+	err = db.Save(&retro).Error
+	if err != nil {
+		utils.LogToSentry(err)
+		return nil, http.StatusInternalServerError, errors.New("failed to update retrospective")
+	}
+
+	return &retro, http.StatusOK, nil
 }

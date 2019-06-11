@@ -45,6 +45,7 @@ type JIRAConfig struct {
 	EstimateField string                  `json:"EstimateField"`
 }
 
+// GetBaseURL returns the sanitized base URL.
 func (config JIRAConfig) GetBaseURL() string {
 	// Just to make sure there are no trailing slashes in the base url, even if provided by the user.
 	return strings.Trim(config.BaseURL, "/")
@@ -126,12 +127,14 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 				"FieldDisplayName": "Base URL of the project. eg. 'https://ireflect.atlassian.net'",
 				"Type":             "string",
 				"Required":         true,
+				"Editable":         false,
 			},
 			{
 				"FieldName":        "BoardIds",
 				"FieldDisplayName": "Board IDs (Comma Separated)",
 				"Type":             "string",
 				"Required":         true,
+				"Editable":         false,
 			},
 			{
 				"FieldName": "JQL",
@@ -139,6 +142,7 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 					FromDateJQLKeyword, ToDateJQLKeyword),
 				"Type":     "string",
 				"Required": false,
+				"Editable": false,
 				"Hint": fmt.Sprintf("<i>You can use the following parameters in your custom JQL, which will be replaced with "+
 					"their actual values at the time of the sprint sync.<br><strong>Sprint ID</strong>: %s, "+
 					"<strong>\"From\" Date</strong>: %s, <strong>\"To\" Date</strong>: %s </i>",
@@ -149,10 +153,20 @@ func (p *JIRATaskProvider) ConfigTemplate() (configMap map[string]interface{}) {
 				"FieldDisplayName": "Estimate Field (Leave blank to use TimeEstimate)",
 				"Type":             "string",
 				"Required":         false,
+				"Editable":         false,
 			},
 		},
 	}
 	return configMap
+}
+
+// SanitizeTimeLogs ...
+func (c *JIRAConnection) SanitizeTimeLogs(timeLogKeys []string) map[string]string {
+	sanitizedKeys := make(map[string]string)
+	for _, timeLogKey := range timeLogKeys {
+		sanitizedKeys[timeLogKey] = timeLogKey
+	}
+	return sanitizedKeys
 }
 
 // GetTaskUrl ...

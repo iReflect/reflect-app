@@ -3,15 +3,43 @@ package models
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"github.com/sirupsen/logrus"
 
 	"github.com/iReflect/reflect-app/apps/retrospective"
 	"github.com/iReflect/reflect-app/db/models/fields"
+)
+
+// Resolution ...
+type Resolution int8
+
+// ResolutionValues ...
+var ResolutionValues = [...]string{
+	"-",
+	"Done",
+	"Won't Do",
+	"Duplicate",
+	"Can't Reproduce",
+}
+
+// GetStringValue ...
+func (resolution Resolution) GetStringValue() string {
+	return ResolutionValues[resolution]
+}
+
+//Resolution
+const (
+	TaskNotDoneResolution Resolution = iota
+	DoneResolution
+	WontDoResolution
+	DuplicateResolution
+	CantReproduceResolution
 )
 
 // Task represents the tasks for retrospectives
@@ -33,6 +61,7 @@ type Task struct {
 	DoneAt            *time.Time
 	IsTrackerTask     bool `gorm:"not null;default: false"`
 	SprintMemberTasks []SprintMemberTask
+	Resolution        Resolution `gorm:"default:0"`
 }
 
 // Stringify ...
@@ -62,12 +91,43 @@ func (task *Task) BeforeUpdate(db *gorm.DB) (err error) {
 func RegisterTaskToAdmin(Admin *admin.Admin, config admin.Config) {
 	task := Admin.AddResource(&Task{}, &config)
 	taskProviderConfigMeta := getFieldsMetaFieldMeta()
+	taskResolutionMeta := getTaskResolutionMeta()
 	task.Meta(&taskProviderConfigMeta)
+	task.Meta(&taskResolutionMeta)
 
 	task.IndexAttrs("-SprintMemberTasks")
 	task.NewAttrs("-SprintMemberTasks")
 	task.EditAttrs("-SprintMemberTasks")
 	task.ShowAttrs("-SprintMemberTasks")
+}
+func getTaskResolutionMeta() admin.Meta {
+	return admin.Meta{
+		Name: "Resolution",
+		Type: "select_one",
+		Valuer: func(value interface{}, context *qor.Context) interface{} {
+			task := value.(*Task)
+			return strconv.Itoa(int(task.Resolution))
+		},
+		Setter: func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			task := resource.(*Task)
+			value, err := strconv.Atoi(metaValue.Value.([]string)[0])
+			if err != nil {
+				logrus.Error("Cannot convert string to int")
+				return
+			}
+			task.Resolution = Resolution(value)
+		},
+		Collection: func(value interface{}, context *qor.Context) (results [][]string) {
+			for index, value := range ResolutionValues {
+				results = append(results, []string{strconv.Itoa(index), value})
+			}
+			return
+		},
+		FormattedValuer: func(value interface{}, context *qor.Context) interface{} {
+			task := value.(*Task)
+			return task.Resolution.GetStringValue()
+		},
+	}
 }
 
 // getFieldsMetaFieldMeta ...

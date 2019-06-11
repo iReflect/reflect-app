@@ -23,6 +23,37 @@ type Retrospective struct {
 	StoryPointPerWeek  float64
 }
 
+// EditLevel ...
+type EditLevel uint
+
+// Various EditLevels ...
+const (
+	NotEditable EditLevel = iota + 1
+	Partially
+	Fully
+)
+
+// RetroFieldsEditLevelMap ...
+type RetroFieldsEditLevelMap struct {
+	Title             EditLevel
+	ProjectName       EditLevel
+	TeamID            EditLevel
+	StoryPointPerWeek EditLevel
+	TimeProviderName  EditLevel
+}
+
+func (editLevel EditLevel) validate() bool {
+	return (editLevel == NotEditable || editLevel == Partially || editLevel == Fully)
+}
+
+// Validate ...
+func (retroFieldsEditLevelMap RetroFieldsEditLevelMap) Validate() bool {
+	return (retroFieldsEditLevelMap.ProjectName.validate() &&
+		retroFieldsEditLevelMap.StoryPointPerWeek.validate() &&
+		retroFieldsEditLevelMap.TeamID.validate() &&
+		retroFieldsEditLevelMap.Title.validate())
+}
+
 // RetrospectiveCreateSerializer ...
 type RetrospectiveCreateSerializer struct {
 	Title              string                   `json:"title" binding:"required"`
@@ -34,7 +65,20 @@ type RetrospectiveCreateSerializer struct {
 	CreatedByID        uint
 }
 
+// RetrospectiveUpdateSerializer ...
+type RetrospectiveUpdateSerializer struct {
+	RetroID            uint                     `json:"retroID" binding:"required"`
+	Title              string                   `json:"title" binding:"required"`
+	ProjectName        string                   `json:"projectName" binding:"required"`
+	TaskProviderConfig []map[string]interface{} `json:"taskProvider" binding:"required,is_valid_task_provider_config"`
+	TeamID             uint                     `json:"team" binding:"required,is_valid_team"`
+	StoryPointPerWeek  float64                  `json:"storyPointPerWeek" binding:"required"`
+	TimeProviderName   string                   `json:"timeProviderKey" binding:"required"`
+	CredentialsChanged bool                     `json:"credentialsChanged"`
+}
+
 // RetrospectiveListSerializer ...
 type RetrospectiveListSerializer struct {
-	Retrospectives []Retrospective
+	MyRetrospectives     []Retrospective
+	OthersRetrospectives []Retrospective
 }

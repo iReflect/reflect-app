@@ -36,6 +36,11 @@ func (retroValidator RetrospectiveValidators) Register() {
 		logrus.Error(err.Error())
 	}
 
+	if err := validatorEngine.RegisterValidation("is_valid_resolution",
+		IsValidResolution); err != nil {
+		logrus.Error(err.Error())
+	}
+
 	if err := validatorEngine.RegisterValidation("is_valid_task_role",
 		IsValidTaskRole); err != nil {
 		logrus.Error(err.Error())
