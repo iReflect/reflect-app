@@ -3,6 +3,7 @@ package services
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -58,7 +59,8 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 	}
 
 	if feedbackType == models.GoalType {
-		retroFeedback.ExpectedAt = sprint.EndDate
+		expectedAt := sprint.EndDate.Add(time.Duration(sprint.EndDate.UnixNano() - sprint.StartDate.UnixNano()))
+		retroFeedback.ExpectedAt = &expectedAt
 	}
 
 	err = db.Create(&retroFeedback).Error
