@@ -58,8 +58,16 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 		retroFeedback.ResolvedAt = sprint.EndDate
 	}
 
+	// In this we set expectedAt = end date of sprint + length of sprint.
 	if feedbackType == models.GoalType {
-		expectedAt := sprint.EndDate.Add(time.Duration(sprint.EndDate.UnixNano() - sprint.StartDate.UnixNano()))
+		endDate := sprint.EndDate
+		startDate := sprint.StartDate
+		// In this we made a time object of end date with time 00:00.
+		absEndDate := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, endDate.Location())
+		// In this we made a time object of start date with time 00:00.
+		absStartDate := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, startDate.Location())
+
+		expectedAt := sprint.EndDate.Add(absEndDate.Sub(absStartDate))
 		retroFeedback.ExpectedAt = &expectedAt
 	}
 
