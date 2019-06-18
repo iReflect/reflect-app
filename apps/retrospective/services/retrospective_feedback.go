@@ -3,6 +3,7 @@ package services
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/iReflect/reflect-app/apps/retrospective/models"
 	retrospectiveSerializers "github.com/iReflect/reflect-app/apps/retrospective/serializers"
@@ -57,8 +58,18 @@ func (service RetrospectiveFeedbackService) Add(userID uint, sprintID string, re
 		retroFeedback.ResolvedAt = sprint.EndDate
 	}
 
+	// In this we set expectedAt = end date of sprint + length of sprint + one extra day.
 	if feedbackType == models.GoalType {
-		retroFeedback.ExpectedAt = sprint.EndDate
+		endDate := sprint.EndDate
+		startDate := sprint.StartDate
+		// In this we made a time object of end date with time 00:00.
+		absEndDate := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, endDate.Location())
+		// In this we made a time object of start date with time 00:00.
+		absStartDate := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, startDate.Location())
+
+		// adding sprint length and one extra day in the end date of current sprint.
+		expectedAt := sprint.EndDate.Add(absEndDate.Sub(absStartDate)).AddDate(0, 0, 1)
+		retroFeedback.ExpectedAt = &expectedAt
 	}
 
 	err = db.Create(&retroFeedback).Error
