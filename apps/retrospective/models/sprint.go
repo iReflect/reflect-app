@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	"log"
 	"strconv"
 	"strings"
@@ -65,8 +64,7 @@ type Sprint struct {
 func (sprint *Sprint) Validate(db *gorm.DB) (err error) {
 	// end date should be after start date
 	if sprint.StartDate != nil && sprint.EndDate != nil && sprint.EndDate.Before(*sprint.StartDate) {
-		err = errors.New("end date can not be before start date")
-		return err
+		return &customErrors.ModelError{Message: "end date can not be before start date"}
 	}
 
 	// RetrospectiveID is set when we use gorm and Retrospective.ID is set when we use QOR admin,
@@ -113,8 +111,7 @@ func (sprint *Sprint) validateConcurrency(baseQuery *gorm.DB, errorMessage strin
 
 	baseQuery.Where("status = ? AND id <> ?", sprint.Status, sprint.ID).Find(&sprints)
 	if len(sprints) > 0 {
-		err = errors.New(errorMessage)
-		return err
+		return &customErrors.ModelError{Message: errorMessage}
 	}
 	return
 }
