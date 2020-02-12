@@ -23,7 +23,13 @@ func SyncSprintMemberData(job *work.Job) error {
 		log.Println("Job failed: ", job.Name, " with error: sprintMemberID cannot be blank")
 		return errors.New("sprintMemberID cannot be blank")
 	}
-	err := sprintService.SyncSprintMemberData(sprintMemberID)
+
+	sprintID := job.ArgInt64("sprintID")
+	if sprintID == 0 {
+		log.Println("Job failed: ", job.Name, " with error: sprintID cannot be zero")
+		return errors.New("sprintID cannot be zero")
+	}
+	err := sprintService.SyncSprintMemberData(uint(sprintID), sprintMemberID)
 
 	if err != nil {
 		log.Println("Job failed: ", job.Name, " with error: ", err)
