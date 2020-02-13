@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	mapset "github.com/deckarep/golang-set"
+	"github.com/deckarep/golang-set"
 	"github.com/gocraft/work"
 	"github.com/jinzhu/gorm"
 
@@ -123,7 +123,8 @@ func (service SprintService) QueueSprint(sprintID uint, assignPoints bool) {
 // QueueSprintMember ...
 func (service SprintService) QueueSprintMember(sprintID uint, sprintMemberID string) {
 	db := service.DB
-	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data", work.Q{"sprintMemberID": sprintMemberID})
+	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data",
+		work.Q{"sprintID": sprintID, "sprintMemberID": sprintMemberID})
 	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Queued})
 }
 
@@ -165,8 +166,11 @@ func (service SprintService) SetSynced(sprintID uint) {
 }
 
 // SyncSprintMemberData ...
-func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err error) {
+func (service SprintService) SyncSprintMemberData(sprintID uint, sprintMemberID string) (err error) {
 	db := service.DB
+
+	service.SetSyncing(sprintID)
+
 	var sprintMember retroModels.SprintMember
 	err = db.Model(&retroModels.SprintMember{}).
 		Where("sprint_members.deleted_at IS NULL").
@@ -179,6 +183,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 
 	if err != nil {
 		utils.LogToSentry(err)
+		service.SetSyncFailed(sprintID)
 		return err
 	}
 
@@ -188,8 +193,6 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 		service.SetSyncFailed(sprint.ID)
 		return errors.New("sprint has no start/end date")
 	}
-
-	service.SetSyncing(sprint.ID)
 
 	taskProviderConfig, err := tasktracker.DecryptTaskProviders(sprint.Retrospective.TaskProviderConfig)
 	if err != nil {
@@ -208,7 +211,7 @@ func (service SprintService) SyncSprintMemberData(sprintMemberID string) (err er
 	if sprint.Retrospective.TimeProviderName == timeTrackerProviders.TimeProviderJira {
 		timeProviderConfig = taskProviderConfig
 	}
-	timeTrackerTaskKeys, timeLogs, err := service.GetSprintMemberSanitizedTimeTrackerData(timeProviderConfig, timeProviderConfig, sprint)
+	timeTrackerTaskKeys, timeLogs, err := service.GetSprintMemberSanitizedTimeTrackerData(taskProviderConfig, timeProviderConfig, sprint)
 	if err != nil {
 		utils.LogToSentry(err)
 		service.SetSyncFailed(sprint.ID)

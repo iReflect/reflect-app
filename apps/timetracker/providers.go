@@ -50,11 +50,15 @@ func CleanTimeProviderConfig(data interface{}, name string) interface{} {
 }
 
 // GetProjectTimeLogs ...
-func GetProjectTimeLogs(config []byte, project string, startTime time.Time, endTime time.Time) (timeLogs []serializers.TimeLog, err error) {
+func GetProjectTimeLogs(
+	config []byte,
+	project string,
+	startTime, endTime time.Time) ([]serializers.TimeLog, error) {
 	connections, err := GetConnections(config)
 	if err != nil {
 		return nil, err
 	}
+	timeLogs := make([]serializers.TimeLog, 0)
 
 	for _, connection := range connections {
 		timeLogs = append(timeLogs, connection.GetProjectTimeLogs(project, startTime, endTime)...)

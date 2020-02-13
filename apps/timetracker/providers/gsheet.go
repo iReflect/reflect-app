@@ -100,8 +100,7 @@ func (m *GsheetConnection) CleanTimeProviderConfig() interface{} {
 // GetProjectTimeLogs ...
 func (m *GsheetConnection) GetProjectTimeLogs(project string, startTime time.Time, endTime time.Time) []serializers.TimeLog {
 
-	var timeLogs []serializers.TimeLog
-
+	timeLogs := make([]serializers.TimeLog, 0)
 	timeTrackerConfig := config.GetConfig().TimeTracker
 	appExecutor := google.AppScriptExecutor{ScriptID: timeTrackerConfig.ScriptID, CredentialsFile: timeTrackerConfig.GoogleCredentials}
 
