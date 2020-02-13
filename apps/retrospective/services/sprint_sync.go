@@ -124,7 +124,7 @@ func (service SprintService) QueueSprint(sprintID uint, assignPoints bool) {
 func (service SprintService) QueueSprintMember(sprintID uint, sprintMemberID string) {
 	db := service.DB
 	workers.Enqueuer.EnqueueUnique("sync_sprint_member_data",
-		work.Q{"sprintMemberID": sprintMemberID, "sprintID": sprintID})
+		work.Q{"sprintID": sprintID, "sprintMemberID": sprintMemberID})
 	db.Create(&retroModels.SprintSyncStatus{SprintID: sprintID, Status: retroModels.Queued})
 }
 
