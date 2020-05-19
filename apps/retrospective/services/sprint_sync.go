@@ -211,7 +211,7 @@ func (service SprintService) SyncSprintMemberData(sprintID uint, sprintMemberID 
 	if sprint.Retrospective.TimeProviderName == timeTrackerProviders.TimeProviderJira {
 		timeProviderConfig = taskProviderConfig
 	}
-	timeTrackerTaskKeys, timeLogs, err := service.GetSprintMemberSanitizedTimeTrackerData(taskProviderConfig, timeProviderConfig, sprint)
+	timeTrackerTaskKeys, timeLogs, err := service.GetSprintMemberSanitizedTimeTrackerData(timeProviderConfig, timeProviderConfig, sprint)
 	if err != nil {
 		utils.LogToSentry(err)
 		service.SetSyncFailed(sprint.ID)
